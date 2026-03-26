@@ -1,0 +1,48 @@
+"""
+Schemas module initialization
+"""
+from app.schemas.verification import (
+    Vertical,
+    TimeSensitivity,
+    ClaimType,
+    Verdict,
+    SourceRole,
+    VerifyRequest,
+    VerifyUrlRequest,
+    SourceInfo,
+    ClaimSources,
+    ClaimResult,
+    VerificationSummary,
+    VerificationMetadata,
+    VerificationResponse,
+    VerificationStatus,
+    ExtractedClaim,
+    SearchQuery,
+    EvidenceItem,
+    RankedEvidence,
+    ClaimVerdict,
+    ErrorResponse,
+)
+
+__all__ = [
+    "Vertical",
+    "TimeSensitivity",
+    "ClaimType",
+    "Verdict",
+    "SourceRole",
+    "VerifyRequest",
+    "VerifyUrlRequest",
+    "SourceInfo",
+    "ClaimSources",
+    "ClaimResult",
+    "VerificationSummary",
+    "VerificationMetadata",
+    "VerificationResponse",
+    "VerificationStatus",
+    "ExtractedClaim",
+    "SearchQuery",
+    "EvidenceItem",
+    "RankedEvidence",
+    "ClaimVerdict",
+    "ErrorResponse",
+]

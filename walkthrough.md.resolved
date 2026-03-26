@@ -1,0 +1,209 @@
+# Verique (TrustLens) — How the Project Works
+
+Verique is an **AI-powered fact-checking system** that extracts claims from text, searches the web for evidence, and produces verdicts with confidence scores. It has **3 components**: a Python backend, a Next.js frontend, and a Chrome extension.
+
+---
+
+## High-Level Architecture
+
+```mermaid
+graph LR
+    subgraph "User Interfaces"
+        A["Next.js Frontend\n(localhost:3000)"]
+        B["Chrome Extension"]
+    end
+
+    subgraph "Backend (FastAPI)"
+        C["API Layer\n/api/v1/verify"]
+        D["VerificationService"]
+        E["LangGraph Pipeline\n(8 Agents)"]
+    end
+
+    subgraph "External Services"
+        F["Groq API\n(Llama 3 LLM)"]
+        G["DuckDuckGo / SerpAPI\n/ Google CSE"]
+    end
+
+    subgraph "Data Layer"
+        H["SQLite / PostgreSQL"]
+        I["In-Memory Cache"]
+    end
+
+    A -- "POST /api/v1/verify/" --> C
+    B -- "POST /api/v1/verify" --> C
+    C --> D --> E
+    E --> F
+    E --> G
+    D --> H
+    D --> I
+```
+
+---
+
+## 1. Backend (`backend/`)
+
+**Stack:** FastAPI + SQLAlchemy + LangGraph + Groq SDK
+
+### Entry Point — [main.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/main.py)
+
+- Creates the FastAPI app with CORS, structured logging, and a lifespan manager
+- Mounts all API routes under the prefix set in config (defaults to `/v1`, but the app itself is also prefixed with `/api` via the router)
+- On startup, initializes the database tables
+
+### Configuration — [config.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/core/config.py)
+
+Loads settings from [.env](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/.env):
+- **LLM**: Uses Groq API (free) with `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`
+- **Search**: DuckDuckGo (free, default), with optional SerpAPI / Google CSE
+- **Database**: PostgreSQL in production, SQLite for local dev
+- **Rate limiting**: 10 req/min, 100 req/hour
+
+### Database — [database.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/core/database.py)
+
+- Auto-detects SQLite vs PostgreSQL from `DATABASE_URL`
+- Uses async SQLAlchemy (`aiosqlite` or `asyncpg`)
+- Creates tables on startup: `articles`, [claims](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/verification.py#108-158), `claim_verdicts`, `verifications`, `sources`, `verification_sources`, `domains`
+
+### API Layer — [verification.py (endpoint)](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/api/v1/endpoints/verification.py)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/verify/` | POST | Verify raw text content |
+| `/api/v1/verify/url` | POST | Fetch a URL and verify its content |
+| `/api/v1/verify/{id}` | GET | Get verification status (not yet implemented) |
+| `/api/v1/verify/async` | POST | Start async verification job (stub) |
+
+When a POST hits `/api/v1/verify/`:
+1. Checks cache for a previous result with the same content hash
+2. If not cached → runs the [VerificationService](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/services/verification_service.py#15-197) pipeline
+3. Caches the result and returns it
+
+---
+
+### The Multi-Agent Pipeline — [pipeline.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/pipeline.py)
+
+This is the **core of the system**. It uses **LangGraph** to orchestrate 8 agents in a linear state machine:
+
+```mermaid
+graph TD
+    A["1. Ingestion Agent"] --> B["2. Claim Decomposer"]
+    B --> C["3. Claim Classifier"]
+    C --> D["4. Query Planner"]
+    D --> E["5. Retrieval Agent"]
+    E --> F["6. Evidence Ranker"]
+    F --> G["7. Verification Agent"]
+    G --> H["8. Explanation Agent"]
+```
+
+Each agent receives a shared [PipelineState](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/pipeline.py#36-73) dict and adds its output:
+
+| # | Agent | File | What it does |
+|---|---|---|---|
+| 1 | **IngestionAgent** | [ingestion.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/ingestion.py) | Cleans raw text (strips HTML, normalizes whitespace) |
+| 2 | **ClaimDecomposerAgent** | [claim_decomposer.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/claim_decomposer.py) | Calls Groq LLM to extract factual claims (numeric, entity, temporal, comparative, causal) |
+| 3 | **ClaimClassifierAgent** | [claim_classifier.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/claim_classifier.py) | Filters out non-verifiable claims (opinions, hypotheticals) |
+| 4 | **QueryPlannerAgent** | [query_planner.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/query_planner.py) | Generates targeted search queries for each claim |
+| 5 | **RetrievalAgent** | [retrieval.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/retrieval.py) | Searches the web (DuckDuckGo/SerpAPI/Google) in parallel, attaches domain reputation scores |
+| 6 | **EvidenceRankerAgent** | [evidence_ranker.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/evidence_ranker.py) | Scores and ranks evidence by relevance and domain quality |
+| 7 | **VerificationAgent** | [verification.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/verification.py) | Calls Groq LLM to generate a verdict for each claim based on evidence |
+| 8 | **ExplanationAgent** | [explanation.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/agents/explanation.py) | Formats results into the final user-friendly JSON response |
+
+### Verdict Categories
+
+Each claim gets one of 7 verdicts:
+
+| Verdict | Meaning |
+|---|---|
+| `strongly_supported` | Multiple high-quality sources confirm |
+| `supported` | Evidence generally supports |
+| `mixed` | Conflicting evidence found |
+| `weak` | Limited or low-quality evidence |
+| `contradicted` | Evidence contradicts the claim |
+| `outdated` | Claim may have been true but is no longer current |
+| `not_verifiable` | Cannot find evidence either way |
+
+### Page Score Algorithm — [verification_service.py](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/services/verification_service.py)
+
+After all claims are verified, a **page score (0–100)** is calculated using:
+- Weighted average of verdict scores per claim
+- Position weighting (earlier claims matter more)
+- Source count bonus (logarithmic scaling)
+- Support ratio bonus (sigmoid-like curve)
+- Global bonus if overall support ratio is high
+
+---
+
+## 2. Frontend (`frontend/`)
+
+**Stack:** Next.js 14 + TailwindCSS + TypeScript
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| [page.tsx](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/app/page.tsx) | Home page with hero section and step cards |
+| [VerifyForm.tsx](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/components/verify/VerifyForm.tsx) | Text input / URL input form that calls the backend API |
+| [ResultsView.tsx](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/components/verify/ResultsView.tsx) | Displays verification results with claim cards |
+| [api.ts](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/lib/api.ts) | API client ([verifyContent](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/extension/background.js#69-92), [verifyUrl](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/lib/api.ts#30-54), [healthCheck](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/lib/api.ts#68-80)) |
+| [SourceReputationBadge.tsx](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/components/verify/SourceReputationBadge.tsx) | Shows domain reputation as a visual badge |
+| [ConfidenceBreakdown.tsx](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/frontend/src/components/verify/ConfidenceBreakdown.tsx) | Visual breakdown of confidence scores |
+
+### Flow
+1. User pastes text or enters a URL in the `VerifyForm`
+2. Frontend calls `POST /api/v1/verify/` (or `/api/v1/verify/url`)
+3. Backend returns [VerificationResponse](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/schemas/verification.py#196-231) with claims, verdicts, page score
+4. `ResultsView` renders each claim with its verdict badge, confidence score, reasoning, and source links
+
+---
+
+## 3. Chrome Extension (`extension/`)
+
+A **Manifest V3** Chrome extension that brings verification directly into the browser.
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| [manifest.json](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/extension/manifest.json) | Extension config (permissions, context menus, keyboard shortcuts) |
+| [background.js](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/extension/background.js) | Service worker: handles context menu clicks, messages, and API calls |
+| [content/](file:///c:/Users/Saad/OneDrive/Desktop/Projects/Verique/backend/app/api/v1/endpoints/verification.py#27-128) | Content script injected into web pages for text extraction and result highlighting |
+| `popup/` | Extension popup UI |
+
+### How it works
+1. User right-clicks selected text → "Verify with Verique"
+2. [background.js](file:///C:/Users/Saad/OneDrive/Desktop/Projects/Verique/extension/background.js) sends the text to `POST /api/v1/verify`
+3. Results are sent back to the content script which highlights claims inline on the page
+
+---
+
+## Data Flow Summary
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend/Extension
+    participant FastAPI
+    participant VerificationService
+    participant LangGraph Pipeline
+    participant Groq LLM
+    participant Web Search
+
+    User->>Frontend/Extension: Paste text / select text
+    Frontend/Extension->>FastAPI: POST /api/v1/verify/
+    FastAPI->>FastAPI: Check cache
+    FastAPI->>VerificationService: verify(text)
+    VerificationService->>LangGraph Pipeline: run(text)
+    LangGraph Pipeline->>LangGraph Pipeline: 1. Clean text
+    LangGraph Pipeline->>Groq LLM: 2. Extract claims
+    LangGraph Pipeline->>LangGraph Pipeline: 3. Filter claims
+    LangGraph Pipeline->>Groq LLM: 4. Plan queries
+    LangGraph Pipeline->>Web Search: 5. Fetch evidence
+    LangGraph Pipeline->>LangGraph Pipeline: 6. Rank evidence
+    LangGraph Pipeline->>Groq LLM: 7. Generate verdicts
+    LangGraph Pipeline->>LangGraph Pipeline: 8. Format output
+    LangGraph Pipeline-->>VerificationService: claims + verdicts
+    VerificationService-->>FastAPI: page_score + summary
+    FastAPI->>FastAPI: Cache result
+    FastAPI-->>Frontend/Extension: VerificationResponse
+    Frontend/Extension-->>User: Display results
+```

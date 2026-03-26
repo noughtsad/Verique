@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Verique - AI Content Verifier",
+  "description": "Instantly verify claims on any webpage with AI-powered fact-checking",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://api.verique.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "verify-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "Verify current page"
+    },
+    "verify-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Verify selected text"
+    }
+  }
+}

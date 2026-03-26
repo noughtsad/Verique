@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verique</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">Verique</span>
+      </div>
+      <div class="status" id="api-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Checking...</span>
+      </div>
+    </header>
+
+    <main class="popup-main">
+      <div class="section">
+        <h3>Quick Verify</h3>
+        <textarea 
+          id="verify-input" 
+          placeholder="Paste text to verify..."
+          rows="4"
+        ></textarea>
+        <button id="verify-btn" class="btn btn-primary">
+          <span class="btn-icon">✓</span>
+          Verify Text
+        </button>
+      </div>
+
+      <div class="divider">
+        <span>or</span>
+      </div>
+
+      <div class="section">
+        <h3>Page Actions</h3>
+        <button id="verify-page-btn" class="btn btn-secondary">
+          <span class="btn-icon">📄</span>
+          Verify Entire Page
+        </button>
+        <button id="verify-selection-btn" class="btn btn-secondary">
+          <span class="btn-icon">✂️</span>
+          Verify Selection
+        </button>
+      </div>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Analyzing claims...</p>
+      </div>
+
+      <div id="error" class="error hidden">
+        <p id="error-message"></p>
+      </div>
+    </main>
+
+    <footer class="popup-footer">
+      <a href="https://verique.io" target="_blank">verique.io</a>
+      <span>•</span>
+      <a href="https://verique.io/docs" target="_blank">API Docs</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: trustlens-postgres
+    environment:
+      POSTGRES_USER: trustlens
+      POSTGRES_PASSWORD: trustlens_dev_password
+      POSTGRES_DB: trustlens
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustlens"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: trustlens-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trustlens-backend
+    environment:
+      - DATABASE_URL=postgresql://trustlens:trustlens_dev_password@postgres:5432/trustlens
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trustlens-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+  # Background Worker (Celery)
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trustlens-worker
+    environment:
+      - DATABASE_URL=postgresql://trustlens:trustlens_dev_password@postgres:5432/trustlens
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.worker worker --loglevel=info
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: trustlens-network
