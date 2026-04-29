@@ -166,13 +166,24 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 
 # 2. Install Dependencies
+# Recommended for normal development:
 pip install -r requirements.txt
+
+# Optional: use the exact locked environment instead
+# pip install -r requirements-lock.txt
 
 # 3. Run the Server
 python -m uvicorn app.main:app --reload
 ```
 
 The backend will start at `http://127.0.0.1:8000`.
+
+### Backend Dependency Files
+
+- `backend/requirements.txt` contains the curated top-level dependencies we maintain by hand.
+- `backend/requirements-lock.txt` contains an exact `pip freeze` snapshot for reproducible installs.
+- Use `requirements.txt` for day-to-day development.
+- Use `requirements-lock.txt` when you want to recreate the same backend environment exactly.
 
 ### 3️⃣ Frontend Setup
 
@@ -217,7 +228,7 @@ The frontend will start at `http://localhost:3000` (or `3001` if 3000 is busy).
 ### Verify Content
 
 ```bash
-curl -X POST http://localhost:8000/v1/verify \
+curl -X POST http://localhost:8000/api/v1/verify/ \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -284,7 +295,7 @@ curl -X POST http://localhost:8000/v1/verify \
 ### Get Verification Status
 
 ```bash
-curl http://localhost:8000/v1/verification/ver_abc123def456
+curl http://localhost:8000/api/v1/verify/ver_abc123def456
 ```
 
 ---
