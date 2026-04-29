@@ -1,13 +1,8 @@
 /**
- * Type definitions for the Verique verification system
- * These types mirror the backend Pydantic schemas
+ * Shared frontend types for verification and social workflows.
  */
 
-// ============================================
-// Enums
-// ============================================
-
-export type Vertical = 
+export type Vertical =
   | 'ecommerce'
   | 'saas'
   | 'tech'
@@ -19,7 +14,7 @@ export type Vertical =
 
 export type TimeSensitivity = 'high' | 'medium' | 'low';
 
-export type ClaimType = 
+export type ClaimType =
   | 'numeric'
   | 'entity'
   | 'temporal'
@@ -27,7 +22,7 @@ export type ClaimType =
   | 'causal'
   | 'general';
 
-export type Verdict = 
+export type Verdict =
   | 'strongly_supported'
   | 'supported'
   | 'mixed'
@@ -37,10 +32,8 @@ export type Verdict =
   | 'not_verifiable';
 
 export type SourceRole = 'supporting' | 'contradicting' | 'neutral';
-
-// ============================================
-// Interfaces
-// ============================================
+export type UserRole = 'user' | 'moderator' | 'admin';
+export type ReviewDecision = 'uphold' | 'revise' | 'remove_verdict';
 
 export interface SourceInfo {
   url: string;
@@ -99,49 +92,152 @@ export interface VerificationResult {
   blockchain_tx?: string;
 }
 
-// ============================================
-// Request Types
-// ============================================
-
 export interface VerifyRequest {
   text: string;
   url?: string;
   vertical?: Vertical;
   language?: string;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 export interface VerifyUrlRequest {
   url: string;
   vertical?: Vertical;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
-
-// ============================================
-// Error Types
-// ============================================
 
 export interface ErrorResponse {
   error: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
-// ============================================
-// UI Configuration
-// ============================================
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  full_name?: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+}
 
-export const VERDICT_CONFIG: Record<Verdict, {
-  label: string;
-  icon: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  score: number;
-}> = {
+export interface AuthResponse {
+  access_token: string;
+  token_type: 'bearer';
+  user: User;
+}
+
+export interface PostVerificationSummary {
+  id: number;
+  status: string;
+  score?: number | null;
+  summary?: VerificationSummary | null;
+  challenge_count: number;
+  review_status: string;
+  final_decision?: string | null;
+  final_decision_note?: string | null;
+  is_human_final: boolean;
+  created_at: string;
+}
+
+export interface Post {
+  id: number;
+  author: User;
+  content: string;
+  source_url?: string | null;
+  created_at: string;
+  updated_at: string;
+  latest_verification_summary?: PostVerificationSummary | null;
+  challenge_state: string;
+}
+
+export interface PostVerification {
+  id: number;
+  verification_id: string;
+  post_id: number;
+  status: string;
+  score?: number | null;
+  summary?: VerificationSummary | null;
+  claims: ClaimResult[];
+  metadata?: VerificationMetadata | null;
+  challenge_count: number;
+  review_status: string;
+  final_decision?: string | null;
+  final_decision_note?: string | null;
+  is_human_final: boolean;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface Challenge {
+  id: number;
+  verification_id: number;
+  user: User;
+  reason_code: string;
+  comment?: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ModerationReview {
+  id: number;
+  verification_id: number;
+  status: string;
+  decision?: ReviewDecision | null;
+  note?: string | null;
+  override_score?: number | null;
+  override_summary?: string | null;
+  created_at: string;
+  decided_at?: string | null;
+  moderator?: User | null;
+  verification: PostVerification;
+  post: Post;
+}
+
+export interface RegisterPayload {
+  email: string;
+  username: string;
+  full_name?: string;
+  password: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface CreatePostPayload {
+  content: string;
+  source_url?: string;
+}
+
+export interface ChallengePayload {
+  reason_code: string;
+  comment?: string;
+}
+
+export interface ModerationDecisionPayload {
+  decision: ReviewDecision;
+  note: string;
+  override_score?: number;
+  override_summary?: string;
+}
+
+export const VERDICT_CONFIG: Record<
+  Verdict,
+  {
+    label: string;
+    icon: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    score: number;
+  }
+> = {
   strongly_supported: {
     label: 'Strongly Supported',
-    icon: '✓✓',
+    icon: '++',
     color: 'text-green-800',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-600',
@@ -149,7 +245,7 @@ export const VERDICT_CONFIG: Record<Verdict, {
   },
   supported: {
     label: 'Supported',
-    icon: '✓',
+    icon: '+',
     color: 'text-green-700',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-500',
@@ -157,10 +253,10 @@ export const VERDICT_CONFIG: Record<Verdict, {
   },
   mixed: {
     label: 'Mixed Evidence',
-    icon: '±',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-500',
+    icon: '+/-',
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-500',
     score: 60,
   },
   weak: {
@@ -173,7 +269,7 @@ export const VERDICT_CONFIG: Record<Verdict, {
   },
   contradicted: {
     label: 'Contradicted',
-    icon: '✗',
+    icon: 'x',
     color: 'text-red-700',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-500',
@@ -181,18 +277,18 @@ export const VERDICT_CONFIG: Record<Verdict, {
   },
   outdated: {
     label: 'Outdated',
-    icon: '⌛',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-500',
+    icon: 'old',
+    color: 'text-violet-700',
+    bgColor: 'bg-violet-50',
+    borderColor: 'border-violet-500',
     score: 30,
   },
   not_verifiable: {
     label: 'Not Verifiable',
-    icon: '○',
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-400',
+    icon: 'o',
+    color: 'text-slate-700',
+    bgColor: 'bg-slate-50',
+    borderColor: 'border-slate-400',
     score: 50,
   },
 };

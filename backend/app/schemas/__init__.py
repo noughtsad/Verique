@@ -1,6 +1,17 @@
 """
 Schemas module initialization
 """
+from app.schemas.auth import AuthResponse, UserCreate, UserLogin, UserResponse
+from app.schemas.social import (
+    ChallengeRequest,
+    ChallengeResponse,
+    ModerationDecisionRequest,
+    ModerationReviewResponse,
+    PostCreate,
+    PostSummary,
+    PostVerificationResponse,
+    PostVerificationSummary,
+)
 from app.schemas.verification import (
     Vertical,
     TimeSensitivity,
@@ -25,6 +36,18 @@ from app.schemas.verification import (
 )
 
 __all__ = [
+    "AuthResponse",
+    "ChallengeRequest",
+    "ChallengeResponse",
+    "ModerationDecisionRequest",
+    "ModerationReviewResponse",
+    "PostCreate",
+    "PostSummary",
+    "PostVerificationResponse",
+    "PostVerificationSummary",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
     "Vertical",
     "TimeSensitivity",
     "ClaimType",

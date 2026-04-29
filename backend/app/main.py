@@ -8,8 +8,9 @@ from fastapi.responses import JSONResponse
 import structlog
 
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import async_session_maker, init_db
 from app.api.v1.router import api_router
+from app.services.auth_service import AuthService
 
 # Configure structured logging
 structlog.configure(
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting TrustLens API", environment=settings.ENVIRONMENT)
     await init_db()
+    async with async_session_maker() as session:
+        await AuthService(session).ensure_seed_moderator()
+        await session.commit()
     yield
     # Shutdown
     logger.info("Shutting down TrustLens API")

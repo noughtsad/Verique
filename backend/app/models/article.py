@@ -2,7 +2,7 @@
 Article Model - Stores verified content
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, Index, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -15,6 +15,7 @@ class Article(Base):
     __tablename__ = "articles"
 
     id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="SET NULL"), nullable=True, index=True)
     url = Column(String(2048), nullable=True, index=True)
     content_hash = Column(String(64), unique=True, index=True, nullable=False)
     title = Column(String(500), nullable=True)
@@ -26,6 +27,7 @@ class Article(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    post = relationship("Post", back_populates="articles")
     claims = relationship("Claim", back_populates="article", cascade="all, delete-orphan")
     verifications = relationship("Verification", back_populates="article", cascade="all, delete-orphan")
 

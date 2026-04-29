@@ -6,6 +6,7 @@ Supports both PostgreSQL (production) and SQLite (local development).
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import NullPool, StaticPool
+from sqlalchemy import text
 import structlog
 
 from app.core.config import settings
@@ -70,9 +71,51 @@ async def init_db():
     logger.info("Initializing database", url=DATABASE_URL[:50] + "...")
     async with engine.begin() as conn:
         # Import all models here to ensure they're registered
-        from app.models import article, claim, verification, source, domain
+        from app.models import article, claim, verification, source, domain, user, post, moderation
         await conn.run_sync(Base.metadata.create_all)
+        if IS_SQLITE:
+            await _ensure_sqlite_schema_compatibility(conn)
     logger.info("Database initialized successfully")
+
+
+async def _ensure_sqlite_schema_compatibility(conn):
+    """Best-effort SQLite schema upgrades for local development.
+
+    SQLite `create_all()` does not alter existing tables, so older local DBs can
+    miss newly added columns. We add missing nullable/defaulted columns here to
+    keep local environments working without forcing a DB reset.
+    """
+    table_updates = {
+        "articles": {
+            "post_id": "INTEGER",
+        },
+        "verifications": {
+            "post_id": "INTEGER",
+            "version_number": "INTEGER NOT NULL DEFAULT 1",
+            "is_latest": "BOOLEAN NOT NULL DEFAULT 1",
+            "challenge_count": "INTEGER NOT NULL DEFAULT 0",
+            "review_status": "VARCHAR(20) NOT NULL DEFAULT 'none'",
+            "final_decision": "VARCHAR(30)",
+            "final_decision_note": "TEXT",
+            "is_human_final": "BOOLEAN NOT NULL DEFAULT 0",
+            "reviewed_at": "DATETIME",
+        },
+    }
+
+    for table_name, columns in table_updates.items():
+        result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+        existing_columns = {row[1] for row in result.fetchall()}
+        for column_name, definition in columns.items():
+            if column_name in existing_columns:
+                continue
+            logger.info(
+                "Applying SQLite compatibility migration",
+                table=table_name,
+                column=column_name,
+            )
+            await conn.execute(
+                text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+            )
 
 
 async def get_db() -> AsyncSession:

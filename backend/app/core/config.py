@@ -1,9 +1,11 @@
 """
 TrustLens Configuration Settings
 """
-from typing import List, Optional
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import List, Optional
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -17,14 +19,14 @@ class Settings(BaseSettings):
     # API Configuration
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    API_PREFIX: str = "/v1"
+    API_PREFIX: str = "/api/v1"
     SECRET_KEY: str = "change-me-in-production"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
     
     # Database
-    DATABASE_URL: str = "postgresql://trustlens:trustlens@localhost:5432/trustlens"
+    DATABASE_URL: str = "sqlite:///./verique.db"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -51,6 +53,9 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    CHALLENGE_THRESHOLD: int = 1
+    SEED_MODERATOR_EMAIL: str = "moderator@verique.local"
+    SEED_MODERATOR_PASSWORD: str = "Moderator123!"
     
     # Caching
     CACHE_TTL_SECONDS: int = 3600
@@ -62,6 +67,20 @@ class Settings(BaseSettings):
     VERIFICATION_TIMEOUT_SECONDS: int = 60
     ENABLE_CROSS_VERIFICATION: bool = False
     CROSS_VERIFICATION_THRESHOLD: float = 0.3
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_flag(cls, value):
+        """Accept common non-boolean environment values gracefully."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on", "debug", "development", "dev"}:
+                return True
+            if normalized in {"0", "false", "no", "off", "release", "production", "prod"}:
+                return False
+        return value
     
     class Config:
         env_file = ".env"
