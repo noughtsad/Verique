@@ -141,3 +141,6 @@ contracts/typechain-types/
 *.bak
 *.backup
 .scratch/
+
+#for claude code
+.claude
