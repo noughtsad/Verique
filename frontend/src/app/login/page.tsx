@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { login, register } from '@/lib/api';
 import { Heart, MessageCircle, UserPlus, Repeat2, ShieldCheck, Flame, TrendingUp, CheckCircle2, Bookmark, Share2, Eye } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000';
