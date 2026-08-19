@@ -148,6 +148,8 @@ class EvidenceRankerAgent:
             
             # Parse score
             score_text = response.choices[0].message.content.strip()
+            if not score_text:
+                return 0.5  # LLM returned empty response
             score = float(score_text)
             return max(0.0, min(1.0, score))
             

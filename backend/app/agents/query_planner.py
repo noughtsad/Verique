@@ -41,7 +41,7 @@ class QueryPlannerAgent:
     
     def __init__(self):
         self.groq_api_key = settings.GROQ_API_KEY
-        self.model = "llama-3.1-8b-instant"  # Fast model for query generation
+        self.model = settings.LLM_MODEL_FAST  # Fast model for query generation
     
     async def plan_queries(
         self,
