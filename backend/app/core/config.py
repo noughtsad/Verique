@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     
     # LLM Providers - Using Groq (FREE API)
     GROQ_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "llama-3.3-70b-versatile"  # Free on Groq
-    LLM_MODEL_FAST: str = "llama-3.1-8b-instant"  # Faster, also free
+    LLM_MODEL: str = "openai/gpt-oss-120b"  # Available on this Groq account (replaces llama-3.3-70b)
+    LLM_MODEL_FAST: str = "openai/gpt-oss-20b"  # Faster model (replaces llama-3.1-8b-instant)
     
     # Search APIs - DuckDuckGo is free, no API key needed
     # Optional: SerpAPI or Google CSE for better results

@@ -1,6 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Verdict colors */
+  --color-verdict-strong: #15803d;
+  --color-verdict-supported: #22c55e;
+  --color-verdict-mixed: #eab308;
+  --color-verdict-weak: #f97316;
+  --color-verdict-contradicted: #ef4444;
+  --color-verdict-unverifiable: #6b7280;
+
+  /* Brand colors */
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+
+  /* Custom animations */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+}
+
 
 :root {
   --foreground-rgb: 15, 23, 42;
