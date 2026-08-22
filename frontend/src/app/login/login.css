@@ -2,7 +2,8 @@
 .lp-root {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  overflow: clip;
+  /* 'clip' unlike 'hidden' does NOT create a scroll/stacking container, so backdrop-filter on children can see the canvas */
   background: #080808;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #f4f4f5;
@@ -100,14 +101,27 @@
   transform: translateX(-24px);
   transition: opacity 0.8s ease, transform 0.8s ease;
 
-  /* Frosted glass panel */
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(8px) saturate(140%) brightness(1);
-  -webkit-backdrop-filter: blur(8px) saturate(140%) brightness(1);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  /* Background is transparent — the .lp-frost sibling handles the glass effect */
+  background: transparent;
+  position: relative;
+
   /* Fill full height */
   align-self: stretch;
   justify-content: center;
+}
+
+/* ─── Blur canvas (frosted glass left panel) ─────────────────────────── */
+.lp-blur-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-right: 2px solid rgba(255, 255, 255, 0.11);
+  /* CSS-level blur applied to the canvas as a whole */
+  filter: blur(10px);
+  /* clip-path: inset(0) clips the blur bleed back to the element’s own bounds */
+  clip-path: inset(8);
 }
 
 .lp-left--visible {
@@ -309,16 +323,23 @@
 
 .lp-globe {
   position: absolute;
-  top: 50%; left: 50%;
-  width: 0; height: 0;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
   transform-style: preserve-3d;
   animation: globeSpin 32s linear infinite;
   z-index: 2;
 }
 
 @keyframes globeSpin {
-  from { transform: rotateY(0deg); }
-  to   { transform: rotateY(360deg); }
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(360deg);
+  }
 }
 
 /* ─── Globe cards ─────────────────────────────────────────────────────────── */
