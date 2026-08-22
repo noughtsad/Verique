@@ -7,7 +7,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Hero */}
         <div className="text-center mb-16">
@@ -18,9 +18,8 @@ export default function AboutPage() {
             About Verique
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            We believe trust should be transparent, not opaque. Verique helps 
-            you understand the factual basis of any content — without telling you 
-            what to think.
+            We believe trust comes from transperacny and availbality of information. Verique helps
+            you understand the factual basis of any content without friction.
           </p>
         </div>
 
@@ -32,9 +31,9 @@ export default function AboutPage() {
               Our Mission
             </h2>
             <p className="text-slate-700 text-lg leading-relaxed">
-              In a world flooded with content, separating fact from fiction shouldn&apos;t 
-              require hours of research. Verique uses AI to do the heavy lifting — 
-              extracting claims, finding evidence, and presenting it transparently so 
+              In a world flooded with content, separating fact from fiction shouldn&apos;t
+              require hours of research. Verique uses AI to do the heavy lifting —
+              extracting claims, finding evidence, and presenting it transparently so
               <strong> you</strong> can make informed decisions.
             </p>
           </div>
@@ -50,28 +49,28 @@ export default function AboutPage() {
             <div className="bg-red-50 rounded-xl p-6 border border-red-100">
               <h3 className="font-semibold text-red-900 mb-2">❌ Not a Truth Arbiter</h3>
               <p className="text-red-800 text-sm">
-                We don&apos;t tell you what&apos;s &quot;true&quot; or &quot;false.&quot; We show you evidence 
+                We don&apos;t tell you what&apos;s &quot;true&quot; or &quot;false.&quot; We show you evidence
                 and let you decide.
               </p>
             </div>
             <div className="bg-red-50 rounded-xl p-6 border border-red-100">
               <h3 className="font-semibold text-red-900 mb-2">❌ Not Political</h3>
               <p className="text-red-800 text-sm">
-                We deliberately avoid political content. Our focus is on 
+                We deliberately avoid political content. Our focus is on
                 practical, everyday claims.
               </p>
             </div>
             <div className="bg-red-50 rounded-xl p-6 border border-red-100">
               <h3 className="font-semibold text-red-900 mb-2">❌ Not a Censor</h3>
               <p className="text-red-800 text-sm">
-                We never hide, block, or modify content. We add context, 
+                We never hide, block, or modify content. We add context,
                 that&apos;s all.
               </p>
             </div>
             <div className="bg-red-50 rounded-xl p-6 border border-red-100">
               <h3 className="font-semibold text-red-900 mb-2">❌ Not Perfect</h3>
               <p className="text-red-800 text-sm">
-                AI can make mistakes. We show our confidence level and sources 
+                AI can make mistakes. We show our confidence level and sources
                 so you can verify yourself.
               </p>
             </div>
@@ -85,24 +84,24 @@ export default function AboutPage() {
             What We ARE
           </h2>
           <div className="space-y-4">
-            <FeatureRow 
-              title="Evidence Surface" 
+            <FeatureRow
+              title="Evidence Surface"
               description="We find and present supporting and contradicting evidence from the web"
             />
-            <FeatureRow 
-              title="Confidence Scores" 
+            <FeatureRow
+              title="Confidence Scores"
               description="Every verdict comes with a confidence level — no false certainty"
             />
-            <FeatureRow 
-              title="Source Links" 
+            <FeatureRow
+              title="Source Links"
               description="Click through to original sources and verify for yourself"
             />
-            <FeatureRow 
-              title="Transparent Reasoning" 
+            <FeatureRow
+              title="Transparent Reasoning"
               description="We explain why each claim is rated the way it is"
             />
-            <FeatureRow 
-              title="Privacy-First" 
+            <FeatureRow
+              title="Privacy-First"
               description="We don't store your content or build profiles on users"
             />
           </div>
@@ -156,7 +155,7 @@ export default function AboutPage() {
           <p className="text-slate-300 mb-8">
             Start verifying content for free. No signup required.
           </p>
-          <a 
+          <a
             href="/"
             className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold transition-colors"
           >
