@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle, Loader2, LogOut, ShieldCheck,
-  Search, Home as HomeIcon, MessageCircle, Bell,
+  Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
   Plus, Upload, X, MapPin
@@ -165,8 +165,16 @@ export default function Home() {
               <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Home</span>
             </button>
             <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Compass className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Explore Feed</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Bell className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Notifications</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
               <MessageCircle className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Messages</span>
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Chat</span>
             </button>
             <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
               <UserIcon className="w-6 h-6 flex-shrink-0" />
@@ -219,7 +227,7 @@ export default function Home() {
           <div className="max-w-2xl mx-auto w-full mb-10">
             <h2 className="font-semibold text-white mb-4 text-[14px] uppercase tracking-wide">Post Something</h2>
             {showComposerModal && user ? (
-              <div className="bg-[#18181b]/55 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-xl animate-in fade-in duration-200 relative">
+              <div className="bg-[#18181b]/55 backdrop-blur-md border border-blue-500/30 rounded-xl p-6 shadow-[0_0_30px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/20 animate-in fade-in duration-300 relative">
                 <button onClick={() => setShowComposerModal(false)} className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition z-10"><X className="w-4 h-4" /></button>
                 <Composer
                   busy={createPostMutation.isPending}
@@ -504,7 +512,7 @@ function Composer({
             value={content}
             onChange={(event) => setContent(event.target.value)}
             placeholder="What's on your mind?"
-            className="w-full h-32 bg-white/5 rounded-lg p-4 text-sm text-white outline-none border border-white/10 focus:border-white/20 focus:bg-white/10 transition font-medium resize-none placeholder-slate-500"
+            className="w-full h-32 bg-white/5 rounded-lg p-4 text-sm text-white outline-none border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] focus:bg-white/10 transition-all duration-300 font-medium resize-none placeholder-slate-500"
           />
         </div>
       </div>
