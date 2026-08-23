@@ -17,7 +17,7 @@ class Article(Base):
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="SET NULL"), nullable=True, index=True)
     url = Column(String(2048), nullable=True, index=True)
-    content_hash = Column(String(64), unique=True, index=True, nullable=False)
+    content_hash = Column(String(64), index=True, nullable=False)
     title = Column(String(500), nullable=True)
     text_content = Column(Text, nullable=False)
     language = Column(String(10), default="en")

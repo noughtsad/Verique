@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
     
     # Database
-    DATABASE_URL: str = "sqlite:///./verique.db"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/postgres"
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

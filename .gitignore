@@ -85,6 +85,7 @@ pip_downloads/
 dist/
 build/
 *.js.map
+*.tsbuildinfo
 
 # Logs
 logs/
@@ -123,6 +124,8 @@ docker-compose.override.yml
 
 # Alembic
 alembic/versions/*.pyc
+backend/alembic/__pycache__/
+backend/alembic/versions/__pycache__/
 
 # Jupyter Notebooks
 .ipynb_checkpoints/

@@ -98,7 +98,7 @@ class SocialService:
         article = Article(
             post_id=post.id,
             url=post.source_url,
-            content_hash=f"{content_hash}-{uuid.uuid4().hex[:8]}",
+            content_hash=content_hash,
             title=None,
             text_content=post.content,
             language="en",

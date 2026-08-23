@@ -2,12 +2,12 @@
 
 @theme {
   /* Verdict colors */
-  --color-verdict-strong: #15803d;
+  --color-verdict-strong: #10b981;
   --color-verdict-supported: #22c55e;
-  --color-verdict-mixed: #eab308;
+  --color-verdict-mixed: #f59e0b;
   --color-verdict-weak: #f97316;
   --color-verdict-contradicted: #ef4444;
-  --color-verdict-unverifiable: #6b7280;
+  --color-verdict-unverifiable: #8b5cf6;
 
   /* Brand colors */
   --color-brand-50: #f0fdf4;
@@ -15,92 +15,106 @@
   --color-brand-500: #22c55e;
   --color-brand-600: #16a34a;
   --color-brand-700: #15803d;
-
-  /* Custom animations */
-  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-fade-in: fadeIn 0.5s ease-in-out;
-
-  @keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
 }
 
-
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-rgb: 248, 250, 252;
+  --foreground-rgb: 250, 250, 250;
+  --background-rgb: 9, 9, 11;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: #fafafa;
+  background-color: #09090b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
+/* Custom minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #09090b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #27272a;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #3f3f46;
 }
 
-/* Claim highlight styles */
+/* Taste-Driven UI Utilities (Linear/Vercel Aesthetic) */
+.card-sleek {
+  background-color: #121215;
+  border: 1px solid #27272a;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.card-sleek:hover {
+  border-color: #3f3f46;
+  background-color: #18181b;
+}
+
+.input-sleek {
+  background-color: #121215;
+  border: 1px solid #27272a;
+  color: #fafafa;
+  transition: border-color 0.15s ease;
+}
+
+.input-sleek:focus {
+  border-color: #52525b;
+  outline: none;
+}
+
+/* Claim highlight inline markers */
 .claim-highlight {
-  @apply cursor-pointer transition-all duration-200 rounded px-0.5;
-}
-
-.claim-highlight:hover {
-  @apply opacity-80;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-radius: 3px;
+  padding: 1px 4px;
 }
 
 .claim-strongly-supported {
-  @apply bg-green-700/20 border-b-2 border-green-700;
+  background-color: rgba(16, 185, 129, 0.15);
+  border-bottom: 2px solid #10b981;
+  color: #6ee7b7;
 }
 
 .claim-supported {
-  @apply bg-green-500/20 border-b-2 border-green-500;
+  background-color: rgba(34, 197, 94, 0.15);
+  border-bottom: 2px solid #22c55e;
+  color: #86efac;
 }
 
 .claim-mixed {
-  @apply bg-yellow-500/20 border-b-2 border-yellow-500;
+  background-color: rgba(245, 158, 11, 0.15);
+  border-bottom: 2px solid #f59e0b;
+  color: #fde047;
 }
 
 .claim-weak {
-  @apply bg-orange-500/20 border-b-2 border-orange-500;
+  background-color: rgba(249, 115, 22, 0.15);
+  border-bottom: 2px solid #f97316;
+  color: #fdba74;
 }
 
 .claim-contradicted {
-  @apply bg-red-500/20 border-b-2 border-red-500;
+  background-color: rgba(239, 68, 68, 0.15);
+  border-bottom: 2px solid #ef4444;
+  color: #fca5a5;
 }
 
 .claim-unverifiable {
-  @apply bg-gray-500/20 border-b-2 border-gray-500;
+  background-color: rgba(139, 92, 246, 0.15);
+  border-bottom: 2px solid #8b5cf6;
+  color: #c4b5fd;
 }
 
-/* Loading animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
 
-.loading-shimmer {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}

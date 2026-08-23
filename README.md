@@ -1,22 +1,22 @@
-# 🔍 TrustLens — AI Trust & Context Layer for Web Content
+﻿# ðŸ” TrustLens â€” AI Trust & Context Layer for Web Content
 
 <div align="center">
 
 ![TrustLens](https://img.shields.io/badge/TrustLens-AI%20Trust%20Layer-00875A?style=for-the-badge&logo=shield&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
-![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat-square&logo=react&logoColor=black)
+![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-FF6B6B?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 **Transform how people evaluate online information with transparent, evidence-based verification.**
 
-[Demo](#-quick-start) • [API Docs](#-api-usage) • [Architecture](#-architecture) • [Extension](#-browser-extension)
+[Demo](#-quick-start) â€¢ [API Docs](#-api-usage) â€¢ [Architecture](#-architecture) â€¢ [Extension](#-browser-extension)
 
 </div>
 
 ---
 
-## 🎯 What is TrustLens?
+## ðŸŽ¯ What is TrustLens?
 
 TrustLens is an AI-powered multi-agent system that adds a transparent "trust overlay" to any webpage. Instead of blindly trusting online content or spending hours manually fact-checking, TrustLens:
 
@@ -26,137 +26,112 @@ TrustLens is an AI-powered multi-agent system that adds a transparent "trust ove
 - **Highlights claims** with intuitive color-coding
 - **Shows you the evidence** so YOU decide what to believe
 
-### 🎨 Visual Verdict System
+### ðŸŽ¨ Visual Verdict System
 
 | Color          | Verdict            | Meaning                                |
 | -------------- | ------------------ | -------------------------------------- |
-| 🟢 Dark Green  | Strongly Supported | Multiple authoritative sources confirm |
-| 🟢 Light Green | Supported          | Evidence generally supports the claim  |
-| 🟡 Yellow      | Mixed/Uncertain    | Conflicting evidence or outdated       |
-| 🟠 Orange      | Weak               | Limited or unreliable support          |
-| 🔴 Red         | Contradicted       | Evidence contradicts the claim         |
-| ⚪ Gray        | Not Verifiable     | Opinion or cannot be fact-checked      |
+| ðŸŸ¢ Dark Green  | Strongly Supported | Multiple authoritative sources confirm |
+| ðŸŸ¢ Light Green | Supported          | Evidence generally supports the claim  |
+| ðŸŸ¡ Yellow      | Mixed/Uncertain    | Conflicting evidence or outdated       |
+| ðŸŸ  Orange      | Weak               | Limited or unreliable support          |
+| ðŸ”´ Red         | Contradicted       | Evidence contradicts the claim         |
+| âšª Gray        | Not Verifiable     | Opinion or cannot be fact-checked      |
 
-### 🚫 What We're NOT
+### ðŸš« What We're NOT
 
-- **NOT a content moderator** — We don't block or censor anything
-- **NOT a political truth arbiter** — We focus on objective, verifiable claims
-- **NOT overconfident** — We show uncertainty clearly and always link to sources
+- **NOT a content moderator** â€” We don't block or censor anything
+- **NOT a political truth arbiter** â€” We focus on objective, verifiable claims
+- **NOT overconfident** â€” We show uncertainty clearly and always link to sources
 
-## 🎪 Focus Verticals (MVP)
+## ðŸŽª Focus Verticals (MVP)
 
-1. **E-commerce & SaaS** — Product claims, warranties, customer counts
-2. **Learning & Technical Content** — Blog posts, tutorials, educational content
-3. **Professional Content** — LinkedIn posts, reports, whitepapers
+1. **E-commerce & SaaS** â€” Product claims, warranties, customer counts
+2. **Learning & Technical Content** â€” Blog posts, tutorials, educational content
+3. **Professional Content** â€” LinkedIn posts, reports, whitepapers
 
 ---
 
-## 🏗️ Architecture
+## ðŸ—ï¸ Architecture
 
 ### Multi-Agent System (LangGraph)
 
-```
+```text
 User Input (text or URL)
-         │
-         ▼
-┌─────────────────────────────────────────────────────┐
-│  1. Ingestion Agent                                 │
-│     • Strips HTML tags & normalises whitespace      │
-│     • Counts words, prepares clean_text             │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  2. Claim Decomposer  [Groq LLM — Llama 3.3 70B]   │
-│     • Extracts every factual statement from text    │
-│     • Tags: claim_type, topic, time_sensitivity     │
-│     • Returns claims with character span offsets   │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  3. Claim Classifier  [Groq LLM — Llama 3.1 8B]    │
-│     • Filters claims to only verifiable ones        │
-│     • Marks each claim: is_verifiable true/false    │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  4. Query Planner  [Groq LLM — Llama 3.1 8B]       │
-│     • Generates targeted web search queries         │
-│       per claim (3 queries each)                    │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  5. Retrieval Agent  (parallel, semaphore=3)        │
-│     ┌─────────────────┐   ┌──────────────────────┐  │
-│     │  DuckDuckGo     │   │  SerpAPI / Google CSE │  │
-│     │  (default/free) │   │  (optional, if keyed) │  │
-│     └─────────────────┘   └──────────────────────┘  │
-│     • Fetches up to 5 results per query             │
-│     • Attaches domain reputation score to each URL  │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  6. Evidence Ranker                                 │
-│     • Scores evidence by relevance to each claim    │
-│     • Ranks by domain reputation + keyword overlap  │
-│     • Keeps top-N results per claim                 │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  7. Verification Agent  [Groq LLM — Llama 3.3 70B] │
-│     • One LLM call per claim with ranked evidence   │
-│     • Outputs verdict + confidence + reasoning      │
-│     • Verdict: strongly_supported / supported /     │
-│       mixed / weak / contradicted / outdated /      │
-│       not_verifiable                                │
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  8. Explanation Agent                               │
-│     • Structures final JSON response               │
-│     • Merges claims + verdicts + evidence sources   │
-│     • Separates sources into supporting/contradicting│
-└────────────────────────┬────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│  Verification Service                              │
-│     • Calculates overall page_score (0–100)        │
-│       using weighted verdicts + source count bonus  │
-│     • Generates summary counts by verdict type      │
-└─────────────────────────────────────────────────────┘
-         │
-         ▼
-    API Response  →  Next.js Frontend  /  Chrome Extension
+  ↓
+1. Ingestion Agent
+   - Strips HTML tags and normalizes whitespace
+   - Counts words and prepares clean text
+
+2. Claim Decomposer [Groq LLM - GPT-OSS 120B]
+   - Extracts factual statements from text
+   - Tags claim type, topic, and time sensitivity
+   - Returns claims with character span offsets
+
+3. Claim Classifier [Groq LLM - GPT-OSS 20B]
+   - Filters claims to only verifiable ones
+   - Marks each claim as verifiable or not verifiable
+
+4. Query Planner [Groq LLM - GPT-OSS 20B]
+   - Generates targeted web search queries per claim
+
+5. Retrieval Agent [parallel]
+   - Uses DuckDuckGo by default
+   - Optionally uses SerpAPI / Google CSE when configured
+   - Fetches and scores candidate evidence
+
+6. Evidence Ranker
+   - Ranks evidence by relevance and domain reputation
+   - Keeps top results per claim
+
+7. Verification Agent [Groq LLM - GPT-OSS 120B]
+   - Produces verdict, confidence, and reasoning for each claim
+
+8. Explanation / Response Assembly
+   - Builds the final API response
+   - Separates supporting and contradicting sources
+
+9. Verification Service
+   - Calculates overall page score
+   - Generates verdict summary counts
+
+API Response -> Next.js Frontend / Chrome Extension
 ```
 
 ### Tech Stack
 
-| Layer         | Technology                                 |
-| ------------- | ------------------------------------------ |
-| **Backend**   | Python 3.10+, FastAPI, LangGraph           |
-| **Frontend**  | Next.js 14, React 18, TypeScript, Tailwind |
-| **Extension** | Chrome Manifest V3                         |
-| **Database**  | SQLite (dev), PostgreSQL (prod)            |
-| **LLMs**      | Groq (Llama 3.3 70B - FREE)                |
-| **Search**    | DuckDuckGo (FREE), optional: SerpAPI       |
+| Layer         | Technology                                          |
+| ------------- | --------------------------------------------------- |
+| **Backend**   | Python 3.10+, FastAPI 0.141+, LangGraph 1.2+        |
+| **Frontend**  | Next.js 16, React 19, TypeScript, Tailwind CSS 4    |
+| **Extension** | Chrome Manifest V3                                  |
+| **Database**  | Supabase PostgreSQL + SQLAlchemy + Alembic          |
+| **LLMs**      | Groq (`openai/gpt-oss-120b` â€” FREE)                 |
+| **Search**    | DuckDuckGo (FREE), optional: SerpAPI                |
 
 ---
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### Prerequisites
 
 - Python 3.10+
-- Node.js 18+
+- Node.js 20+ (required by Next.js 16)
 - Groq API Key (free at [console.groq.com](https://console.groq.com))
 
-### 1️⃣ Get Your Free Groq API Key
+> [!NOTE]
+> The LLM models available on Groq vary by account. This project is configured to use
+> `openai/gpt-oss-120b` (main) and `openai/gpt-oss-20b` (fast). If you get a `model_not_found`
+> error, run `GET https://api.groq.com/openai/v1/models` with your API key to list available
+> models, then update `LLM_MODEL` and `LLM_MODEL_FAST` in `backend/.env` accordingly.
+
+### 1ï¸âƒ£ Get Your Free Groq API Key
 
 1. Go to [console.groq.com](https://console.groq.com)
 2. Sign up (free)
 3. Create an API key
 4. Copy the key
 
-### 2️⃣ Backend Setup
+### 2ï¸âƒ£ Backend Setup
 
 ```powershell
 cd backend
@@ -166,17 +141,29 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 
 # 2. Install Dependencies
-# Recommended for normal development:
 pip install -r requirements.txt
 
-# Optional: use the exact locked environment instead
-# pip install -r requirements-lock.txt
+# 3. Create your local env file
+Copy-Item .env.example .env
 
-# 3. Run the Server
-python -m uvicorn app.main:app --reload
+# 4. Edit .env and set your real values
+# - DATABASE_URL
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - GROQ_API_KEY
+
+# 5. Run database migrations
+alembic upgrade head
+
+# 6. Run the Server
+uvicorn app.main:app --reload
 ```
 
 The backend will start at `http://127.0.0.1:8000`.
+
+> [!IMPORTANT]
+> The backend no longer creates tables automatically on startup. Run
+> `alembic upgrade head` before starting the API against a fresh database.
 
 ### Backend Dependency Files
 
@@ -185,52 +172,19 @@ The backend will start at `http://127.0.0.1:8000`.
 - Use `requirements.txt` for day-to-day development.
 - Use `requirements-lock.txt` when you want to recreate the same backend environment exactly.
 
-### 3️⃣ Frontend Setup
+### Supabase Notes
 
-```powershell
-cd frontend
+- `DATABASE_URL` should point to your Supabase Postgres instance.
+- `SUPABASE_URL` should be the base project URL, for example `https://your-project.supabase.co`.
+- `SUPABASE_ANON_KEY` is stored for app integration, but the backend database connection itself uses `DATABASE_URL`.
 
-# 1. Install Dependencies
-npm install
-
-# 2. Run Development Server
-npm run dev
-```
-
-The frontend will start at `http://localhost:3000` (or `3001` if 3000 is busy).
-
-### 4️⃣ Chrome Extension
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked"
-4. Select the `extension` folder
-
-### Access Points
-
-- 🌐 **Web App**: http://localhost:3000
-- 📚 **API Docs**: http://127.0.0.1:8000/docs
-- 🔧 **API Base**: http://127.0.0.1:8000/api/v1
-- ❤️ **Health**: http://127.0.0.1:8000/health
-
-### 🆓 Free APIs Used
-
-| Service        | Purpose             | Free Tier        |
-| -------------- | ------------------- | ---------------- |
-| **Groq**       | LLM (Llama 3.3 70B) | 14,400 req/day   |
-| **DuckDuckGo** | Web Search          | Unlimited        |
-| **SQLite**     | Database            | Local, unlimited |
-
----
-
-## 📚 API Usage
+## 📡 API Usage
 
 ### Verify Content
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/verify/ \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
     "text": "Our product is used by over 10,000 teams worldwide and reduces costs by 50%.",
     "url": "https://example.com/product",
@@ -286,7 +240,7 @@ curl -X POST http://localhost:8000/api/v1/verify/ \
   ],
   "metadata": {
     "processing_time_ms": 8420,
-    "models_used": ["gpt-4o"],
+    "models_used": ["openai/gpt-oss-120b"],
     "sources_checked": 24
   }
 }
@@ -294,13 +248,17 @@ curl -X POST http://localhost:8000/api/v1/verify/ \
 
 ### Get Verification Status
 
+`GET /api/v1/verify/{verification_id}` is currently a placeholder and returns `404`.
+
+For persisted verification flows, use the post-based endpoint:
+
 ```bash
-curl http://localhost:8000/api/v1/verify/ver_abc123def456
+GET /api/v1/posts/{post_id}/verifications/latest
 ```
 
 ---
 
-## 🌐 Browser Extension
+## ðŸŒ Browser Extension
 
 ### Installation
 
@@ -328,42 +286,42 @@ npm run build
 
 ---
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
 trustlens/
-├── backend/                 # Python FastAPI backend
-│   ├── app/
-│   │   ├── agents/         # LangGraph agent definitions
-│   │   ├── api/            # API routes
-│   │   ├── core/           # Config, security, database
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── schemas/        # Pydantic schemas
-│   │   └── services/       # Business logic
-│   ├── tests/
-│   └── alembic/            # Database migrations
-├── frontend/               # React web application
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom hooks
-│   │   └── lib/            # Utilities
-│   └── public/
-├── extension/              # Chrome browser extension
-│   ├── src/
-│   │   ├── popup/          # Extension popup
-│   │   ├── content/        # Content scripts
-│   │   └── background/     # Service worker
-│   └── public/
-├── contracts/              # Solidity smart contracts (optional)
-└── docs/                   # Documentation
+â”œâ”€â”€ backend/                 # Python FastAPI backend
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ agents/         # LangGraph agent definitions
+â”‚   â”‚   â”œâ”€â”€ api/            # API routes
+â”‚   â”‚   â”œâ”€â”€ core/           # Config, security, database
+â”‚   â”‚   â”œâ”€â”€ models/         # SQLAlchemy models
+â”‚   â”‚   â”œâ”€â”€ schemas/        # Pydantic schemas
+â”‚   â”‚   â””â”€â”€ services/       # Business logic
+â”‚   â”œâ”€â”€ tests/
+â”‚   â””â”€â”€ alembic/            # Database migrations
+â”œâ”€â”€ frontend/               # React web application
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ components/     # React components
+â”‚   â”‚   â”œâ”€â”€ pages/          # Page components
+â”‚   â”‚   â”œâ”€â”€ hooks/          # Custom hooks
+â”‚   â”‚   â””â”€â”€ lib/            # Utilities
+â”‚   â””â”€â”€ public/
+â”œâ”€â”€ extension/              # Chrome browser extension
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ popup/          # Extension popup
+â”‚   â”‚   â”œâ”€â”€ content/        # Content scripts
+â”‚   â”‚   â””â”€â”€ background/     # Service worker
+â”‚   â””â”€â”€ public/
+â”œâ”€â”€ contracts/              # Solidity smart contracts (optional)
+â””â”€â”€ docs/                   # Documentation
 ```
 
 ---
 
-## 🗺️ Roadmap
+## ðŸ—ºï¸ Roadmap
 
-### ✅ Phase 0 — MVP (Hackathon Ready)
+### âœ… Phase 0 â€” MVP (Hackathon Ready)
 
 - [x] Web app with text input
 - [x] Core agent pipeline
@@ -371,21 +329,21 @@ trustlens/
 - [x] Color-coded highlighting
 - [x] Page scoring
 
-### 🔄 Phase 1 — Extension & Multi-Agent
+### ðŸ”„ Phase 1 â€” Extension & Multi-Agent
 
 - [ ] Browser extension for Chrome/Edge
 - [ ] Parallel retrieval workers
 - [ ] Cross-model verification
 - [ ] Real-time agent visualization
 
-### 📋 Phase 2 — API & Reputation
+### ðŸ“‹ Phase 2 â€” API & Reputation
 
 - [ ] Public REST API with rate limiting
 - [ ] Domain reputation tracking
 - [ ] Organization dashboard
 - [ ] Historical accuracy trends
 
-### 🔮 Phase 3 — Advanced Features
+### ðŸ”® Phase 3 â€” Advanced Features
 
 - [ ] Blockchain anchoring (Polygon)
 - [ ] Time-decay re-verification
@@ -394,7 +352,7 @@ trustlens/
 
 ---
 
-## 🤔 FAQ
+## ðŸ¤” FAQ
 
 **Q: Are you deciding what's true on the internet?**
 
@@ -414,13 +372,13 @@ trustlens/
 
 ---
 
-## 📄 License
+## ðŸ“„ License
 
 MIT License - See [LICENSE](LICENSE) file
 
 ---
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
@@ -428,8 +386,8 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 <div align="center">
 
-**Built with ❤️ for a more transparent web**
+**Built with â¤ï¸ for a more transparent web**
 
-[⬆ Back to Top](#-trustlens--ai-trust--context-layer-for-web-content)
+[â¬† Back to Top](#-trustlens--ai-trust--context-layer-for-web-content)
 
 </div>

@@ -8,7 +8,7 @@ import {
   Search, Home as HomeIcon, MessageCircle, Bell,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin
+  Plus, Upload, X, MapPin, Sparkles, Flame, Zap, ShieldAlert, CheckCircle2, XCircle, HelpCircle, Award, Compass, RefreshCw, Command
 } from 'lucide-react';
 
 import {
@@ -28,10 +28,10 @@ import { ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '
 import { cn, formatDate, getDomainFromUrl } from '@/lib/utils';
 
 const CHALLENGE_REASONS = [
-  ['missing_context', 'Missing context'],
-  ['wrong_sources', 'Wrong sources'],
-  ['outdated_conclusion', 'Outdated conclusion'],
-  ['incorrect_reasoning', 'Incorrect reasoning'],
+  ['missing_context', 'Missing Context'],
+  ['wrong_sources', 'Wrong Sources'],
+  ['outdated_conclusion', 'Outdated Conclusion'],
+  ['incorrect_reasoning', 'Incorrect Reasoning'],
 ] as const;
 
 export default function Home() {
@@ -49,6 +49,8 @@ export default function Home() {
   const [overrideScore, setOverrideScore] = useState('');
   const [overrideSummary, setOverrideSummary] = useState('');
   const [showComposerModal, setShowComposerModal] = useState(false);
+  const [feedFilter, setFeedFilter] = useState<'all' | 'verified' | 'suspicious'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const postsQuery = useQuery({ queryKey: ['posts'], queryFn: listPosts });
   const moderationQuery = useQuery({
@@ -83,8 +85,6 @@ export default function Home() {
       router.push('/login');
     }
   }, [authChecked, user, router]);
-
-
 
   const createPostMutation = useMutation({
     mutationFn: createPost,
@@ -136,89 +136,184 @@ export default function Home() {
     },
   });
 
+  const filteredPosts = useMemo(() => {
+    if (!postsQuery.data) return [];
+    return postsQuery.data.filter((post) => {
+      const matchSearch = searchQuery === '' || 
+        post.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        post.author.username.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchSearch) return false;
 
+      if (feedFilter === 'verified') {
+        const score = post.latest_verification_summary?.score;
+        return score !== null && score !== undefined && score > 70;
+      }
+      if (feedFilter === 'suspicious') {
+        const score = post.latest_verification_summary?.score;
+        return score !== null && score !== undefined && score < 50;
+      }
+      return true;
+    });
+  }, [postsQuery.data, searchQuery, feedFilter]);
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-zinc-400 font-mono text-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+          <span>Initializing Verique protocol...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white flex overflow-hidden font-sans">
-      <div className="w-full bg-white flex overflow-hidden min-h-screen relative">
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex overflow-hidden font-sans selection:bg-zinc-700 selection:text-white">
+      <div className="w-full flex overflow-hidden min-h-screen relative">
 
-        {/* EXPANDING LEFT SIDEBAR (Dark) */}
-        {/* Spacer for flex layout to account for fixed sidebar width */}
-        <div className="w-[100px] flex-shrink-0 hidden sm:block"></div>
+        {/* LEFT SIDEBAR */}
+        <div className="w-[72px] sm:w-[220px] flex-shrink-0"></div>
         
-        <aside className="fixed top-0 left-0 h-screen w-[100px] hover:w-[240px] z-50 transition-all duration-300 ease-in-out bg-slate-900 flex flex-col py-8 overflow-hidden group shadow-xl hidden sm:flex border-r border-slate-800">
-          {/* Logo */}
-          <div className="flex items-center px-6 mb-16 w-[240px]">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-              <span className="text-white font-bold text-xl tracking-tight">V</span>
+        <aside className="fixed top-0 left-0 h-screen w-[72px] sm:w-[220px] z-40 bg-[#0c0c0e] flex flex-col py-5 px-3 border-r border-[#27272a]">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-3 px-3 mb-8">
+            <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
             </div>
-            <span className="ml-4 font-semibold text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Verique</span>
+            <div className="hidden sm:flex flex-col">
+              <span className="font-semibold text-white text-sm tracking-tight">Verique</span>
+              <span className="text-[10px] font-mono text-zinc-400">Trust Protocol</span>
+            </div>
           </div>
 
-          {/* Nav Icons */}
-          <div className="flex flex-col gap-6 text-slate-400 w-[240px]">
-            <button className="flex items-center px-9 py-3 text-white relative group/btn hover:bg-white/5 transition">
-              <HomeIcon className="w-6 h-6 flex-shrink-0" />
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Home</span>
+          {/* Navigation Items */}
+          <div className="flex flex-col gap-1 text-zinc-400">
+            <button className="flex items-center gap-3 px-3 py-2 text-white rounded-lg bg-zinc-800/80 border border-zinc-700/60 font-medium text-xs transition">
+              <HomeIcon className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+              <span className="hidden sm:inline">Timeline Feed</span>
             </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <MessageCircle className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Messages</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <UserIcon className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Profile</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Bookmark className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Bookmarks</span>
-            </button>
+            
             <button 
               onClick={() => setIsVerificationLocked(!isVerificationLocked)}
-              className={cn("flex items-center px-9 py-3 transition group/btn", isVerificationLocked ? "text-white bg-white/10" : "hover:text-white hover:bg-white/5")}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition",
+                isVerificationLocked 
+                  ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" 
+                  : "hover:text-white hover:bg-zinc-800/40 text-zinc-400"
+              )}
             >
-              <ShieldCheck className={cn("w-6 h-6 flex-shrink-0", isVerificationLocked ? "text-blue-500" : "")} />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Fact-Check Panel</span>
+              <ShieldCheck className={cn("w-4 h-4 flex-shrink-0", isVerificationLocked ? "text-emerald-400" : "")} />
+              <span className="hidden sm:inline">Fact-Check Inspector</span>
+            </button>
+
+            <button onClick={() => router.push('/docs')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-white hover:bg-zinc-800/40 text-xs font-medium transition text-zinc-400">
+              <Compass className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">API Docs</span>
+            </button>
+
+            <button onClick={() => router.push('/about')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-white hover:bg-zinc-800/40 text-xs font-medium transition text-zinc-400">
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">About</span>
             </button>
           </div>
 
-          <div className="mt-auto flex flex-col gap-6 text-slate-400 w-[240px]">
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Settings className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Settings</span>
+          {/* New Claim CTA */}
+          <div className="mt-6 px-1">
+            <button 
+              onClick={() => setShowComposerModal(true)}
+              className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">New Claim</span>
             </button>
+          </div>
+
+          {/* User Profile / Logout */}
+          <div className="mt-auto flex flex-col gap-1 border-t border-[#27272a] pt-4 px-1">
             {user && (
-              <button onClick={() => { clearAuthToken(); setUser(null) }} className="flex items-center px-9 py-3 hover:text-red-400 hover:bg-white/5 transition group/btn text-slate-400" title="Logout">
-                <LogOut className="w-6 h-6 flex-shrink-0" />
-                <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Logout</span>
+              <div className="flex items-center gap-2.5 p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 mb-1">
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-7 h-7 rounded-full bg-zinc-800 flex-shrink-0" />
+                <div className="hidden sm:flex flex-col overflow-hidden">
+                  <span className="text-xs font-semibold text-white truncate">{user.full_name || user.username}</span>
+                  <span className="text-[10px] font-mono text-zinc-400 truncate">@{user.username}</span>
+                </div>
+              </div>
+            )}
+
+            {user && (
+              <button 
+                onClick={() => { clearAuthToken(); setUser(null); router.push('/login'); }} 
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-rose-400 hover:bg-rose-500/10 text-xs font-medium transition text-zinc-400" 
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             )}
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN (Feed) */}
-        <main className="flex-1 flex flex-col h-screen overflow-y-auto px-8 py-10 relative">
+        {/* MIDDLE MAIN CONTENT */}
+        <main className="flex-1 flex flex-col h-screen overflow-y-auto px-4 sm:px-8 py-6 relative">
 
-
-
-
-          {/* Top Search Bar */}
-          <div className="max-w-2xl mx-auto w-full mb-8">
-            <div className="relative">
-              <input type="text" className="w-full bg-slate-50/50 border border-slate-200 rounded-lg py-2.5 px-6 pr-12 text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition" placeholder="Search" />
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-slate-400" />
+          {/* Header Stats Bar */}
+          <div className="max-w-3xl mx-auto w-full mb-6">
+            <div className="bg-[#121215] border border-[#27272a] rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+              <div className="flex items-center gap-2 text-zinc-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Fact-Check Protocol Active</span>
+              </div>
+              <div className="flex items-center gap-4 text-zinc-400">
+                <span>Confidence Index: <strong className="text-zinc-100">99.4%</strong></span>
+                <span>Claims: <strong className="text-zinc-100">{postsQuery.data?.length || 0}</strong></span>
               </div>
             </div>
           </div>
 
-          {/* Post Creation Card */}
-          <div className="max-w-2xl mx-auto w-full mb-10">
-            <h2 className="font-semibold text-slate-800 mb-4 text-[14px] uppercase tracking-wide">Post Something</h2>
-            {showComposerModal && user ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm animate-in fade-in duration-200 relative">
-                <button onClick={() => setShowComposerModal(false)} className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition z-10"><X className="w-4 h-4" /></button>
+          {/* Search & New Post Trigger */}
+          <div className="max-w-3xl mx-auto w-full mb-6 flex gap-3">
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full input-sleek rounded-xl py-2.5 px-4 pl-10 text-xs font-medium placeholder-zinc-500" 
+                placeholder="Filter claims by keyword, source, or user..." 
+              />
+              <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <Search className="h-3.5 w-3.5 text-zinc-400" />
+              </div>
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3.5 flex items-center text-zinc-400 hover:text-white">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <button 
+              onClick={() => setShowComposerModal(true)}
+              className="py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium text-xs transition flex items-center gap-2"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Submit Claim</span>
+            </button>
+          </div>
+
+          {/* Composer Modal */}
+          {showComposerModal && user && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+              <div className="w-full max-w-lg bg-[#121215] border border-[#27272a] rounded-2xl p-5 shadow-2xl relative">
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#27272a]">
+                  <h3 className="font-semibold text-white text-sm">Submit Claim for Verification</h3>
+                  <button 
+                    onClick={() => setShowComposerModal(false)} 
+                    className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
                 <Composer
                   busy={createPostMutation.isPending}
                   error={createPostMutation.error instanceof Error ? createPostMutation.error.message : null}
@@ -230,45 +325,44 @@ export default function Home() {
                   user={user}
                 />
               </div>
-            ) : (
-              <div 
-                onClick={() => setShowComposerModal(true)}
-                className="bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4 cursor-text shadow-sm hover:shadow transition-all group"
-              >
-                <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 border border-slate-100">
-                  {user ? (
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300"><UserIcon className="w-5 h-5" /></div>
-                  )}
-                </div>
-                <div className="flex-1 text-slate-400 font-medium text-[15px]">
-                  What's on your mind?
-                </div>
-                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-50 text-slate-300 group-hover:text-blue-500 transition-colors cursor-pointer">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Timeline Header */}
-          <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-            <h1 className="text-lg font-semibold text-slate-800 tracking-tight">Timeline</h1>
-            <div className="flex gap-4 sm:gap-6 text-sm font-medium text-slate-500">
-                <button className="text-slate-900 border-b-2 border-slate-900 pb-1 font-semibold">All</button>
-                <button className="hover:text-slate-900 pb-1">Following</button>
-                <button className="hover:text-slate-900 pb-1">Newest</button>
-                <button className="hover:text-slate-900 pb-1">Popular</button>
+          {/* Timeline Feed Controls */}
+          <div className="max-w-3xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+            <h1 className="text-sm font-semibold text-zinc-200">Claims Timeline</h1>
+            
+            <div className="flex gap-1 p-1 bg-[#121215] rounded-lg border border-[#27272a] text-xs">
+              <button 
+                onClick={() => setFeedFilter('all')}
+                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'all' ? "bg-zinc-800 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200")}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setFeedFilter('verified')}
+                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'verified' ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "text-zinc-400 hover:text-zinc-200")}
+              >
+                Verified (70%+)
+              </button>
+              <button 
+                onClick={() => setFeedFilter('suspicious')}
+                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'suspicious' ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "text-zinc-400 hover:text-zinc-200")}
+              >
+                Contradicted
+              </button>
             </div>
           </div>
 
-          {/* Timeline Feed (Standard Single Column) */}
-          <div className="flex flex-col gap-6 pb-20 max-w-2xl mx-auto">
+          {/* Timeline Posts */}
+          <div className="flex flex-col gap-4 pb-16 max-w-3xl mx-auto w-full">
             {postsQuery.isLoading ? (
-              <div className="flex justify-center p-8 w-full"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
-            ) : postsQuery.data?.length ? (
-              postsQuery.data.map((post) => (
+              <div className="flex items-center justify-center p-12 card-sleek rounded-xl text-zinc-400 gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                <span className="text-xs font-mono">Loading claims feed...</span>
+              </div>
+            ) : filteredPosts.length ? (
+              filteredPosts.map((post) => (
                 <TimelinePostCard
                   key={post.id}
                   post={post}
@@ -280,43 +374,56 @@ export default function Home() {
                 />
               ))
             ) : (
-              <div className="p-8 text-center text-slate-500 w-full col-span-2">No posts yet.</div>
+              <div className="p-12 text-center card-sleek rounded-xl text-zinc-400">
+                <HelpCircle className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                <p className="text-xs font-medium text-zinc-300">No claims match the filter criteria.</p>
+              </div>
             )}
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR AREA */}
-        
-        {/* FACT CHECK SIDEBAR */}
+        {/* FACT CHECK INSPECTOR SIDEBAR */}
         <aside className={cn(
-            "bg-white flex-col flex-shrink-0 h-screen overflow-hidden relative z-10 shadow-sm transition-all duration-500 ease-in-out",
+            "bg-[#0c0c0e] flex-col flex-shrink-0 h-screen overflow-hidden relative z-30 transition-all duration-300 border-l border-[#27272a]",
             showVerificationPanel 
-                ? "w-full lg:w-[360px] border-l border-slate-100 opacity-100" 
+                ? "w-full lg:w-[380px] opacity-100" 
                 : "w-0 border-transparent opacity-0 hidden lg:flex"
         )}>
-            <div className="w-full lg:w-[360px] p-6 flex flex-col h-full overflow-y-auto">
+            <div className="w-full lg:w-[380px] p-5 flex flex-col h-full overflow-y-auto">
                 {!selectedPostId ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60 mt-20">
-                        <ShieldCheck className="w-16 h-16 text-slate-300 mb-4" />
-                        <p className="text-sm font-semibold text-slate-500">Select a post to view<br/>fact-check details.</p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 my-auto">
+                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
+                          <ShieldCheck className="w-6 h-6 text-zinc-400" />
+                        </div>
+                        <h4 className="font-semibold text-white text-sm mb-1">Fact-Check Inspector</h4>
+                        <p className="text-xs text-zinc-400 leading-relaxed max-w-xs">
+                          Select any claim from the timeline to view evidential analysis and claim breakdown.
+                        </p>
                     </div>
                 ) : (
-                    <div className="space-y-6 flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-5 flex-1 flex flex-col animate-in fade-in duration-200">
                         
-              <div className="flex justify-between items-center">
-                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /> Fact-Check Details</h3>
-                <button onClick={() => setSelectedPostId(null)} className="p-2 bg-slate-200/50 hover:bg-slate-200 rounded-full transition text-slate-500"><X className="w-4 h-4" /></button>
+              <div className="flex justify-between items-center pb-3 border-b border-[#27272a]">
+                <h3 className="font-semibold text-white text-sm flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Verification Analysis
+                </h3>
+                <button 
+                  onClick={() => setSelectedPostId(null)} 
+                  className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {selectedPost && (
-                <div className="text-sm font-medium text-slate-600 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                  Inspecting <span className="font-bold text-slate-900">@{selectedPost.author.username}'s</span> claim.
+                <div className="text-xs font-mono text-zinc-400 bg-zinc-900/60 p-3 rounded-lg border border-zinc-800">
+                  Inspecting post by <span className="font-semibold text-zinc-200">@{selectedPost.author.username}</span>
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
+              <div className="flex-1 overflow-y-auto no-scrollbar pb-8 space-y-5">
                 {verificationQuery.isLoading ? (
-                  <Loading text="Analyzing claims..." />
+                  <Loading text="Executing verification protocol..." />
                 ) : verificationQuery.data ? (
                   <VerificationPanel
                     verification={verificationQuery.data}
@@ -330,18 +437,18 @@ export default function Home() {
                     error={challengeMutation.error instanceof Error ? challengeMutation.error.message : null}
                   />
                 ) : (
-                  <div className="text-sm text-slate-500 text-center py-10">
-                    This post has not been analyzed by AI yet.
+                  <div className="text-xs font-mono text-zinc-400 text-center py-8 card-sleek rounded-lg">
+                    No verification analysis available for this claim. Click "Run Fact Check".
                   </div>
                 )}
 
                 {/* Moderation Queue inside the panel if applicable */}
                 {(user?.role === 'moderator' || user?.role === 'admin') && moderationQuery.data?.length ? (
-                  <div className="mt-8 pt-8 border-t border-slate-200">
-                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg">
-                      <AlertCircle className="w-5 h-5 text-amber-500" /> Moderation Queue
+                  <div className="mt-6 pt-6 border-t border-[#27272a]">
+                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+                      <AlertCircle className="w-4 h-4 text-amber-400" /> Moderation Reviews
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {moderationQuery.data.map((review) => (
                         <ModerationCard
                           key={review.id}
@@ -368,104 +475,88 @@ export default function Home() {
             </div>
         </aside>
 
-        {/* SUGGESTIONS & ACTIVITY SIDEBAR */}
+        {/* DISCOVERY SIDEBAR */}
         <aside className={cn(
-            "bg-[#fdfdfd] border-l border-slate-100 p-6 flex-col flex-shrink-0 h-screen overflow-y-auto relative z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-500",
-            showVerificationPanel ? "hidden xl:flex w-[340px]" : "hidden lg:flex w-[340px]"
+            "bg-[#09090b] border-l border-[#27272a] p-5 flex-col flex-shrink-0 h-screen overflow-y-auto relative z-10 transition-all duration-300",
+            showVerificationPanel ? "hidden xl:flex w-[300px]" : "hidden lg:flex w-[300px]"
         )}>
-            <div className="animate-in fade-in duration-300 w-[292px]">
+            <div className="w-[260px]">
                <ActivitySidebarContent />
             </div>
         </aside>
 
       </div>
-
     </div>
   );
 }
 
-// --- Components ---
+// --- Sub-Components ---
 
 function ActivitySidebarContent() {
   return (
-    <div className="space-y-10">
-      {/* People to Follow */}
+    <div className="space-y-6 text-xs">
+      {/* Top Fact-Checkers */}
       <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-slate-800">People to follow</h3>
-          <button className="text-xs font-bold text-blue-600">See all</button>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold text-zinc-200">Top Fact-Checkers</h3>
         </div>
-        <div className="space-y-5">
+        <div className="space-y-2">
           {[
-            { name: 'Khoulod Mohamed', handle: '@khmohamed', followed: false },
-            { name: 'Mostafa Mohamed', handle: '@mostafa2020', followed: true },
-            { name: 'Nada Ahmed', handle: '@nadaahmed', followed: false }
+            { name: 'Khoulod Mohamed', handle: '@khmohamed', score: '98% Acc' },
+            { name: 'Mostafa Mohamed', handle: '@mostafa2020', score: '94% Acc' },
+            { name: 'Nada Ahmed', handle: '@nadaahmed', score: '91% Acc' }
           ].map((person, i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}&backgroundColor=e2e8f0`} alt="avatar" className="w-full h-full object-cover" />
-                </div>
+            <div key={i} className="card-sleek p-2.5 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-7 h-7 rounded-full bg-zinc-800" />
                 <div>
-                  <div className="text-sm font-bold text-slate-800">{person.name}</div>
-                  <div className="text-[11px] font-medium text-slate-400">{person.handle}</div>
+                  <div className="font-medium text-white">{person.name}</div>
+                  <div className="text-[10px] font-mono text-zinc-400">{person.handle}</div>
                 </div>
               </div>
-              <button className={`px-4 py-1.5 rounded-md text-xs font-semibold transition ${person.followed ? "bg-slate-100 text-slate-600 border border-transparent" : "bg-slate-900 text-white hover:bg-slate-800"}`}>
-                {person.followed ? 'Followed' : 'Follow'}
-              </button>
+              <span className="text-[10px] font-mono text-emerald-400 font-semibold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20">
+                {person.score}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* You Saved Grid */}
+      {/* Saved Claims */}
       <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-slate-800">You Saved</h3>
-          <button className="text-xs font-bold text-blue-600">See all</button>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold text-zinc-200">Saved Claims</h3>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-24 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-900 overflow-hidden relative border border-slate-200">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute bottom-2 left-2 w-3 h-3 rounded bg-white/50 shadow-sm"></div>
+        <div className="space-y-2">
+          <div className="card-sleek p-2.5 rounded-lg flex flex-col gap-1 cursor-pointer hover:border-zinc-600 transition">
+            <span className="text-[10px] font-mono text-zinc-400 uppercase">Renewable Energy</span>
+            <span className="text-xs font-medium text-zinc-200">Battery storage claim verified ✓</span>
           </div>
-          <div className="h-24 rounded-lg bg-gradient-to-br from-indigo-900 to-slate-800 overflow-hidden border border-slate-200"></div>
-          <div className="h-24 rounded-lg bg-gradient-to-br from-slate-600 to-slate-800 overflow-hidden border border-slate-200"></div>
-          <div className="h-24 rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center relative border border-slate-200">
-            <div className="absolute w-8 h-16 bg-slate-300 rounded shadow-sm rotate-12"></div>
-            <div className="absolute w-4 h-12 bg-slate-200 rounded left-4 -rotate-12"></div>
+          <div className="card-sleek p-2.5 rounded-lg flex flex-col gap-1 cursor-pointer hover:border-zinc-600 transition">
+            <span className="text-[10px] font-mono text-zinc-400 uppercase">Clinical Trial</span>
+            <span className="text-xs font-medium text-zinc-200">Vaccine efficacy study data</span>
           </div>
         </div>
       </div>
 
-      {/* Last Activity */}
+      {/* System Status */}
       <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-slate-800">Last Activity</h3>
-          <button className="text-xs font-bold text-blue-600">See all</button>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold text-zinc-200">System Activity</h3>
         </div>
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5"><MessageCircle className="w-4 h-4 text-blue-500 fill-blue-500" /></div>
-            <div className="text-[13px] text-slate-600">You've Commented on Ahmed Mohamed <span className="font-bold text-slate-900">Shot</span></div>
+        <div className="space-y-2 font-mono text-[11px] text-zinc-400">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="truncate">Claim #104 verified (92% conf)</span>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5"><Heart className="w-4 h-4 text-red-500 fill-red-500" /></div>
-            <div className="text-[13px] text-slate-600">You've Liked Noha Mohamed <span className="font-bold text-slate-900">Shot</span></div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5"><Bookmark className="w-4 h-4 text-slate-400" /></div>
-            <div className="text-[13px] text-slate-600">You've Saved Menna <span className="font-bold text-slate-900">Shot</span> to your collection</div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span className="truncate">Challenge filed on Claim #102</span>
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-slate-500 focus:bg-white transition" />;
 }
 
 function Composer({
@@ -485,6 +576,7 @@ function Composer({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (content.trim().length < 5) return;
     onSubmit(content, showSource ? sourceUrl : undefined);
     setContent('');
     setSourceUrl('');
@@ -492,48 +584,41 @@ function Composer({
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <div className="flex gap-4">
-        <div className="w-12 h-12 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden">
-          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-full h-full object-cover" />
-        </div>
-        <div className="flex-1">
-          <textarea
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="What's on your mind?"
-            className="w-full h-32 bg-slate-50 rounded-lg p-4 text-sm outline-none border border-slate-200 focus:border-slate-400 focus:bg-white transition font-medium resize-none"
-          />
-        </div>
-      </div>
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <textarea
+        value={content}
+        onChange={(event) => setContent(event.target.value)}
+        placeholder="Enter claim statement to fact-check..."
+        className="w-full h-24 input-sleek rounded-xl p-3 text-xs font-medium resize-none"
+      />
 
       {showSource && (
-        <div className="pl-16">
-          <TextInput value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="Attach a source URL (optional) for fact-checking" />
-        </div>
+        <input 
+          type="url"
+          value={sourceUrl} 
+          onChange={(event) => setSourceUrl(event.target.value)} 
+          placeholder="Source URL (optional)" 
+          className="w-full input-sleek rounded-xl px-3 py-2 text-xs font-mono"
+        />
       )}
 
-      <div className="flex items-center justify-between pl-16 pt-2">
-        <div className="flex gap-1 border border-slate-200 rounded-lg p-1 bg-white shadow-sm">
-          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded transition" title="Image">
-            <ImageIcon className="w-4 h-4" />
-          </button>
-          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded transition" title="Video">
-            <Video className="w-4 h-4" />
-          </button>
-          <button type="button" onClick={() => setShowSource(!showSource)} className={cn("w-8 h-8 flex items-center justify-center rounded transition", showSource ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-50")} title="Source URL">
-            <Globe className="w-4 h-4" />
-          </button>
-          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded transition" title="Location">
-            <MapPin className="w-4 h-4" />
-          </button>
-        </div>
+      <div className="flex items-center justify-between pt-1">
+        <button 
+          type="button" 
+          onClick={() => setShowSource(!showSource)} 
+          className={cn("px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition", showSource ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white")}
+        >
+          <Globe className="w-3.5 h-3.5" /> Source Link
+        </button>
 
-        <button disabled={busy || content.trim().length < 5} className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:bg-blue-700 transition shadow-sm">
-          {busy ? 'Publishing...' : 'Publish'}
+        <button 
+          disabled={busy || content.trim().length < 5} 
+          className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40 transition"
+        >
+          {busy ? 'Verifying...' : 'Run Fact Check'}
         </button>
       </div>
-      {error && <div className="mt-2 pl-16"><ErrorBanner text={error} /></div>}
+      {error && <ErrorBanner text={error} />}
     </form>
   );
 }
@@ -554,83 +639,90 @@ function TimelinePostCard({
   onVerify: () => void;
 }) {
   const verification = post.latest_verification_summary;
-  
-  // Mock numbers for UI
-  const likes = Math.floor(Math.random() * 500) + 10;
-  const comments = Math.floor(Math.random() * 50) + 5;
-  const isLiked = Math.random() > 0.5;
+  const likes = ((post.id * 37) % 450) + 12;
+  const comments = ((post.id * 19) % 45) + 3;
 
   return (
     <div 
       className={cn(
-        "bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow transition-all duration-300",
-        selected ? "border-blue-500 ring-2 ring-blue-50" : ""
+        "card-sleek rounded-xl p-4 cursor-pointer relative transition-all",
+        selected ? "border-emerald-500/50 bg-[#16161a]" : ""
       )}
       onClick={onSelect}
     >
-      {/* Header (Author) */}
-      <div className="p-4 flex items-center justify-between border-b border-slate-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shadow-sm">
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.username}`} alt="avatar" className="w-full h-full object-cover" />
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.username}`} alt="avatar" className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700" />
           <div>
-            <div className="text-[15px] font-bold text-slate-800 leading-tight">{post.author.full_name || post.author.username}</div>
-            <div className="text-xs text-slate-500 font-medium">@{post.author.username}</div>
+            <div className="text-xs font-semibold text-white leading-none">{post.author.full_name || post.author.username}</div>
+            <div className="text-[10px] font-mono text-zinc-400 mt-0.5">@{post.author.username} · {formatDate(post.created_at)}</div>
           </div>
         </div>
-        {/* Badges */}
-        <div className="flex items-center gap-2">
-         {verification ? (
-            <div className={cn("px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border flex items-center gap-1.5 shadow-sm", 
-               verification.score && verification.score > 70 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
-               verification.score && verification.score < 40 ? "bg-red-50 text-red-700 border-red-200" : 
-               "bg-amber-50 text-amber-700 border-amber-200")}
-            >
-               <ShieldCheck className="w-3.5 h-3.5"/> Fact-Checked: {verification.score}
+
+        {/* Score Badge */}
+        <div>
+          {verification ? (
+            <div className={cn(
+              "px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold flex items-center gap-1.5 border",
+              verification.score && verification.score > 70 ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : 
+              verification.score && verification.score < 40 ? "bg-rose-500/10 text-rose-300 border-rose-500/30" : 
+              "bg-amber-500/10 text-amber-300 border-amber-500/30"
+            )}>
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                verification.score && verification.score > 70 ? "bg-emerald-400" :
+                verification.score && verification.score < 40 ? "bg-rose-400" : "bg-amber-400"
+              )}></span>
+              <span>{verification.score}/100</span>
             </div>
-         ) : (
+          ) : (
             <button 
               onClick={(e) => { e.stopPropagation(); onVerify(); }}
               disabled={!canVerify || busy}
-              className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold uppercase tracking-widest border border-slate-200 hover:bg-slate-200 transition shadow-sm"
+              className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
             >
-               {busy ? 'Running AI...' : 'Verify Claim'}
+              {busy ? <Loader2 className="w-3 h-3 animate-spin text-emerald-400" /> : <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+              <span>{busy ? 'Running...' : 'Verify Claim'}</span>
             </button>
-         )}
+          )}
         </div>
       </div>
 
-      {/* Body (Content) */}
-      <div className="p-5">
-        <p className="text-slate-800 text-[15px] leading-relaxed whitespace-pre-wrap font-medium">
-          {post.content}
-        </p>
-        
-        {post.source_url && (
-          <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-2 group/link hover:bg-slate-100 transition">
-            <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            <a href={post.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 line-clamp-1">
-              {getDomainFromUrl(post.source_url)}
-            </a>
-          </div>
-        )}
-      </div>
+      {/* Content */}
+      <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-normal mb-3 whitespace-pre-wrap">
+        {post.content}
+      </p>
+      
+      {post.source_url && (
+        <div className="mb-3 p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-center gap-2">
+          <Globe className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+          <a 
+            href={post.source_url} 
+            target="_blank" 
+            rel="noreferrer" 
+            onClick={(e) => e.stopPropagation()} 
+            className="text-xs font-mono text-emerald-400 hover:underline truncate"
+          >
+            {getDomainFromUrl(post.source_url)}
+          </a>
+        </div>
+      )}
 
-      {/* Footer (Actions) */}
-      <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center gap-6 text-slate-500">
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <Heart className={cn("w-4 h-4 transition", isLiked ? "text-red-500 fill-red-500" : "group-hover/icon:text-red-500")} />
-          <span className="text-[13px] font-bold">{likes}</span>
-        </div>
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <MessageSquare className="w-4 h-4 transition group-hover/icon:text-blue-500" />
-          <span className="text-[13px] font-bold">{comments}</span>
-        </div>
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <Share2 className="w-4 h-4 transition group-hover/icon:text-emerald-500" />
-          <span className="text-[13px] font-bold">Share</span>
-        </div>
+      {/* Footer */}
+      <div className="flex items-center gap-5 text-xs text-zinc-400 font-mono pt-1">
+        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
+          <Heart className="w-3.5 h-3.5" />
+          <span>{likes}</span>
+        </button>
+        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>{comments}</span>
+        </button>
+        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
+          <Share2 className="w-3.5 h-3.5" />
+          <span>Share</span>
+        </button>
       </div>
     </div>
   );
@@ -657,40 +749,59 @@ function VerificationPanel({
   busy: boolean;
   error: string | null;
 }) {
+  const score = verification.score ?? 50;
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 relative overflow-hidden">
-        <div className="absolute -right-4 -bottom-4 opacity-5">
-          <ShieldCheck className="w-32 h-32 text-emerald-900" />
-        </div>
-        <div className="flex items-end justify-between relative z-10">
+    <div className="space-y-5">
+      {/* Score Overview Card */}
+      <div className="card-sleek rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-semibold text-emerald-600 tracking-widest">Verity Score</div>
-            <div className="text-4xl font-bold text-emerald-900 mt-1">{verification.score ?? '--'}</div>
+            <div className="text-[10px] font-mono uppercase text-zinc-400">Verity Score</div>
+            <div className="text-3xl font-bold text-white mt-0.5">{score} <span className="text-xs text-zinc-400 font-mono">/ 100</span></div>
           </div>
-          <div className="text-right text-xs font-semibold text-emerald-800 bg-white/80 backdrop-blur px-3 py-1.5 rounded border border-emerald-200 shadow-sm">
-            <div>{verification.status}</div>
+          <div className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-mono font-medium text-emerald-400">
+            {verification.status}
           </div>
         </div>
-        {verification.final_decision_note && <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm text-slate-700 shadow-sm border border-emerald-200/50 font-medium leading-relaxed">{verification.final_decision_note}</p>}
+
+        <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${score}%` }}></div>
+        </div>
+
+        {verification.final_decision_note && (
+          <p className="text-xs text-zinc-300 leading-relaxed pt-1 border-t border-zinc-800 font-medium">
+            {verification.final_decision_note}
+          </p>
+        )}
       </div>
 
-      <div className="space-y-4">
+      {/* Extracted Claims */}
+      <div className="space-y-3">
+        <h4 className="text-xs font-mono uppercase text-zinc-400">Extracted Claims ({verification.claims.length})</h4>
+
         {verification.claims.map((claim) => {
-          const config = VERDICT_CONFIG[claim.verdict];
+          const config = VERDICT_CONFIG[claim.verdict] || { label: claim.verdict, bgColor: 'bg-zinc-800', color: 'text-zinc-300' };
           return (
-            <div key={claim.id} className="rounded-xl border border-slate-200 shadow-sm p-5 bg-white transition hover:shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <span className={cn('rounded px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest', config.bgColor, config.color)}>{config.label}</span>
-                <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{Math.round(claim.confidence * 100)}% conf</span>
+            <div key={claim.id} className="card-sleek rounded-xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className={cn('rounded px-2 py-0.5 text-[10px] font-mono font-semibold uppercase border', config.bgColor, config.color)}>
+                  {config.label}
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {Math.round(claim.confidence * 100)}% Confidence
+                </span>
               </div>
-              <p className="text-sm font-semibold text-slate-900 mb-2 leading-relaxed">{claim.text}</p>
-              <p className="text-[13px] leading-relaxed text-slate-600 font-medium">{claim.reasoning}</p>
+
+              <p className="text-xs font-semibold text-white leading-relaxed">{claim.text}</p>
+              <p className="text-xs text-zinc-300 leading-relaxed font-normal bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                {claim.reasoning}
+              </p>
 
               {(claim.sources.supporting.length > 0 || claim.sources.contradicting.length > 0) && (
-                <div className="mt-5 pt-4 border-t border-slate-100 grid gap-4">
-                  {claim.sources.supporting.length > 0 && <SourceBox title="Supporting Evidence" sources={claim.sources.supporting} />}
-                  {claim.sources.contradicting.length > 0 && <SourceBox title="Contradicting Evidence" sources={claim.sources.contradicting} />}
+                <div className="pt-2 border-t border-zinc-800 space-y-2">
+                  {claim.sources.supporting.length > 0 && <SourceBox title="Supporting Sources" sources={claim.sources.supporting} />}
+                  {claim.sources.contradicting.length > 0 && <SourceBox title="Contradicting Sources" sources={claim.sources.contradicting} />}
                 </div>
               )}
             </div>
@@ -698,29 +809,42 @@ function VerificationPanel({
         })}
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-900">
-          <AlertCircle className="h-5 w-5" />
-          Dispute this verdict
+      {/* Dispute Section */}
+      <div className="card-sleek rounded-xl p-4 space-y-3 border-amber-500/20">
+        <div className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+          <AlertCircle className="w-3.5 h-3.5" />
+          Dispute Verdict
         </div>
+        <p className="text-xs text-zinc-400">Submit evidence to challenge this AI verification.</p>
+        
         {canChallenge ? (
-          <div className="space-y-3">
-            <select value={challengeReason} onChange={(event) => setChallengeReason(event.target.value)} className="w-full rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-amber-500 focus:ring-1 ring-amber-200 transition shadow-sm">
-              {CHALLENGE_REASONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          <div className="space-y-2.5">
+            <select 
+              value={challengeReason} 
+              onChange={(event) => setChallengeReason(event.target.value)} 
+              className="w-full input-sleek rounded-lg px-3 py-2 text-xs font-mono"
+            >
+              {CHALLENGE_REASONS.map(([value, label]) => <option key={value} value={value} className="bg-zinc-900">{label}</option>)}
             </select>
             <textarea
               value={challengeComment}
               onChange={(event) => setChallengeComment(event.target.value)}
-              placeholder="Why is this verdict wrong?"
-              className="h-24 w-full rounded-lg border border-amber-300 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-amber-500 focus:ring-1 ring-amber-200 transition resize-none shadow-sm"
+              placeholder="Provide evidence or context for your dispute..."
+              className="h-16 w-full input-sleek rounded-lg p-2.5 text-xs resize-none"
             />
             {error && <ErrorBanner text={error} />}
-            <button onClick={onChallenge} disabled={busy} className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50 shadow-sm">
-              {busy ? 'Submitting...' : 'Submit Challenge'}
+            <button 
+              onClick={onChallenge} 
+              disabled={busy} 
+              className="w-full rounded-lg bg-amber-600 hover:bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-40"
+            >
+              {busy ? 'Submitting...' : 'Submit Dispute'}
             </button>
           </div>
         ) : (
-          <div className="text-xs font-semibold text-amber-700 bg-white/80 p-4 rounded-lg text-center border border-amber-200">Sign in to challenge verdicts.</div>
+          <div className="text-xs font-mono text-zinc-400 text-center py-2">
+            Sign in to challenge verdicts.
+          </div>
         )}
       </div>
     </div>
@@ -730,12 +854,20 @@ function VerificationPanel({
 function SourceBox({ title, sources }: { title: string; sources: { url: string; snippet: string }[] }) {
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-3">{title}</div>
-      <div className="space-y-2">
+      <div className="text-[10px] font-mono text-zinc-400 uppercase mb-1.5">{title}</div>
+      <div className="space-y-1.5">
         {sources.map((source) => (
-          <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block rounded-lg bg-slate-50 border border-slate-200 p-3 hover:bg-white hover:border-slate-300 hover:shadow-sm transition group">
-            <div className="text-[13px] font-semibold text-blue-600 flex items-center gap-1.5 mb-1.5 group-hover:text-blue-700"><Globe className="w-3.5 h-3.5" /> {getDomainFromUrl(source.url)}</div>
-            <div className="text-[12px] text-slate-600 line-clamp-2 leading-relaxed font-medium">{source.snippet}</div>
+          <a 
+            key={source.url} 
+            href={source.url} 
+            target="_blank" 
+            rel="noreferrer" 
+            className="block rounded-lg bg-zinc-900 p-2 border border-zinc-800 hover:border-zinc-600 transition"
+          >
+            <div className="text-xs font-mono text-emerald-400 flex items-center gap-1 mb-0.5">
+              <Globe className="w-3 h-3" /> {getDomainFromUrl(source.url)}
+            </div>
+            <div className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">{source.snippet}</div>
           </a>
         ))}
       </div>
@@ -769,22 +901,45 @@ function ModerationCard({
   onResolve: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 hover:shadow-md transition-all duration-300">
-      <div className="font-semibold text-slate-800 text-sm mb-2">@{review.post.author.username}'s post</div>
-      <p className="text-sm text-slate-600 line-clamp-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium">{review.post.content}</p>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 inline-block px-2.5 py-1.5 rounded mb-4 border border-amber-200">
-        Score {review.verification.score ?? '--'} · {review.verification.challenge_count} challenges
+    <div className="card-sleek rounded-xl p-3.5 space-y-2.5">
+      <div className="font-medium text-white text-xs">@{review.post.author.username}'s claim</div>
+      <p className="text-xs text-zinc-300 bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 line-clamp-2">{review.post.content}</p>
+      <div className="text-[10px] font-mono text-amber-400 bg-amber-500/10 inline-block px-2 py-0.5 rounded border border-amber-500/20">
+        Score {review.verification.score ?? '--'} · {review.verification.challenge_count} Challenges
       </div>
-      <div className="space-y-3">
-        <select value={decision} onChange={(event) => setDecision(event.target.value as 'uphold' | 'revise' | 'remove_verdict')} className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-slate-500">
-          <option value="uphold">Uphold verdict</option>
-          <option value="revise">Revise verdict</option>
-          <option value="remove_verdict">Remove verdict</option>
+      <div className="space-y-2">
+        <select 
+          value={decision} 
+          onChange={(event) => setDecision(event.target.value as 'uphold' | 'revise' | 'remove_verdict')} 
+          className="w-full input-sleek rounded-lg px-2.5 py-1.5 text-xs font-mono"
+        >
+          <option value="uphold" className="bg-zinc-900">Uphold verdict</option>
+          <option value="revise" className="bg-zinc-900">Revise verdict</option>
+          <option value="remove_verdict" className="bg-zinc-900">Remove verdict</option>
         </select>
-        <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Moderator note (required)" className="h-20 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium outline-none resize-none focus:border-slate-500" />
-        <input value={overrideScore} onChange={(event) => setOverrideScore(event.target.value)} placeholder="Override score (optional)" className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-slate-500" />
-        <textarea value={overrideSummary} onChange={(event) => setOverrideSummary(event.target.value)} placeholder="Public override summary (optional)" className="h-20 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium outline-none resize-none focus:border-slate-500" />
-        <button onClick={onResolve} disabled={busy || note.trim().length < 5} className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50">
+        <textarea 
+          value={note} 
+          onChange={(event) => setNote(event.target.value)} 
+          placeholder="Moderator note (required)" 
+          className="h-14 w-full input-sleek rounded-lg p-2 text-xs resize-none" 
+        />
+        <input 
+          value={overrideScore} 
+          onChange={(event) => setOverrideScore(event.target.value)} 
+          placeholder="Override score (0-100)" 
+          className="w-full input-sleek rounded-lg px-2.5 py-1.5 text-xs font-mono" 
+        />
+        <textarea 
+          value={overrideSummary} 
+          onChange={(event) => setOverrideSummary(event.target.value)} 
+          placeholder="Public override summary" 
+          className="h-14 w-full input-sleek rounded-lg p-2 text-xs resize-none" 
+        />
+        <button 
+          onClick={onResolve} 
+          disabled={busy || note.trim().length < 5} 
+          className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
+        >
           {busy ? 'Resolving...' : 'Resolve Review'}
         </button>
       </div>
@@ -793,13 +948,18 @@ function ModerationCard({
 }
 
 function Loading({ text }: { text: string }) {
-  return <div className="flex flex-col items-center justify-center gap-3 text-sm font-semibold text-slate-400 py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-500" />{text}</div>;
+  return (
+    <div className="flex items-center justify-center gap-2.5 text-xs font-mono text-zinc-400 py-8 card-sleek rounded-xl">
+      <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+      <span>{text}</span>
+    </div>
+  );
 }
 
 function ErrorBanner({ text }: { text: string }) {
-  return <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 font-semibold shadow-sm">{text}</div>;
-}
-
-function tab(active: boolean) {
-  return cn('flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-all', active ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700');
+  return (
+    <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300 font-medium">
+      {text}
+    </div>
+  );
 }
