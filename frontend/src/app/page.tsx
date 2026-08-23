@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle, Loader2, LogOut, ShieldCheck,
-  Search, Home as HomeIcon, MessageCircle, Bell,
+  Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin, Sparkles, Flame, Zap, ShieldAlert, CheckCircle2, XCircle, HelpCircle, Award, Compass, RefreshCw, Command
+  Plus, Upload, X, MapPin
 } from 'lucide-react';
 
 import {
@@ -26,12 +26,13 @@ import {
 } from '@/lib/api';
 import { ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '@/lib/types';
 import { cn, formatDate, getDomainFromUrl } from '@/lib/utils';
+import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 
 const CHALLENGE_REASONS = [
-  ['missing_context', 'Missing Context'],
-  ['wrong_sources', 'Wrong Sources'],
-  ['outdated_conclusion', 'Outdated Conclusion'],
-  ['incorrect_reasoning', 'Incorrect Reasoning'],
+  ['missing_context', 'Missing context'],
+  ['wrong_sources', 'Wrong sources'],
+  ['outdated_conclusion', 'Outdated conclusion'],
+  ['incorrect_reasoning', 'Incorrect reasoning'],
 ] as const;
 
 export default function Home() {
@@ -49,8 +50,6 @@ export default function Home() {
   const [overrideScore, setOverrideScore] = useState('');
   const [overrideSummary, setOverrideSummary] = useState('');
   const [showComposerModal, setShowComposerModal] = useState(false);
-  const [feedFilter, setFeedFilter] = useState<'all' | 'verified' | 'suspicious'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const postsQuery = useQuery({ queryKey: ['posts'], queryFn: listPosts });
   const moderationQuery = useQuery({
@@ -85,6 +84,8 @@ export default function Home() {
       router.push('/login');
     }
   }, [authChecked, user, router]);
+
+
 
   const createPostMutation = useMutation({
     mutationFn: createPost,
@@ -136,184 +137,98 @@ export default function Home() {
     },
   });
 
-  const filteredPosts = useMemo(() => {
-    if (!postsQuery.data) return [];
-    return postsQuery.data.filter((post) => {
-      const matchSearch = searchQuery === '' || 
-        post.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        post.author.username.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      if (!matchSearch) return false;
 
-      if (feedFilter === 'verified') {
-        const score = post.latest_verification_summary?.score;
-        return score !== null && score !== undefined && score > 70;
-      }
-      if (feedFilter === 'suspicious') {
-        const score = post.latest_verification_summary?.score;
-        return score !== null && score !== undefined && score < 50;
-      }
-      return true;
-    });
-  }, [postsQuery.data, searchQuery, feedFilter]);
-
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-zinc-400 font-mono text-xs">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-          <span>Initializing Verique protocol...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex overflow-hidden font-sans selection:bg-zinc-700 selection:text-white">
-      <div className="w-full flex overflow-hidden min-h-screen relative">
+    <div className="min-h-screen bg-transparent flex overflow-hidden font-sans">
+      <AnimatedCanvas className="fixed inset-0 z-0" interactive={false} />
+      <div className="w-full bg-transparent flex overflow-hidden min-h-screen relative z-10">
 
-        {/* LEFT SIDEBAR */}
-        <div className="w-[72px] sm:w-[220px] flex-shrink-0"></div>
+        {/* EXPANDING LEFT SIDEBAR (Dark) */}
+        {/* Spacer for flex layout to account for fixed sidebar width */}
+        <div className="w-[100px] flex-shrink-0 hidden sm:block"></div>
         
-        <aside className="fixed top-0 left-0 h-screen w-[72px] sm:w-[220px] z-40 bg-[#0c0c0e] flex flex-col py-5 px-3 border-r border-[#27272a]">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3 px-3 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <aside className="fixed top-0 left-0 h-screen w-[100px] hover:w-[240px] z-50 transition-all duration-300 ease-in-out bg-[#18181b]/55 backdrop-blur-xl flex flex-col py-8 overflow-hidden group shadow-xl hidden sm:flex border-r border-white/10">
+          {/* Logo */}
+          <div className="flex items-center px-6 mb-16 w-[240px]">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+              <span className="text-white font-bold text-xl tracking-tight">V</span>
             </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="font-semibold text-white text-sm tracking-tight">Verique</span>
-              <span className="text-[10px] font-mono text-zinc-400">Trust Protocol</span>
-            </div>
+            <span className="ml-4 font-semibold text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Verique</span>
           </div>
 
-          {/* Navigation Items */}
-          <div className="flex flex-col gap-1 text-zinc-400">
-            <button className="flex items-center gap-3 px-3 py-2 text-white rounded-lg bg-zinc-800/80 border border-zinc-700/60 font-medium text-xs transition">
-              <HomeIcon className="w-4 h-4 flex-shrink-0 text-emerald-400" />
-              <span className="hidden sm:inline">Timeline Feed</span>
+          {/* Nav Icons */}
+          <div className="flex flex-col gap-6 text-slate-400 w-[240px]">
+            <button className="flex items-center px-9 py-3 text-white relative group/btn hover:bg-white/5 transition">
+              <HomeIcon className="w-6 h-6 flex-shrink-0" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Home</span>
             </button>
-            
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Compass className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Explore Feed</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Bell className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Notifications</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <MessageCircle className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Chat</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <UserIcon className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Profile</span>
+            </button>
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Bookmark className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Bookmarks</span>
+            </button>
             <button 
               onClick={() => setIsVerificationLocked(!isVerificationLocked)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition",
-                isVerificationLocked 
-                  ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" 
-                  : "hover:text-white hover:bg-zinc-800/40 text-zinc-400"
-              )}
+              className={cn("flex items-center px-9 py-3 transition group/btn", isVerificationLocked ? "text-white bg-white/10" : "hover:text-white hover:bg-white/5")}
             >
-              <ShieldCheck className={cn("w-4 h-4 flex-shrink-0", isVerificationLocked ? "text-emerald-400" : "")} />
-              <span className="hidden sm:inline">Fact-Check Inspector</span>
-            </button>
-
-            <button onClick={() => router.push('/docs')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-white hover:bg-zinc-800/40 text-xs font-medium transition text-zinc-400">
-              <Compass className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">API Docs</span>
-            </button>
-
-            <button onClick={() => router.push('/about')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-white hover:bg-zinc-800/40 text-xs font-medium transition text-zinc-400">
-              <Sparkles className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">About</span>
+              <ShieldCheck className={cn("w-6 h-6 flex-shrink-0", isVerificationLocked ? "text-blue-500" : "")} />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Fact-Check Panel</span>
             </button>
           </div>
 
-          {/* New Claim CTA */}
-          <div className="mt-6 px-1">
-            <button 
-              onClick={() => setShowComposerModal(true)}
-              className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">New Claim</span>
+          <div className="mt-auto flex flex-col gap-6 text-slate-400 w-[240px]">
+            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
+              <Settings className="w-6 h-6 flex-shrink-0" />
+              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Settings</span>
             </button>
-          </div>
-
-          {/* User Profile / Logout */}
-          <div className="mt-auto flex flex-col gap-1 border-t border-[#27272a] pt-4 px-1">
             {user && (
-              <div className="flex items-center gap-2.5 p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 mb-1">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-7 h-7 rounded-full bg-zinc-800 flex-shrink-0" />
-                <div className="hidden sm:flex flex-col overflow-hidden">
-                  <span className="text-xs font-semibold text-white truncate">{user.full_name || user.username}</span>
-                  <span className="text-[10px] font-mono text-zinc-400 truncate">@{user.username}</span>
-                </div>
-              </div>
-            )}
-
-            {user && (
-              <button 
-                onClick={() => { clearAuthToken(); setUser(null); router.push('/login'); }} 
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-rose-400 hover:bg-rose-500/10 text-xs font-medium transition text-zinc-400" 
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Logout</span>
+              <button onClick={() => { clearAuthToken(); setUser(null) }} className="flex items-center px-9 py-3 hover:text-red-400 hover:bg-white/5 transition group/btn text-slate-400" title="Logout">
+                <LogOut className="w-6 h-6 flex-shrink-0" />
+                <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Logout</span>
               </button>
             )}
           </div>
         </aside>
 
-        {/* MIDDLE MAIN CONTENT */}
-        <main className="flex-1 flex flex-col h-screen overflow-y-auto px-4 sm:px-8 py-6 relative">
+        {/* MIDDLE COLUMN (Feed) */}
+        <main className="flex-1 flex flex-col h-screen overflow-y-auto px-8 py-10 relative">
 
-          {/* Header Stats Bar */}
-          <div className="max-w-3xl mx-auto w-full mb-6">
-            <div className="bg-[#121215] border border-[#27272a] rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <div className="flex items-center gap-2 text-zinc-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Fact-Check Protocol Active</span>
-              </div>
-              <div className="flex items-center gap-4 text-zinc-400">
-                <span>Confidence Index: <strong className="text-zinc-100">99.4%</strong></span>
-                <span>Claims: <strong className="text-zinc-100">{postsQuery.data?.length || 0}</strong></span>
+
+
+
+          {/* Top Search Bar */}
+          <div className="max-w-2xl mx-auto w-full mb-8">
+            <div className="relative">
+              <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-6 pr-12 text-sm font-medium text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white/10 transition" placeholder="Search" />
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400" />
               </div>
             </div>
           </div>
 
-          {/* Search & New Post Trigger */}
-          <div className="max-w-3xl mx-auto w-full mb-6 flex gap-3">
-            <div className="relative flex-1">
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full input-sleek rounded-xl py-2.5 px-4 pl-10 text-xs font-medium placeholder-zinc-500" 
-                placeholder="Filter claims by keyword, source, or user..." 
-              />
-              <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                <Search className="h-3.5 w-3.5 text-zinc-400" />
-              </div>
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3.5 flex items-center text-zinc-400 hover:text-white">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <button 
-              onClick={() => setShowComposerModal(true)}
-              className="py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium text-xs transition flex items-center gap-2"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Submit Claim</span>
-            </button>
-          </div>
-
-          {/* Composer Modal */}
-          {showComposerModal && user && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-              <div className="w-full max-w-lg bg-[#121215] border border-[#27272a] rounded-2xl p-5 shadow-2xl relative">
-                <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#27272a]">
-                  <h3 className="font-semibold text-white text-sm">Submit Claim for Verification</h3>
-                  <button 
-                    onClick={() => setShowComposerModal(false)} 
-                    className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
+          {/* Post Creation Card */}
+          <div className="max-w-2xl mx-auto w-full mb-10">
+            <h2 className="font-semibold text-white mb-4 text-[14px] uppercase tracking-wide">Post Something</h2>
+            {showComposerModal && user ? (
+              <div className="bg-[#18181b]/55 backdrop-blur-md border border-blue-500/30 rounded-xl p-6 shadow-[0_0_30px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/20 animate-in fade-in duration-300 relative">
+                <button onClick={() => setShowComposerModal(false)} className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition z-10"><X className="w-4 h-4" /></button>
                 <Composer
                   busy={createPostMutation.isPending}
                   error={createPostMutation.error instanceof Error ? createPostMutation.error.message : null}
@@ -325,44 +240,45 @@ export default function Home() {
                   user={user}
                 />
               </div>
-            </div>
-          )}
+            ) : (
+              <div 
+                onClick={() => setShowComposerModal(true)}
+                className="bg-[#18181b]/55 backdrop-blur-md border border-white/10 rounded-xl p-5 flex items-center gap-4 cursor-text shadow-sm hover:shadow transition-all group"
+              >
+                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0 border border-white/10">
+                  {user ? (
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/5 text-slate-400"><UserIcon className="w-5 h-5" /></div>
+                  )}
+                </div>
+                <div className="flex-1 text-slate-300 font-medium text-[15px]">
+                  What's on your mind?
+                </div>
+                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 group-hover:text-blue-400 transition-colors cursor-pointer">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+              </div>
+            )}
+          </div>
 
-          {/* Timeline Feed Controls */}
-          <div className="max-w-3xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-            <h1 className="text-sm font-semibold text-zinc-200">Claims Timeline</h1>
-            
-            <div className="flex gap-1 p-1 bg-[#121215] rounded-lg border border-[#27272a] text-xs">
-              <button 
-                onClick={() => setFeedFilter('all')}
-                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'all' ? "bg-zinc-800 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200")}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setFeedFilter('verified')}
-                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'verified' ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "text-zinc-400 hover:text-zinc-200")}
-              >
-                Verified (70%+)
-              </button>
-              <button 
-                onClick={() => setFeedFilter('suspicious')}
-                className={cn("px-3 py-1 rounded-md font-medium transition", feedFilter === 'suspicious' ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "text-zinc-400 hover:text-zinc-200")}
-              >
-                Contradicted
-              </button>
+          {/* Timeline Header */}
+          <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <h1 className="text-lg font-semibold text-white tracking-tight">Timeline</h1>
+            <div className="flex gap-4 sm:gap-6 text-sm font-medium text-slate-400">
+                <button className="text-white border-b-2 border-white pb-1 font-semibold">All</button>
+                <button className="hover:text-white pb-1">Following</button>
+                <button className="hover:text-white pb-1">Newest</button>
+                <button className="hover:text-white pb-1">Popular</button>
             </div>
           </div>
 
-          {/* Timeline Posts */}
-          <div className="flex flex-col gap-4 pb-16 max-w-3xl mx-auto w-full">
+          {/* Timeline Feed (Standard Single Column) */}
+          <div className="flex flex-col gap-6 pb-20 max-w-2xl mx-auto">
             {postsQuery.isLoading ? (
-              <div className="flex items-center justify-center p-12 card-sleek rounded-xl text-zinc-400 gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                <span className="text-xs font-mono">Loading claims feed...</span>
-              </div>
-            ) : filteredPosts.length ? (
-              filteredPosts.map((post) => (
+              <div className="flex justify-center p-8 w-full"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+            ) : postsQuery.data?.length ? (
+              postsQuery.data.map((post) => (
                 <TimelinePostCard
                   key={post.id}
                   post={post}
@@ -374,56 +290,43 @@ export default function Home() {
                 />
               ))
             ) : (
-              <div className="p-12 text-center card-sleek rounded-xl text-zinc-400">
-                <HelpCircle className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-xs font-medium text-zinc-300">No claims match the filter criteria.</p>
-              </div>
+              <div className="p-8 text-center text-slate-500 w-full col-span-2">No posts yet.</div>
             )}
           </div>
         </main>
 
-        {/* FACT CHECK INSPECTOR SIDEBAR */}
+        {/* RIGHT SIDEBAR AREA */}
+        
+        {/* FACT CHECK SIDEBAR */}
         <aside className={cn(
-            "bg-[#0c0c0e] flex-col flex-shrink-0 h-screen overflow-hidden relative z-30 transition-all duration-300 border-l border-[#27272a]",
+            "bg-[#18181b]/55 backdrop-blur-xl flex-col flex-shrink-0 h-screen overflow-hidden relative z-10 shadow-xl transition-all duration-500 ease-in-out",
             showVerificationPanel 
-                ? "w-full lg:w-[380px] opacity-100" 
+                ? "w-full lg:w-[360px] border-l border-white/10 opacity-100" 
                 : "w-0 border-transparent opacity-0 hidden lg:flex"
         )}>
-            <div className="w-full lg:w-[380px] p-5 flex flex-col h-full overflow-y-auto">
+            <div className="w-full lg:w-[360px] p-6 flex flex-col h-full overflow-y-auto">
                 {!selectedPostId ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 my-auto">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
-                          <ShieldCheck className="w-6 h-6 text-zinc-400" />
-                        </div>
-                        <h4 className="font-semibold text-white text-sm mb-1">Fact-Check Inspector</h4>
-                        <p className="text-xs text-zinc-400 leading-relaxed max-w-xs">
-                          Select any claim from the timeline to view evidential analysis and claim breakdown.
-                        </p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60 mt-20">
+                        <ShieldCheck className="w-16 h-16 text-slate-400 mb-4" />
+                        <p className="text-sm font-semibold text-slate-400">Select a post to view<br/>fact-check details.</p>
                     </div>
                 ) : (
-                    <div className="space-y-5 flex-1 flex flex-col animate-in fade-in duration-200">
+                    <div className="space-y-6 flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                         
-              <div className="flex justify-between items-center pb-3 border-b border-[#27272a]">
-                <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Verification Analysis
-                </h3>
-                <button 
-                  onClick={() => setSelectedPostId(null)} 
-                  className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /> Fact-Check Details</h3>
+                <button onClick={() => setSelectedPostId(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition text-slate-400"><X className="w-4 h-4" /></button>
               </div>
 
               {selectedPost && (
-                <div className="text-xs font-mono text-zinc-400 bg-zinc-900/60 p-3 rounded-lg border border-zinc-800">
-                  Inspecting post by <span className="font-semibold text-zinc-200">@{selectedPost.author.username}</span>
+                <div className="text-sm font-medium text-slate-300 bg-white/5 p-4 rounded-2xl border border-white/10 shadow-sm">
+                  Inspecting <span className="font-bold text-white">@{selectedPost.author.username}'s</span> claim.
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto no-scrollbar pb-8 space-y-5">
+              <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
                 {verificationQuery.isLoading ? (
-                  <Loading text="Executing verification protocol..." />
+                  <Loading text="Analyzing claims..." />
                 ) : verificationQuery.data ? (
                   <VerificationPanel
                     verification={verificationQuery.data}
@@ -437,18 +340,18 @@ export default function Home() {
                     error={challengeMutation.error instanceof Error ? challengeMutation.error.message : null}
                   />
                 ) : (
-                  <div className="text-xs font-mono text-zinc-400 text-center py-8 card-sleek rounded-lg">
-                    No verification analysis available for this claim. Click "Run Fact Check".
+                  <div className="text-sm text-slate-500 text-center py-10">
+                    This post has not been analyzed by AI yet.
                   </div>
                 )}
 
                 {/* Moderation Queue inside the panel if applicable */}
                 {(user?.role === 'moderator' || user?.role === 'admin') && moderationQuery.data?.length ? (
-                  <div className="mt-6 pt-6 border-t border-[#27272a]">
-                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
-                      <AlertCircle className="w-4 h-4 text-amber-400" /> Moderation Reviews
+                  <div className="mt-8 pt-8 border-t border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg">
+                      <AlertCircle className="w-5 h-5 text-amber-500" /> Moderation Queue
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {moderationQuery.data.map((review) => (
                         <ModerationCard
                           key={review.id}
@@ -475,88 +378,104 @@ export default function Home() {
             </div>
         </aside>
 
-        {/* DISCOVERY SIDEBAR */}
+        {/* SUGGESTIONS & ACTIVITY SIDEBAR */}
         <aside className={cn(
-            "bg-[#09090b] border-l border-[#27272a] p-5 flex-col flex-shrink-0 h-screen overflow-y-auto relative z-10 transition-all duration-300",
-            showVerificationPanel ? "hidden xl:flex w-[300px]" : "hidden lg:flex w-[300px]"
+            "bg-[#18181b]/55 backdrop-blur-xl border-l border-white/10 p-6 flex-col flex-shrink-0 h-screen overflow-y-auto relative z-10 shadow-xl transition-all duration-500",
+            showVerificationPanel ? "hidden xl:flex w-[340px]" : "hidden lg:flex w-[340px]"
         )}>
-            <div className="w-[260px]">
+            <div className="animate-in fade-in duration-300 w-[292px]">
                <ActivitySidebarContent />
             </div>
         </aside>
 
       </div>
+
     </div>
   );
 }
 
-// --- Sub-Components ---
+// --- Components ---
 
 function ActivitySidebarContent() {
   return (
-    <div className="space-y-6 text-xs">
-      {/* Top Fact-Checkers */}
+    <div className="space-y-10">
+      {/* People to Follow */}
       <div>
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold text-zinc-200">Top Fact-Checkers</h3>
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="font-bold text-white">People to follow</h3>
+          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-5">
           {[
-            { name: 'Khoulod Mohamed', handle: '@khmohamed', score: '98% Acc' },
-            { name: 'Mostafa Mohamed', handle: '@mostafa2020', score: '94% Acc' },
-            { name: 'Nada Ahmed', handle: '@nadaahmed', score: '91% Acc' }
+            { name: 'Khoulod Mohamed', handle: '@khmohamed', followed: false },
+            { name: 'Mostafa Mohamed', handle: '@mostafa2020', followed: true },
+            { name: 'Nada Ahmed', handle: '@nadaahmed', followed: false }
           ].map((person, i) => (
-            <div key={i} className="card-sleek p-2.5 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-7 h-7 rounded-full bg-zinc-800" />
+            <div key={i} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden">
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}&backgroundColor=18181b`} alt="avatar" className="w-full h-full object-cover" />
+                </div>
                 <div>
-                  <div className="font-medium text-white">{person.name}</div>
-                  <div className="text-[10px] font-mono text-zinc-400">{person.handle}</div>
+                  <div className="text-sm font-bold text-white">{person.name}</div>
+                  <div className="text-[11px] font-medium text-slate-400">{person.handle}</div>
                 </div>
               </div>
-              <span className="text-[10px] font-mono text-emerald-400 font-semibold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20">
-                {person.score}
-              </span>
+              <button className={`px-4 py-1.5 rounded-md text-xs font-semibold transition ${person.followed ? "bg-white/10 text-slate-400 border border-transparent" : "bg-white/5 text-slate-200 border border-white/10 backdrop-blur-sm hover:bg-white/10"}`}>
+                {person.followed ? 'Followed' : 'Follow'}
+              </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Saved Claims */}
+      {/* You Saved Grid */}
       <div>
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold text-zinc-200">Saved Claims</h3>
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="font-bold text-white">You Saved</h3>
+          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
         </div>
-        <div className="space-y-2">
-          <div className="card-sleek p-2.5 rounded-lg flex flex-col gap-1 cursor-pointer hover:border-zinc-600 transition">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase">Renewable Energy</span>
-            <span className="text-xs font-medium text-zinc-200">Battery storage claim verified ✓</span>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 rounded-lg bg-gradient-to-tr from-slate-800 to-slate-900 overflow-hidden relative border border-white/10 backdrop-blur-md">
+            <div className="absolute inset-0 bg-black/20"></div>
+            <div className="absolute bottom-2 left-2 w-3 h-3 rounded bg-white/20 shadow-sm"></div>
           </div>
-          <div className="card-sleek p-2.5 rounded-lg flex flex-col gap-1 cursor-pointer hover:border-zinc-600 transition">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase">Clinical Trial</span>
-            <span className="text-xs font-medium text-zinc-200">Vaccine efficacy study data</span>
+          <div className="h-24 rounded-lg bg-gradient-to-br from-indigo-900/50 to-slate-800/50 backdrop-blur-md overflow-hidden border border-white/10"></div>
+          <div className="h-24 rounded-lg bg-gradient-to-br from-slate-700/50 to-slate-800/50 backdrop-blur-md overflow-hidden border border-white/10"></div>
+          <div className="h-24 rounded-lg bg-white/5 backdrop-blur-md overflow-hidden flex items-center justify-center relative border border-white/10">
+            <div className="absolute w-8 h-16 bg-white/10 rounded shadow-sm rotate-12"></div>
+            <div className="absolute w-4 h-12 bg-white/5 rounded left-4 -rotate-12"></div>
           </div>
         </div>
       </div>
 
-      {/* System Status */}
+      {/* Last Activity */}
       <div>
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold text-zinc-200">System Activity</h3>
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="font-bold text-white">Last Activity</h3>
+          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
         </div>
-        <div className="space-y-2 font-mono text-[11px] text-zinc-400">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span className="truncate">Claim #104 verified (92% conf)</span>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5"><MessageCircle className="w-4 h-4 text-blue-500 fill-blue-500" /></div>
+            <div className="text-[13px] text-slate-400">You've Commented on Ahmed Mohamed <span className="font-bold text-white">Shot</span></div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span className="truncate">Challenge filed on Claim #102</span>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5"><Heart className="w-4 h-4 text-red-500 fill-red-500" /></div>
+            <div className="text-[13px] text-slate-400">You've Liked Noha Mohamed <span className="font-bold text-white">Shot</span></div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5"><Bookmark className="w-4 h-4 text-slate-500" /></div>
+            <div className="text-[13px] text-slate-400">You've Saved Menna <span className="font-bold text-white">Shot</span> to your collection</div>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20 focus:bg-white/10 transition" />;
 }
 
 function Composer({
@@ -576,7 +495,6 @@ function Composer({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (content.trim().length < 5) return;
     onSubmit(content, showSource ? sourceUrl : undefined);
     setContent('');
     setSourceUrl('');
@@ -584,41 +502,48 @@ function Composer({
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
-      <textarea
-        value={content}
-        onChange={(event) => setContent(event.target.value)}
-        placeholder="Enter claim statement to fact-check..."
-        className="w-full h-24 input-sleek rounded-xl p-3 text-xs font-medium resize-none"
-      />
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <div className="flex gap-4">
+        <div className="w-12 h-12 rounded-full bg-white/5 flex-shrink-0 overflow-hidden">
+          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1">
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full h-32 bg-white/5 rounded-lg p-4 text-sm text-white outline-none border border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/20 focus:shadow-[0_0_20px_rgba(59,130,246,0.2)] focus:bg-white/10 transition-all duration-300 font-medium resize-none placeholder-slate-500"
+          />
+        </div>
+      </div>
 
       {showSource && (
-        <input 
-          type="url"
-          value={sourceUrl} 
-          onChange={(event) => setSourceUrl(event.target.value)} 
-          placeholder="Source URL (optional)" 
-          className="w-full input-sleek rounded-xl px-3 py-2 text-xs font-mono"
-        />
+        <div className="pl-16">
+          <TextInput value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="Attach a source URL (optional) for fact-checking" />
+        </div>
       )}
 
-      <div className="flex items-center justify-between pt-1">
-        <button 
-          type="button" 
-          onClick={() => setShowSource(!showSource)} 
-          className={cn("px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition", showSource ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white")}
-        >
-          <Globe className="w-3.5 h-3.5" /> Source Link
-        </button>
+      <div className="flex items-center justify-between pl-16 pt-2">
+        <div className="flex gap-1 border border-white/10 rounded-lg p-1 bg-white/5 shadow-sm">
+          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-400 hover:bg-white/5 rounded transition" title="Image">
+            <ImageIcon className="w-4 h-4" />
+          </button>
+          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-400 hover:bg-white/5 rounded transition" title="Video">
+            <Video className="w-4 h-4" />
+          </button>
+          <button type="button" onClick={() => setShowSource(!showSource)} className={cn("w-8 h-8 flex items-center justify-center rounded transition", showSource ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5")} title="Source URL">
+            <Globe className="w-4 h-4" />
+          </button>
+          <button type="button" className="w-8 h-8 flex items-center justify-center text-slate-400 hover:bg-white/5 rounded transition" title="Location">
+            <MapPin className="w-4 h-4" />
+          </button>
+        </div>
 
-        <button 
-          disabled={busy || content.trim().length < 5} 
-          className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40 transition"
-        >
-          {busy ? 'Verifying...' : 'Run Fact Check'}
+        <button disabled={busy || content.trim().length < 5} className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:bg-blue-700 transition shadow-sm">
+          {busy ? 'Publishing...' : 'Publish'}
         </button>
       </div>
-      {error && <ErrorBanner text={error} />}
+      {error && <div className="mt-2 pl-16"><ErrorBanner text={error} /></div>}
     </form>
   );
 }
@@ -639,90 +564,83 @@ function TimelinePostCard({
   onVerify: () => void;
 }) {
   const verification = post.latest_verification_summary;
-  const likes = ((post.id * 37) % 450) + 12;
-  const comments = ((post.id * 19) % 45) + 3;
+  
+  // Mock numbers for UI
+  const likes = Math.floor(Math.random() * 500) + 10;
+  const comments = Math.floor(Math.random() * 50) + 5;
+  const isLiked = Math.random() > 0.5;
 
   return (
     <div 
       className={cn(
-        "card-sleek rounded-xl p-4 cursor-pointer relative transition-all",
-        selected ? "border-emerald-500/50 bg-[#16161a]" : ""
+        "bg-[#18181b]/55 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow transition-all duration-300",
+        selected ? "border-blue-500 ring-2 ring-blue-500/20" : ""
       )}
       onClick={onSelect}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.username}`} alt="avatar" className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700" />
+      {/* Header (Author) */}
+      <div className="p-4 flex items-center justify-between border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shadow-sm">
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.username}`} alt="avatar" className="w-full h-full object-cover" />
+          </div>
           <div>
-            <div className="text-xs font-semibold text-white leading-none">{post.author.full_name || post.author.username}</div>
-            <div className="text-[10px] font-mono text-zinc-400 mt-0.5">@{post.author.username} · {formatDate(post.created_at)}</div>
+            <div className="text-[15px] font-bold text-white leading-tight">{post.author.full_name || post.author.username}</div>
+            <div className="text-xs text-slate-400 font-medium">@{post.author.username}</div>
           </div>
         </div>
-
-        {/* Score Badge */}
-        <div>
-          {verification ? (
-            <div className={cn(
-              "px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold flex items-center gap-1.5 border",
-              verification.score && verification.score > 70 ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : 
-              verification.score && verification.score < 40 ? "bg-rose-500/10 text-rose-300 border-rose-500/30" : 
-              "bg-amber-500/10 text-amber-300 border-amber-500/30"
-            )}>
-              <span className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                verification.score && verification.score > 70 ? "bg-emerald-400" :
-                verification.score && verification.score < 40 ? "bg-rose-400" : "bg-amber-400"
-              )}></span>
-              <span>{verification.score}/100</span>
+        {/* Badges */}
+        <div className="flex items-center gap-2">
+         {verification ? (
+            <div className={cn("px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border flex items-center gap-1.5 shadow-sm", 
+               verification.score && verification.score > 70 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+               verification.score && verification.score < 40 ? "bg-red-500/10 text-red-400 border-red-500/20" : 
+               "bg-amber-500/10 text-amber-400 border-amber-500/20")}
+            >
+               <ShieldCheck className="w-3.5 h-3.5"/> Fact-Checked: {verification.score}
             </div>
-          ) : (
+         ) : (
             <button 
               onClick={(e) => { e.stopPropagation(); onVerify(); }}
               disabled={!canVerify || busy}
-              className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded bg-white/5 text-slate-300 text-[10px] font-semibold uppercase tracking-widest border border-white/10 hover:bg-white/10 transition shadow-sm"
             >
-              {busy ? <Loader2 className="w-3 h-3 animate-spin text-emerald-400" /> : <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
-              <span>{busy ? 'Running...' : 'Verify Claim'}</span>
+               {busy ? 'Running AI...' : 'Verify Claim'}
             </button>
-          )}
+         )}
         </div>
       </div>
 
-      {/* Content */}
-      <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-normal mb-3 whitespace-pre-wrap">
-        {post.content}
-      </p>
-      
-      {post.source_url && (
-        <div className="mb-3 p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-center gap-2">
-          <Globe className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
-          <a 
-            href={post.source_url} 
-            target="_blank" 
-            rel="noreferrer" 
-            onClick={(e) => e.stopPropagation()} 
-            className="text-xs font-mono text-emerald-400 hover:underline truncate"
-          >
-            {getDomainFromUrl(post.source_url)}
-          </a>
-        </div>
-      )}
+      {/* Body (Content) */}
+      <div className="p-5">
+        <p className="text-slate-200 text-[15px] leading-relaxed whitespace-pre-wrap font-medium">
+          {post.content}
+        </p>
+        
+        {post.source_url && (
+          <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 group/link hover:bg-white/10 transition">
+            <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <a href={post.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-[13px] font-semibold text-blue-400 hover:text-blue-300 line-clamp-1">
+              {getDomainFromUrl(post.source_url)}
+            </a>
+          </div>
+        )}
+      </div>
 
-      {/* Footer */}
-      <div className="flex items-center gap-5 text-xs text-zinc-400 font-mono pt-1">
-        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
-          <Heart className="w-3.5 h-3.5" />
-          <span>{likes}</span>
-        </button>
-        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>{comments}</span>
-        </button>
-        <button className="flex items-center gap-1 hover:text-zinc-200 transition">
-          <Share2 className="w-3.5 h-3.5" />
-          <span>Share</span>
-        </button>
+      {/* Footer (Actions) */}
+      <div className="px-5 py-3 bg-white/5 border-t border-white/10 flex items-center gap-6 text-slate-400">
+        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
+          <Heart className={cn("w-4 h-4 transition", isLiked ? "text-red-500 fill-red-500" : "group-hover/icon:text-red-500")} />
+          <span className="text-[13px] font-bold">{likes}</span>
+        </div>
+        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
+          <MessageSquare className="w-4 h-4 transition group-hover/icon:text-blue-400" />
+          <span className="text-[13px] font-bold">{comments}</span>
+        </div>
+        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
+          <Share2 className="w-4 h-4 transition group-hover/icon:text-emerald-400" />
+          <span className="text-[13px] font-bold">Share</span>
+        </div>
       </div>
     </div>
   );
@@ -749,59 +667,40 @@ function VerificationPanel({
   busy: boolean;
   error: string | null;
 }) {
-  const score = verification.score ?? 50;
-
   return (
-    <div className="space-y-5">
-      {/* Score Overview Card */}
-      <div className="card-sleek rounded-xl p-4 space-y-3">
-        <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-6 relative overflow-hidden">
+        <div className="absolute -right-4 -bottom-4 opacity-10">
+          <ShieldCheck className="w-32 h-32 text-emerald-400" />
+        </div>
+        <div className="flex items-end justify-between relative z-10">
           <div>
-            <div className="text-[10px] font-mono uppercase text-zinc-400">Verity Score</div>
-            <div className="text-3xl font-bold text-white mt-0.5">{score} <span className="text-xs text-zinc-400 font-mono">/ 100</span></div>
+            <div className="text-[10px] uppercase font-semibold text-emerald-500 tracking-widest">Verity Score</div>
+            <div className="text-4xl font-bold text-emerald-400 mt-1">{verification.score ?? '--'}</div>
           </div>
-          <div className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-mono font-medium text-emerald-400">
-            {verification.status}
+          <div className="text-right text-xs font-semibold text-emerald-300 bg-emerald-500/20 backdrop-blur px-3 py-1.5 rounded border border-emerald-500/20 shadow-sm">
+            <div>{verification.status}</div>
           </div>
         </div>
-
-        <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${score}%` }}></div>
-        </div>
-
-        {verification.final_decision_note && (
-          <p className="text-xs text-zinc-300 leading-relaxed pt-1 border-t border-zinc-800 font-medium">
-            {verification.final_decision_note}
-          </p>
-        )}
+        {verification.final_decision_note && <p className="mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border border-emerald-500/20 font-medium leading-relaxed">{verification.final_decision_note}</p>}
       </div>
 
-      {/* Extracted Claims */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-mono uppercase text-zinc-400">Extracted Claims ({verification.claims.length})</h4>
-
+      <div className="space-y-4">
         {verification.claims.map((claim) => {
-          const config = VERDICT_CONFIG[claim.verdict] || { label: claim.verdict, bgColor: 'bg-zinc-800', color: 'text-zinc-300' };
+          const config = VERDICT_CONFIG[claim.verdict];
           return (
-            <div key={claim.id} className="card-sleek rounded-xl p-4 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className={cn('rounded px-2 py-0.5 text-[10px] font-mono font-semibold uppercase border', config.bgColor, config.color)}>
-                  {config.label}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {Math.round(claim.confidence * 100)}% Confidence
-                </span>
+            <div key={claim.id} className="rounded-xl border border-white/10 shadow-sm p-5 bg-white/5 transition hover:bg-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <span className={cn('rounded px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest border', config.bgColor.replace('50', '500/10'), config.color.replace('700', '400'), config.color.replace('text-', 'border-').replace('700', '500/20'))}>{config.label}</span>
+                <span className="text-xs font-semibold text-slate-400 bg-white/5 px-2 py-1 rounded-md border border-white/10">{Math.round(claim.confidence * 100)}% conf</span>
               </div>
-
-              <p className="text-xs font-semibold text-white leading-relaxed">{claim.text}</p>
-              <p className="text-xs text-zinc-300 leading-relaxed font-normal bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
-                {claim.reasoning}
-              </p>
+              <p className="text-sm font-semibold text-white mb-2 leading-relaxed">{claim.text}</p>
+              <p className="text-[13px] leading-relaxed text-slate-300 font-medium">{claim.reasoning}</p>
 
               {(claim.sources.supporting.length > 0 || claim.sources.contradicting.length > 0) && (
-                <div className="pt-2 border-t border-zinc-800 space-y-2">
-                  {claim.sources.supporting.length > 0 && <SourceBox title="Supporting Sources" sources={claim.sources.supporting} />}
-                  {claim.sources.contradicting.length > 0 && <SourceBox title="Contradicting Sources" sources={claim.sources.contradicting} />}
+                <div className="mt-5 pt-4 border-t border-white/10 grid gap-4">
+                  {claim.sources.supporting.length > 0 && <SourceBox title="Supporting Evidence" sources={claim.sources.supporting} />}
+                  {claim.sources.contradicting.length > 0 && <SourceBox title="Contradicting Evidence" sources={claim.sources.contradicting} />}
                 </div>
               )}
             </div>
@@ -809,42 +708,29 @@ function VerificationPanel({
         })}
       </div>
 
-      {/* Dispute Section */}
-      <div className="card-sleek rounded-xl p-4 space-y-3 border-amber-500/20">
-        <div className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5" />
-          Dispute Verdict
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-6">
+        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-400">
+          <AlertCircle className="h-5 w-5" />
+          Dispute this verdict
         </div>
-        <p className="text-xs text-zinc-400">Submit evidence to challenge this AI verification.</p>
-        
         {canChallenge ? (
-          <div className="space-y-2.5">
-            <select 
-              value={challengeReason} 
-              onChange={(event) => setChallengeReason(event.target.value)} 
-              className="w-full input-sleek rounded-lg px-3 py-2 text-xs font-mono"
-            >
-              {CHALLENGE_REASONS.map(([value, label]) => <option key={value} value={value} className="bg-zinc-900">{label}</option>)}
+          <div className="space-y-3">
+            <select value={challengeReason} onChange={(event) => setChallengeReason(event.target.value)} className="w-full rounded-lg border border-amber-500/20 bg-black/20 text-slate-200 px-4 py-2.5 text-sm font-medium outline-none focus:border-amber-500/50 focus:ring-1 ring-amber-500/20 transition shadow-sm">
+              {CHALLENGE_REASONS.map(([value, label]) => <option key={value} value={value} className="bg-slate-900 text-white">{label}</option>)}
             </select>
             <textarea
               value={challengeComment}
               onChange={(event) => setChallengeComment(event.target.value)}
-              placeholder="Provide evidence or context for your dispute..."
-              className="h-16 w-full input-sleek rounded-lg p-2.5 text-xs resize-none"
+              placeholder="Why is this verdict wrong?"
+              className="h-24 w-full rounded-lg border border-amber-500/20 bg-black/20 text-slate-200 px-4 py-3 text-sm font-medium outline-none focus:border-amber-500/50 focus:ring-1 ring-amber-500/20 transition resize-none shadow-sm placeholder-slate-500"
             />
             {error && <ErrorBanner text={error} />}
-            <button 
-              onClick={onChallenge} 
-              disabled={busy} 
-              className="w-full rounded-lg bg-amber-600 hover:bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-40"
-            >
-              {busy ? 'Submitting...' : 'Submit Dispute'}
+            <button onClick={onChallenge} disabled={busy} className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50 shadow-sm">
+              {busy ? 'Submitting...' : 'Submit Challenge'}
             </button>
           </div>
         ) : (
-          <div className="text-xs font-mono text-zinc-400 text-center py-2">
-            Sign in to challenge verdicts.
-          </div>
+          <div className="text-xs font-semibold text-amber-400 bg-amber-500/10 p-4 rounded-lg text-center border border-amber-500/20">Sign in to challenge verdicts.</div>
         )}
       </div>
     </div>
@@ -854,20 +740,12 @@ function VerificationPanel({
 function SourceBox({ title, sources }: { title: string; sources: { url: string; snippet: string }[] }) {
   return (
     <div>
-      <div className="text-[10px] font-mono text-zinc-400 uppercase mb-1.5">{title}</div>
-      <div className="space-y-1.5">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-3">{title}</div>
+      <div className="space-y-2">
         {sources.map((source) => (
-          <a 
-            key={source.url} 
-            href={source.url} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="block rounded-lg bg-zinc-900 p-2 border border-zinc-800 hover:border-zinc-600 transition"
-          >
-            <div className="text-xs font-mono text-emerald-400 flex items-center gap-1 mb-0.5">
-              <Globe className="w-3 h-3" /> {getDomainFromUrl(source.url)}
-            </div>
-            <div className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">{source.snippet}</div>
+          <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block rounded-lg bg-white/5 border border-white/10 p-3 hover:bg-white/10 hover:border-white/20 hover:shadow-sm transition group">
+            <div className="text-[13px] font-semibold text-blue-400 flex items-center gap-1.5 mb-1.5 group-hover:text-blue-300"><Globe className="w-3.5 h-3.5" /> {getDomainFromUrl(source.url)}</div>
+            <div className="text-[12px] text-slate-300 line-clamp-2 leading-relaxed font-medium">{source.snippet}</div>
           </a>
         ))}
       </div>
@@ -901,45 +779,22 @@ function ModerationCard({
   onResolve: () => void;
 }) {
   return (
-    <div className="card-sleek rounded-xl p-3.5 space-y-2.5">
-      <div className="font-medium text-white text-xs">@{review.post.author.username}'s claim</div>
-      <p className="text-xs text-zinc-300 bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 line-clamp-2">{review.post.content}</p>
-      <div className="text-[10px] font-mono text-amber-400 bg-amber-500/10 inline-block px-2 py-0.5 rounded border border-amber-500/20">
-        Score {review.verification.score ?? '--'} · {review.verification.challenge_count} Challenges
+    <div className="rounded-xl border border-white/10 bg-white/5 shadow-sm p-5 hover:bg-white/10 transition-all duration-300">
+      <div className="font-semibold text-white text-sm mb-2">@{review.post.author.username}'s post</div>
+      <p className="text-sm text-slate-300 line-clamp-2 mb-4 bg-black/20 p-3 rounded-lg border border-white/10 font-medium">{review.post.content}</p>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 inline-block px-2.5 py-1.5 rounded mb-4 border border-amber-500/20">
+        Score {review.verification.score ?? '--'} · {review.verification.challenge_count} challenges
       </div>
-      <div className="space-y-2">
-        <select 
-          value={decision} 
-          onChange={(event) => setDecision(event.target.value as 'uphold' | 'revise' | 'remove_verdict')} 
-          className="w-full input-sleek rounded-lg px-2.5 py-1.5 text-xs font-mono"
-        >
-          <option value="uphold" className="bg-zinc-900">Uphold verdict</option>
-          <option value="revise" className="bg-zinc-900">Revise verdict</option>
-          <option value="remove_verdict" className="bg-zinc-900">Remove verdict</option>
+      <div className="space-y-3">
+        <select value={decision} onChange={(event) => setDecision(event.target.value as 'uphold' | 'revise' | 'remove_verdict')} className="w-full rounded-lg border border-white/10 bg-black/20 text-white px-4 py-2.5 text-sm font-medium outline-none focus:border-white/20">
+          <option value="uphold" className="bg-slate-900">Uphold verdict</option>
+          <option value="revise" className="bg-slate-900">Revise verdict</option>
+          <option value="remove_verdict" className="bg-slate-900">Remove verdict</option>
         </select>
-        <textarea 
-          value={note} 
-          onChange={(event) => setNote(event.target.value)} 
-          placeholder="Moderator note (required)" 
-          className="h-14 w-full input-sleek rounded-lg p-2 text-xs resize-none" 
-        />
-        <input 
-          value={overrideScore} 
-          onChange={(event) => setOverrideScore(event.target.value)} 
-          placeholder="Override score (0-100)" 
-          className="w-full input-sleek rounded-lg px-2.5 py-1.5 text-xs font-mono" 
-        />
-        <textarea 
-          value={overrideSummary} 
-          onChange={(event) => setOverrideSummary(event.target.value)} 
-          placeholder="Public override summary" 
-          className="h-14 w-full input-sleek rounded-lg p-2 text-xs resize-none" 
-        />
-        <button 
-          onClick={onResolve} 
-          disabled={busy || note.trim().length < 5} 
-          className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
-        >
+        <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Moderator note (required)" className="h-20 w-full rounded-lg border border-white/10 bg-black/20 text-white px-4 py-3 text-sm font-medium outline-none resize-none focus:border-white/20 placeholder-slate-500" />
+        <input value={overrideScore} onChange={(event) => setOverrideScore(event.target.value)} placeholder="Override score (optional)" className="w-full rounded-lg border border-white/10 bg-black/20 text-white px-4 py-2.5 text-sm font-medium outline-none focus:border-white/20 placeholder-slate-500" />
+        <textarea value={overrideSummary} onChange={(event) => setOverrideSummary(event.target.value)} placeholder="Public override summary (optional)" className="h-20 w-full rounded-lg border border-white/10 bg-black/20 text-white px-4 py-3 text-sm font-medium outline-none resize-none focus:border-white/20 placeholder-slate-500" />
+        <button onClick={onResolve} disabled={busy || note.trim().length < 5} className="w-full rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition disabled:opacity-50">
           {busy ? 'Resolving...' : 'Resolve Review'}
         </button>
       </div>
@@ -948,18 +803,13 @@ function ModerationCard({
 }
 
 function Loading({ text }: { text: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2.5 text-xs font-mono text-zinc-400 py-8 card-sleek rounded-xl">
-      <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
-      <span>{text}</span>
-    </div>
-  );
+  return <div className="flex flex-col items-center justify-center gap-3 text-sm font-semibold text-slate-400 py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-500" />{text}</div>;
 }
 
 function ErrorBanner({ text }: { text: string }) {
-  return (
-    <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300 font-medium">
-      {text}
-    </div>
-  );
+  return <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 font-semibold shadow-sm">{text}</div>;
+}
+
+function tab(active: boolean) {
+  return cn('flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-all', active ? 'bg-white/10 text-white shadow-sm border border-white/10' : 'text-slate-400 hover:text-slate-200');
 }
