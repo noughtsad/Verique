@@ -4,11 +4,12 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { login, register } from '@/lib/api';
 import { Heart, MessageCircle, UserPlus, Repeat2, ShieldCheck, Flame, TrendingUp, CheckCircle2, Bookmark, Share2, Eye } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000';
 import { useQueryClient } from '@tanstack/react-query';
+import { login, register } from '@/lib/api';
+import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 import './login.css';
 
 // ─── Canvas animation config ──────────────────────────────────────────────────
@@ -93,36 +94,36 @@ function buildGrid(W: number, H: number): Shape[] {
 
 // ─── Globe card data ──────────────────────────────────────────────────────────
 const GLOBE_CARDS = [
-  { user: 'alex_news',   init: 'A', color: '#6366f1', text: 'Scientists confirm breakthrough in renewable energy storage.', likes: 1240, verified: true },
+  { user: 'alex_news', init: 'A', color: '#6366f1', text: 'Scientists confirm breakthrough in renewable energy storage.', likes: 1240, verified: true },
   { user: 'priya_facts', init: 'P', color: '#06b6d4', text: 'New study: 3hrs sleep is enough — CLAIM DISPUTED', likes: 892, verified: false },
-  { user: 'mark_truth',  init: 'M', color: '#22c55e', text: '🌍 Climate summit agrees on net-zero by 2040 roadmap.', likes: 3421, verified: true },
-  { user: 'sara_daily',  init: 'S', color: '#f97316', text: 'Breaking: Central bank raises rates by 0.5% amid inflation.', likes: 567, verified: true },
-  { user: 'dev_post',    init: 'D', color: '#a78bfa', text: 'AI models outperform doctors in early cancer detection.', likes: 2100, verified: true },
+  { user: 'mark_truth', init: 'M', color: '#22c55e', text: '🌍 Climate summit agrees on net-zero by 2040 roadmap.', likes: 3421, verified: true },
+  { user: 'sara_daily', init: 'S', color: '#f97316', text: 'Breaking: Central bank raises rates by 0.5% amid inflation.', likes: 567, verified: true },
+  { user: 'dev_post', init: 'D', color: '#a78bfa', text: 'AI models outperform doctors in early cancer detection.', likes: 2100, verified: true },
   { user: 'leila_watch', init: 'L', color: '#ec4899', text: 'CLAIM: Moon landing footage shot in Hollywood studio.', likes: 312, verified: false },
-  { user: 'omar_lens',   init: 'O', color: '#facc15', text: 'Record turnout in municipal elections across 14 states.', likes: 789, verified: true },
+  { user: 'omar_lens', init: 'O', color: '#facc15', text: 'Record turnout in municipal elections across 14 states.', likes: 789, verified: true },
   { user: 'nina_verify', init: 'N', color: '#34d399', text: 'New vaccine shows 94% efficacy in phase 3 trials.', likes: 4502, verified: true },
-  { user: 'kai_report',  init: 'K', color: '#ef4444', text: 'Stock markets hit all-time high on strong earnings data.', likes: 1023, verified: true },
-  { user: 'jess_check',  init: 'J', color: '#60a5fa', text: 'DISPUTED: Drinking lemon water daily cures diabetes.', likes: 201, verified: false },
-  { user: 'raj_globe',   init: 'R', color: '#06b6d4', text: 'Space agency announces crewed Mars mission for 2031.', likes: 5890, verified: true },
-  { user: 'bella_scan',  init: 'B', color: '#22c55e', text: 'City council approves €2B public transport overhaul.', likes: 1345, verified: true },
-  { user: 'tomás_now',   init: 'T', color: '#9ca3af', text: 'FACT-CHECKED ✓ Water fluoridation is safe and effective.', likes: 678, verified: true },
-  { user: 'yuna_pulse',  init: 'Y', color: '#f97316', text: 'Earthquake magnitude 6.2 strikes Pacific Rim — no tsunami.', likes: 2231, verified: true },
-  { user: 'finn_data',   init: 'F', color: '#a78bfa', text: 'CLAIM: 5G towers cause health issues. Evidence: None found.', likes: 445, verified: false },
-  { user: 'chen_live',   init: 'C', color: '#ec4899', text: 'Researchers develop biodegradable plastic alternative.', likes: 3102, verified: true },
-  { user: 'amara_hq',   init: 'A', color: '#6366f1', text: '78% of Gen-Z use social media as primary news source.', likes: 1567, verified: true },
-  { user: 'sol_facts',   init: 'S', color: '#facc15', text: 'MISLEADING: Headline omits crucial context on tax reform.', likes: 934, verified: false },
-  { user: 'lena_brief',  init: 'L', color: '#34d399', text: 'WHO declares end of mpox global health emergency.', likes: 2780, verified: true },
-  { user: 'hugo_press',  init: 'H', color: '#ef4444', text: 'CLAIM: New food additive linked to cancer. Study retracted.', likes: 388, verified: false },
-  { user: 'mia_signal',  init: 'M', color: '#60a5fa', text: 'Quantum computing startup achieves 1000-qubit milestone.', likes: 4100, verified: true },
-  { user: 'zara_now',    init: 'Z', color: '#9ca3af', text: 'Parliament passes landmark digital privacy legislation.', likes: 1890, verified: true },
-  { user: 'ivan_check',  init: 'I', color: '#a78bfa', text: 'DISPUTED: Historic temps "not unprecedented" — False.', likes: 512, verified: false },
-  { user: 'ada_facts',   init: 'A', color: '#22c55e', text: 'Renewable energy now supplies 42% of global electricity.', likes: 6230, verified: true },
-  { user: 'rex_pulse',   init: 'R', color: '#f97316', text: 'Study links ultra-processed food to higher dementia risk.', likes: 3401, verified: true },
-  { user: 'nora_wire',   init: 'N', color: '#06b6d4', text: 'CLAIM: Garlic injections cure COVID-19. No evidence found.', likes: 145, verified: false },
-  { user: 'eli_scan',    init: 'E', color: '#ec4899', text: 'New deep-sea species discovered off coast of Azores.', likes: 2910, verified: true },
-  { user: 'tao_brief',   init: 'T', color: '#6366f1', text: 'Global literacy rate reaches historic high of 91%.', likes: 1750, verified: true },
-  { user: 'pia_verify',  init: 'P', color: '#facc15', text: 'MISLEADING: Out-of-context clip distorts politician speech.', likes: 670, verified: false },
-  { user: 'kas_live',    init: 'K', color: '#34d399', text: 'Researchers map complete human epigenome for first time.', likes: 3850, verified: true },
+  { user: 'kai_report', init: 'K', color: '#ef4444', text: 'Stock markets hit all-time high on strong earnings data.', likes: 1023, verified: true },
+  { user: 'jess_check', init: 'J', color: '#60a5fa', text: 'DISPUTED: Drinking lemon water daily cures diabetes.', likes: 201, verified: false },
+  { user: 'raj_globe', init: 'R', color: '#06b6d4', text: 'Space agency announces crewed Mars mission for 2031.', likes: 5890, verified: true },
+  { user: 'bella_scan', init: 'B', color: '#22c55e', text: 'City council approves €2B public transport overhaul.', likes: 1345, verified: true },
+  { user: 'tomás_now', init: 'T', color: '#9ca3af', text: 'FACT-CHECKED ✓ Water fluoridation is safe and effective.', likes: 678, verified: true },
+  { user: 'yuna_pulse', init: 'Y', color: '#f97316', text: 'Earthquake magnitude 6.2 strikes Pacific Rim — no tsunami.', likes: 2231, verified: true },
+  { user: 'finn_data', init: 'F', color: '#a78bfa', text: 'CLAIM: 5G towers cause health issues. Evidence: None found.', likes: 445, verified: false },
+  { user: 'chen_live', init: 'C', color: '#ec4899', text: 'Researchers develop biodegradable plastic alternative.', likes: 3102, verified: true },
+  { user: 'amara_hq', init: 'A', color: '#6366f1', text: '78% of Gen-Z use social media as primary news source.', likes: 1567, verified: true },
+  { user: 'sol_facts', init: 'S', color: '#facc15', text: 'MISLEADING: Headline omits crucial context on tax reform.', likes: 934, verified: false },
+  { user: 'lena_brief', init: 'L', color: '#34d399', text: 'WHO declares end of mpox global health emergency.', likes: 2780, verified: true },
+  { user: 'hugo_press', init: 'H', color: '#ef4444', text: 'CLAIM: New food additive linked to cancer. Study retracted.', likes: 388, verified: false },
+  { user: 'mia_signal', init: 'M', color: '#60a5fa', text: 'Quantum computing startup achieves 1000-qubit milestone.', likes: 4100, verified: true },
+  { user: 'zara_now', init: 'Z', color: '#9ca3af', text: 'Parliament passes landmark digital privacy legislation.', likes: 1890, verified: true },
+  { user: 'ivan_check', init: 'I', color: '#a78bfa', text: 'DISPUTED: Historic temps "not unprecedented" — False.', likes: 512, verified: false },
+  { user: 'ada_facts', init: 'A', color: '#22c55e', text: 'Renewable energy now supplies 42% of global electricity.', likes: 6230, verified: true },
+  { user: 'rex_pulse', init: 'R', color: '#f97316', text: 'Study links ultra-processed food to higher dementia risk.', likes: 3401, verified: true },
+  { user: 'nora_wire', init: 'N', color: '#06b6d4', text: 'CLAIM: Garlic injections cure COVID-19. No evidence found.', likes: 145, verified: false },
+  { user: 'eli_scan', init: 'E', color: '#ec4899', text: 'New deep-sea species discovered off coast of Azores.', likes: 2910, verified: true },
+  { user: 'tao_brief', init: 'T', color: '#6366f1', text: 'Global literacy rate reaches historic high of 91%.', likes: 1750, verified: true },
+  { user: 'pia_verify', init: 'P', color: '#facc15', text: 'MISLEADING: Out-of-context clip distorts politician speech.', likes: 670, verified: false },
+  { user: 'kas_live', init: 'K', color: '#34d399', text: 'Researchers map complete human epigenome for first time.', likes: 3850, verified: true },
 ];
 
 function getSpherePositions(n: number, R: number) {
@@ -131,9 +132,11 @@ function getSpherePositions(n: number, R: number) {
     const y = 1 - (i / (n - 1)) * 2;
     const radius = Math.sqrt(1 - y * y);
     const theta = golden * i;
+    // Round to 4dp — prevents SSR/client hydration mismatch from floating point string differences
+    const round = (v: number) => Math.round(v * 10000) / 10000;
     return {
-      rotY: (Math.atan2(Math.cos(theta) * radius, Math.sin(theta) * radius) * 180) / Math.PI,
-      rotX: (-Math.asin(y) * 180) / Math.PI,
+      rotY: round((Math.atan2(Math.cos(theta) * radius, Math.sin(theta) * radius) * 180) / Math.PI),
+      rotX: round((-Math.asin(y) * 180) / Math.PI),
     };
   });
 }
@@ -147,94 +150,11 @@ export default function LoginPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authError, setAuthError] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const blurCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const c = canvas.getContext('2d')!;
-    if (!c) return;
-
-    let shapes: Shape[] = [], rafId: number;
-    let pointer: { x: number; y: number } | null = null;
-    let activity = 0;
-    let waves: { x: number; y: number; startTime: number }[] = [];
-    let maskRects: DOMRect[] = [], frameCount = 0, maskOverride = false, W = 0, H = 0;
-
-    const iconPaths = {
-      heart: new Path2D(ICON_PATHS_STRINGS.heart),
-      user: new Path2D(ICON_PATHS_STRINGS.user),
-      message: new Path2D(ICON_PATHS_STRINGS.message),
-      repeat: new Path2D(ICON_PATHS_STRINGS.repeat),
-      check: new Path2D(ICON_PATHS_STRINGS.check),
-    };
-
-    function init() {
-      W = window.innerWidth; H = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
-      canvas!.width = W * dpr; canvas!.height = H * dpr;
-      canvas!.style.width = W + 'px'; canvas!.style.height = H + 'px';
-      c.setTransform(1, 0, 0, 1, 0, 0); c.scale(dpr, dpr);
-      shapes = buildGrid(W, H);
-    }
-
-    function tick() {
-      const radius = Math.min(W, H) * (RADIUS_VMIN / 100), now = performance.now();
-      c.clearRect(0, 0, W, H); c.fillStyle = '#080808'; c.fillRect(0, 0, W, H);
-      activity *= 0.93;
-      if (++frameCount % 10 === 0) maskRects = Array.from(document.querySelectorAll('[data-shape-mask]')).map(el => el.getBoundingClientRect());
-      const maxDist = Math.sqrt(W * W + H * H);
-      waves = waves.filter(w => (now - w.startTime) / 1000 * WAVE_SPEED < maxDist + WAVE_WIDTH);
-
-      for (const s of shapes) {
-        const pad = GAP / 2;
-        const masked = !maskOverride && maskRects.some(r => s.x >= r.left - pad && s.x <= r.right + pad && s.y >= r.top - pad && s.y <= r.bottom + pad);
-        if (masked) { s.scale += (0 - s.scale) * durationToFactor(SPEED_OUT); if (s.scale < 0.005) s.scale = 0; continue; }
-
-        let pi = 0;
-        if (pointer && activity > 0.001) {
-          const dist = Math.sqrt((s.x - pointer.x) ** 2 + (s.y - pointer.y) ** 2);
-          pi = smoothstep(1 - dist / radius) * activity;
-          if (pi > 0.05 && !s.hovered) { s.hovered = true; s.maxScale = rnd(MIN_HOVER_SCALE, MAX_HOVER_SCALE); s.angle = rnd(0, Math.PI * 2); }
-          else if (pi <= 0.05) s.hovered = false;
-        } else s.hovered = false;
-
-        let wi = 0;
-        for (const wave of waves) { const wr = (now - wave.startTime) / 1000 * WAVE_SPEED; const wd = Math.sqrt((s.x - wave.x) ** 2 + (s.y - wave.y) ** 2); const t = 1 - Math.abs(wd - wr) / WAVE_WIDTH; if (t > 0) wi = Math.max(wi, Math.sin(Math.PI * t)); }
-
-        const target = Math.max(REST_SCALE + pi * (s.maxScale - REST_SCALE), REST_SCALE + wi * (s.maxScale - REST_SCALE));
-        s.scale += (target - s.scale) * (target > s.scale ? durationToFactor(SPEED_IN) : durationToFactor(SPEED_OUT));
-        if (s.scale < REST_SCALE * 0.15) continue;
-
-        c.save();
-        c.translate(s.x, s.y);
-        c.rotate(s.angle);
-        c.scale(s.scale, s.scale);
-
-        const fill = resolveFill(c, s.color, s.size);
-        c.strokeStyle = fill as string;
-        
-        drawIcon(c, s, iconPaths);
-
-        c.restore();
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    function triggerWave(x?: number, y?: number) {
-      waves.push({ x: x ?? W / 2, y: y ?? H / 2, startTime: performance.now() });
-      maskOverride = true;
-      setTimeout(() => { maskOverride = false; }, Math.sqrt(W * W + H * H) / WAVE_SPEED * 1000);
-    }
-
-    const onMove = (e: PointerEvent) => { pointer = { x: e.clientX, y: e.clientY }; activity = 1; };
-    const onClick = (e: MouseEvent) => triggerWave(e.clientX, e.clientY);
-
-    init(); rafId = requestAnimationFrame(tick);
-    window.addEventListener('resize', init); window.addEventListener('pointermove', onMove); window.addEventListener('click', onClick);
-    triggerWave();
     const t = setTimeout(() => setFormVisible(true), 600);
-    return () => { cancelAnimationFrame(rafId); window.removeEventListener('resize', init); window.removeEventListener('pointermove', onMove); window.removeEventListener('click', onClick); clearTimeout(t); };
+    return () => clearTimeout(t);
   }, []);
 
   // ── Auth ────────────────────────────────────────────────────────────────────
@@ -252,8 +172,11 @@ export default function LoginPage() {
 
   return (
     <div className="lp-root">
-      {/* Canvas backdrop */}
-      <canvas ref={canvasRef} className="lp-canvas" />
+      {/* Main canvas backdrop */}
+      <AnimatedCanvas blurCanvasRef={blurCanvasRef} blurWidthRatio={0.44} className="lp-canvas" />
+
+      {/* Blur canvas — draws a blurred copy of main canvas over the left panel */}
+      <canvas ref={blurCanvasRef} className="lp-blur-canvas" />
 
       {/* Grid overlay */}
       <div className="lp-grid" />
