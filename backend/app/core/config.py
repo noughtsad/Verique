@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # JWT Settings
     JWT_SECRET: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
     CHALLENGE_THRESHOLD: int = 1
     SEED_MODERATOR_EMAIL: str = "moderator@verique.local"
     SEED_MODERATOR_PASSWORD: str = "Moderator123!"

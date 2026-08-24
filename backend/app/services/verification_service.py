@@ -85,8 +85,8 @@ class VerificationService:
         verdict_weights = {
             "strongly_supported": 1.0,   # Perfect score
             "supported": 0.85,            # Very good
-            "mixed": 0.50,                # Neutral
-            "weak": 0.35,                 # Below average
+            "mixed": 0.40,                # Penalize partial misinformation (was 0.50)
+            "weak": 0.30,                 # Below average
             "contradicted": 0.10,         # Poor
             "outdated": 0.40,             # Slightly below neutral
             "not_verifiable": 0.50        # Neutral (not the claim's fault)
@@ -119,7 +119,7 @@ class VerificationService:
             # Source count bonus: Logarithmic scaling
             # More sources = higher confidence in the score
             total_sources = supporting_count + contradicting_count
-            if total_sources > 0:
+            if total_sources > 0 and claim.verdict.value in ["strongly_supported", "supported", "not_verifiable"]:
                 # Support ratio bonus
                 support_ratio = supporting_count / total_sources if total_sources > 0 else 0
                 
@@ -134,6 +134,14 @@ class VerificationService:
                 final_score = min(1.0, final_score)  # Cap at 1.0
             else:
                 final_score = base_score
+                
+            # STRICT PENALTY: Prevent mixed/negative verdicts from getting a passing score
+            if claim.verdict.value == "mixed":
+                final_score = min(0.45, final_score)
+            elif claim.verdict.value == "weak":
+                final_score = min(0.35, final_score)
+            elif claim.verdict.value == "contradicted":
+                final_score = min(0.20, final_score)
             
             weighted_sum += final_score * position_weight
             total_weight += position_weight
@@ -146,7 +154,10 @@ class VerificationService:
         
         # Apply global source bonus
         # If the page has many supporting sources overall, boost the score
-        if total_supporting > 0:
+        # ONLY if there are no explicitly contradicted or mixed claims to prevent bypassing penalties
+        has_misinformation = any(c.verdict.value in ["mixed", "weak", "contradicted"] for c in claims)
+        
+        if total_supporting > 0 and not has_misinformation:
             total_sources = total_supporting + total_contradicting
             global_support_ratio = total_supporting / total_sources
             
