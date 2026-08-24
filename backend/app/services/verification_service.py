@@ -110,11 +110,11 @@ class VerificationService:
             # Position weight: Earlier claims are more important
             position_weight = 1.0 + (0.3 / (i + 1))
             
-            # Get base verdict score
+            # Get base verdict score (0.0 to 1.0)
             verdict_score = verdict_weights.get(claim.verdict.value, 0.5)
             
-            # Apply confidence multiplier
-            base_score = verdict_score * claim.confidence
+            # Apply confidence multiplier: pull the score towards neutral (0.5) when confidence is low
+            base_score = 0.5 + (verdict_score - 0.5) * claim.confidence
             
             # Source count bonus: Logarithmic scaling
             # More sources = higher confidence in the score

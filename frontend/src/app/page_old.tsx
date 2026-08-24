@@ -274,7 +274,7 @@ export default function Home() {
           </div>
 
           {/* Timeline Feed (Standard Single Column) */}
-          <div className="flex flex-col gap-6 pb-20 max-w-2xl mx-auto w-full">
+          <div className="flex flex-col gap-6 pb-20 max-w-2xl mx-auto">
             {postsQuery.isLoading ? (
               <div className="flex justify-center p-8 w-full"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
             ) : postsQuery.data?.length ? (
@@ -667,53 +667,22 @@ function VerificationPanel({
   busy: boolean;
   error: string | null;
 }) {
-  const score = verification.score ?? 0;
-  const hasScore = verification.score !== null && verification.score !== undefined;
-  
-  let containerColor = "border-slate-500/20 bg-slate-500/10";
-  let labelColor = "text-slate-500";
-  let scoreColor = "text-slate-400";
-  let badgeColor = "text-slate-300 bg-slate-500/20 border-slate-500/20";
-  let iconColor = "text-slate-400";
-
-  if (hasScore) {
-    if (score >= 70) {
-      containerColor = "border-emerald-500/20 bg-emerald-500/10";
-      labelColor = "text-emerald-500";
-      scoreColor = "text-emerald-400";
-      badgeColor = "text-emerald-300 bg-emerald-500/20 border-emerald-500/20";
-      iconColor = "text-emerald-400";
-    } else if (score >= 40) {
-      containerColor = "border-amber-500/20 bg-amber-500/10";
-      labelColor = "text-amber-500";
-      scoreColor = "text-amber-400";
-      badgeColor = "text-amber-300 bg-amber-500/20 border-amber-500/20";
-      iconColor = "text-amber-400";
-    } else {
-      containerColor = "border-red-500/20 bg-red-500/10";
-      labelColor = "text-red-500";
-      scoreColor = "text-red-400";
-      badgeColor = "text-red-300 bg-red-500/20 border-red-500/20";
-      iconColor = "text-red-400";
-    }
-  }
-
   return (
     <div className="space-y-4">
-      <div className={cn("rounded-xl border p-6 relative overflow-hidden", containerColor)}>
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-6 relative overflow-hidden">
         <div className="absolute -right-4 -bottom-4 opacity-10">
-          <ShieldCheck className={cn("w-32 h-32", iconColor)} />
+          <ShieldCheck className="w-32 h-32 text-emerald-400" />
         </div>
         <div className="flex items-end justify-between relative z-10">
           <div>
-            <div className={cn("text-[10px] uppercase font-semibold tracking-widest", labelColor)}>Verity Score</div>
-            <div className={cn("text-4xl font-bold mt-1", scoreColor)}>{verification.score ?? '--'}</div>
+            <div className="text-[10px] uppercase font-semibold text-emerald-500 tracking-widest">Verity Score</div>
+            <div className="text-4xl font-bold text-emerald-400 mt-1">{verification.score ?? '--'}</div>
           </div>
-          <div className={cn("text-right text-xs font-semibold backdrop-blur px-3 py-1.5 rounded border shadow-sm", badgeColor)}>
+          <div className="text-right text-xs font-semibold text-emerald-300 bg-emerald-500/20 backdrop-blur px-3 py-1.5 rounded border border-emerald-500/20 shadow-sm">
             <div>{verification.status}</div>
           </div>
         </div>
-        {verification.final_decision_note && <p className={cn("mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border font-medium leading-relaxed", containerColor.split(' ')[0])}>{verification.final_decision_note}</p>}
+        {verification.final_decision_note && <p className="mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border border-emerald-500/20 font-medium leading-relaxed">{verification.final_decision_note}</p>}
       </div>
 
       <div className="space-y-4">

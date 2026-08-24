@@ -58,6 +58,12 @@ async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false
   });
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
     const error = await response.json().catch(() => null);
     const message =
       error?.detail ||
