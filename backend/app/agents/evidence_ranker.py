@@ -76,9 +76,20 @@ class EvidenceRankerAgent:
                 item["combined_score"] = score
                 scored_items.append(item)
             
-            # Sort by score and take top K
+            # Sort by score
             scored_items.sort(key=lambda x: x["combined_score"], reverse=True)
-            ranked[claim_id] = scored_items[:self.max_evidence_per_claim]
+            
+            # Filter out duplicate domains (keep only the highest scoring one per domain)
+            unique_domain_items = []
+            seen_domains = set()
+            for item in scored_items:
+                domain = item.get("domain")
+                if domain not in seen_domains:
+                    unique_domain_items.append(item)
+                    seen_domains.add(domain)
+            
+            # Take top K
+            ranked[claim_id] = unique_domain_items[:self.max_evidence_per_claim]
         
         total_ranked = sum(len(e) for e in ranked.values())
         logger.info("Evidence ranked", total=total_ranked)
