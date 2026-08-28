@@ -1,7 +1,8 @@
 """
 Schemas module initialization
 """
-from app.schemas.auth import AuthResponse, UserCreate, UserLogin, UserResponse
+from app.schemas.auth import AuthResponse, PublicUserResponse, UserCreate, UserLogin, UserResponse
+from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
 from app.schemas.social import (
     ChallengeRequest,
     ChallengeResponse,
@@ -36,6 +37,9 @@ from app.schemas.verification import (
 )
 
 __all__ = [
+    "FollowerListItem",
+    "FollowResponse",
+    "UserProfileResponse",
     "AuthResponse",
     "ChallengeRequest",
     "ChallengeResponse",
@@ -45,6 +49,7 @@ __all__ = [
     "PostSummary",
     "PostVerificationResponse",
     "PostVerificationSummary",
+    "PublicUserResponse",
     "UserCreate",
     "UserLogin",
     "UserResponse",

@@ -216,8 +216,8 @@ export default function LoginPage() {
                 <input className="lp-input" name="username" placeholder="Username" required />
                 <input className="lp-input" name="full_name" placeholder="Full name" />
               </>}
-              <input className="lp-input" name="email" type="email" placeholder="Email" defaultValue={authMode === 'login' ? 'moderator@verique.local' : ''} key={`e-${authMode}`} required />
-              <input className="lp-input" name="password" type="password" placeholder="Password" defaultValue={authMode === 'login' ? 'Moderator123!' : ''} key={`p-${authMode}`} required />
+              <input className="lp-input" name="email" type="email" placeholder="Email" key={`e-${authMode}`} required />
+              <input className="lp-input" name="password" type="password" placeholder="Password" key={`p-${authMode}`} required />
               {authError && <div className="lp-error">{authError}</div>}
               <button className="lp-btn" disabled={authMutation.isPending}>
                 {authMutation.isPending ? 'Working…' : authMode === 'login' ? 'Sign in' : 'Create account'}

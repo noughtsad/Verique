@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production"
     
     # CORS
-    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
+    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     
     # Database
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # JWT Settings
     JWT_SECRET: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     CHALLENGE_THRESHOLD: int = 1
     SEED_MODERATOR_EMAIL: str = "moderator@verique.local"
     SEED_MODERATOR_PASSWORD: str = "Moderator123!"

@@ -7,6 +7,8 @@ import {
   Challenge,
   ChallengePayload,
   CreatePostPayload,
+  FollowerListItem,
+  FollowResponse,
   LoginPayload,
   ModerationDecisionPayload,
   ModerationReview,
@@ -14,30 +16,22 @@ import {
   PostVerification,
   RegisterPayload,
   User,
+  UserProfile,
   VerificationResult,
   VerifyRequest,
   VerifyUrlRequest,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const TOKEN_STORAGE_KEY = 'verique_access_token';
 
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
-}
-
-export function setAuthToken(token: string) {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  }
-}
-
-export function clearAuthToken() {
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+export async function clearAuthToken() {
+  try {
+    await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Failed to logout server-side:', error);
   }
 }
 
@@ -45,21 +39,14 @@ async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false
   const headers = new Headers(init?.headers || {});
   headers.set('Content-Type', 'application/json');
 
-  const token = getAuthToken();
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  } else if (requireAuth) {
-    throw new Error('Please sign in to continue');
-  }
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
+    credentials: 'include', // Send httpOnly cookies
   });
 
   if (!response.ok) {
-    if (response.status === 401 && token) {
-      clearAuthToken();
+    if (response.status === 401) {
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
@@ -77,21 +64,17 @@ async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
-  const data = await apiFetch<AuthResponse>('/api/v1/auth/register', {
+  return apiFetch<AuthResponse>('/api/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  setAuthToken(data.access_token);
-  return data;
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  const data = await apiFetch<AuthResponse>('/api/v1/auth/login', {
+  return apiFetch<AuthResponse>('/api/v1/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  setAuthToken(data.access_token);
-  return data;
 }
 
 export async function getCurrentUser(): Promise<User> {
@@ -185,4 +168,44 @@ export async function getVerificationStatus(verificationId: string): Promise<unk
 
 export async function healthCheck(): Promise<{ status: string }> {
   return apiFetch<{ status: string }>('/health');
+}
+
+// -----------------------------------------------------------------------
+// Social — User profiles & follow system
+// -----------------------------------------------------------------------
+
+export async function getUserProfile(username: string): Promise<UserProfile> {
+  return apiFetch<UserProfile>(`/api/v1/users/${username}`);
+}
+
+export async function getUserPosts(
+  username: string,
+  limit = 20,
+  offset = 0,
+): Promise<Post[]> {
+  return apiFetch<Post[]>(`/api/v1/users/${username}/posts?limit=${limit}&offset=${offset}`);
+}
+
+export async function getFollowers(username: string): Promise<FollowerListItem[]> {
+  return apiFetch<FollowerListItem[]>(`/api/v1/users/${username}/followers`);
+}
+
+export async function getFollowing(username: string): Promise<FollowerListItem[]> {
+  return apiFetch<FollowerListItem[]>(`/api/v1/users/${username}/following`);
+}
+
+export async function followUser(username: string): Promise<FollowResponse> {
+  return apiFetch<FollowResponse>(
+    `/api/v1/users/${username}/follow`,
+    { method: 'POST', body: JSON.stringify({}) },
+    true,
+  );
+}
+
+export async function unfollowUser(username: string): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/users/${username}/follow`,
+    { method: 'DELETE' },
+    true,
+  );
 }

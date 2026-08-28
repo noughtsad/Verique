@@ -6,7 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from app.schemas.auth import UserResponse
+from app.schemas.auth import PublicUserResponse
 from app.schemas.verification import ClaimResult, VerificationMetadata, VerificationSummary
 
 
@@ -42,7 +42,7 @@ class PostVerificationSummary(BaseModel):
 
 class PostSummary(BaseModel):
     id: int
-    author: UserResponse
+    author: PublicUserResponse
     content: str
     source_url: Optional[str] = None
     created_at: datetime
@@ -72,7 +72,7 @@ class PostVerificationResponse(BaseModel):
 class ChallengeResponse(BaseModel):
     id: int
     verification_id: int
-    user: UserResponse
+    user: PublicUserResponse
     reason_code: str
     comment: Optional[str] = None
     status: str
@@ -89,6 +89,6 @@ class ModerationReviewResponse(BaseModel):
     override_summary: Optional[str] = None
     created_at: datetime
     decided_at: Optional[datetime] = None
-    moderator: Optional[UserResponse] = None
+    moderator: Optional[PublicUserResponse] = None
     verification: PostVerificationResponse
     post: PostSummary

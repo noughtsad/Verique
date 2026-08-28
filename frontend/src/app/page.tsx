@@ -2,13 +2,14 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle, Loader2, LogOut, ShieldCheck,
   Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin
+  Plus, Upload, X, MapPin, UserCircle
 } from 'lucide-react';
 
 import {
@@ -27,6 +28,7 @@ import {
 import { ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '@/lib/types';
 import { cn, formatDate, getDomainFromUrl } from '@/lib/utils';
 import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
+import { Sidebar } from '@/app/components/Sidebar';
 
 const CHALLENGE_REASONS = [
   ['missing_context', 'Missing context'],
@@ -72,8 +74,8 @@ export default function Home() {
     getCurrentUser().then((u) => {
       setUser(u);
       setAuthChecked(true);
-    }).catch(() => {
-      clearAuthToken();
+    }).catch(async () => {
+      await clearAuthToken();
       setUser(null);
       setAuthChecked(true);
     });
@@ -148,64 +150,7 @@ export default function Home() {
         {/* Spacer for flex layout to account for fixed sidebar width */}
         <div className="w-[100px] flex-shrink-0 hidden sm:block"></div>
         
-        <aside className="fixed top-0 left-0 h-screen w-[100px] hover:w-[240px] z-50 transition-all duration-300 ease-in-out bg-[#18181b]/55 backdrop-blur-xl flex flex-col py-8 overflow-hidden group shadow-xl hidden sm:flex border-r border-white/10">
-          {/* Logo */}
-          <div className="flex items-center px-6 mb-16 w-[240px]">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-              <span className="text-white font-bold text-xl tracking-tight">V</span>
-            </div>
-            <span className="ml-4 font-semibold text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Verique</span>
-          </div>
-
-          {/* Nav Icons */}
-          <div className="flex flex-col gap-6 text-slate-400 w-[240px]">
-            <button className="flex items-center px-9 py-3 text-white relative group/btn hover:bg-white/5 transition">
-              <HomeIcon className="w-6 h-6 flex-shrink-0" />
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Home</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Compass className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Explore Feed</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Bell className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Notifications</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <MessageCircle className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Chat</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <UserIcon className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Profile</span>
-            </button>
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Bookmark className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Bookmarks</span>
-            </button>
-            <button 
-              onClick={() => setIsVerificationLocked(!isVerificationLocked)}
-              className={cn("flex items-center px-9 py-3 transition group/btn", isVerificationLocked ? "text-white bg-white/10" : "hover:text-white hover:bg-white/5")}
-            >
-              <ShieldCheck className={cn("w-6 h-6 flex-shrink-0", isVerificationLocked ? "text-blue-500" : "")} />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Fact-Check Panel</span>
-            </button>
-          </div>
-
-          <div className="mt-auto flex flex-col gap-6 text-slate-400 w-[240px]">
-            <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-              <Settings className="w-6 h-6 flex-shrink-0" />
-              <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Settings</span>
-            </button>
-            {user && (
-              <button onClick={() => { clearAuthToken(); setUser(null) }} className="flex items-center px-9 py-3 hover:text-red-400 hover:bg-white/5 transition group/btn text-slate-400" title="Logout">
-                <LogOut className="w-6 h-6 flex-shrink-0" />
-                <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Logout</span>
-              </button>
-            )}
-          </div>
-        </aside>
+        <Sidebar user={user} onLogout={() => setUser(null)} />
 
         {/* MIDDLE COLUMN (Feed) */}
         <main className="flex-1 flex flex-col h-screen overflow-y-auto px-8 py-10 relative">
@@ -580,12 +525,12 @@ function TimelinePostCard({
     >
       {/* Header (Author) */}
       <div className="p-4 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shadow-sm">
+          <div className="flex items-center gap-3">
+          <Link href={`/profile/${post.author.username}`} className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shadow-sm hover:ring-2 hover:ring-violet-500/50 transition-all flex-shrink-0">
             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.username}`} alt="avatar" className="w-full h-full object-cover" />
-          </div>
+          </Link>
           <div>
-            <div className="text-[15px] font-bold text-white leading-tight">{post.author.full_name || post.author.username}</div>
+            <Link href={`/profile/${post.author.username}`} className="text-[15px] font-bold text-white leading-tight hover:text-violet-300 transition-colors">{post.author.full_name || post.author.username}</Link>
             <div className="text-xs text-slate-400 font-medium">@{post.author.username}</div>
           </div>
         </div>

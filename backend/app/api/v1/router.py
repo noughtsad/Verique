@@ -3,7 +3,7 @@ API V1 Router - Main router for API version 1
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, health, moderation, posts, verification
+from app.api.v1.endpoints import auth, health, moderation, posts, users, verification
 
 api_router = APIRouter()
 
@@ -29,6 +29,12 @@ api_router.include_router(
 api_router.include_router(
     moderation.router,
     tags=["Moderation"]
+)
+
+api_router.include_router(
+    users.router,
+    prefix="/users",
+    tags=["Users"]
 )
 
 api_router.include_router(

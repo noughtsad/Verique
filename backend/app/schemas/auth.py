@@ -18,7 +18,23 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
 
+class PublicUserResponse(BaseModel):
+    """Safe public representation of a user — email is intentionally omitted."""
+
+    id: int
+    username: str
+    full_name: str | None = None
+    role: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class UserResponse(BaseModel):
+    """Full user representation returned only to the authenticated owner (/auth/me)."""
+
     id: int
     email: str
     username: str
@@ -32,6 +48,8 @@ class UserResponse(BaseModel):
 
 
 class AuthResponse(BaseModel):
+    """Returned on login/register — access_token is also set as an httpOnly cookie."""
+
     access_token: str
     token_type: str = "bearer"
     user: UserResponse

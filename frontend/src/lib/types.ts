@@ -122,6 +122,15 @@ export interface User {
   created_at: string;
 }
 
+export interface PublicUser {
+  id: number;
+  username: string;
+  full_name?: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: 'bearer';
@@ -143,7 +152,7 @@ export interface PostVerificationSummary {
 
 export interface Post {
   id: number;
-  author: User;
+  author: PublicUser;
   content: string;
   source_url?: string | null;
   created_at: string;
@@ -173,7 +182,7 @@ export interface PostVerification {
 export interface Challenge {
   id: number;
   verification_id: number;
-  user: User;
+  user: PublicUser;
   reason_code: string;
   comment?: string | null;
   status: string;
@@ -190,7 +199,7 @@ export interface ModerationReview {
   override_summary?: string | null;
   created_at: string;
   decided_at?: string | null;
-  moderator?: User | null;
+  moderator?: PublicUser | null;
   verification: PostVerification;
   post: Post;
 }
@@ -292,3 +301,37 @@ export const VERDICT_CONFIG: Record<
     score: 50,
   },
 };
+
+// -----------------------------------------------------------------------
+// Social networking — Follow system
+// -----------------------------------------------------------------------
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  full_name?: string | null;
+  bio?: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+  followers_count: number;
+  following_count: number;
+  posts_count: number;
+  is_followed_by_me: boolean;
+}
+
+export interface FollowerListItem {
+  id: number;
+  username: string;
+  full_name?: string | null;
+  bio?: string | null;
+  role: UserRole;
+  is_followed_by_me: boolean;
+}
+
+export interface FollowResponse {
+  follower_id: number;
+  followed_id: number;
+  created_at: string;
+}
+
