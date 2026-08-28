@@ -15,6 +15,8 @@ from app.core.config import settings
 from app.core.cache import cache
 from app.models.article import Article
 from app.models.claim import Claim, ClaimVerdict
+from app.models.comment import Comment
+from app.models.like import PostLike
 from app.models.moderation import Challenge, ModerationReview
 from app.models.post import Post
 from app.models.source import Source, VerificationSource
@@ -23,6 +25,8 @@ from app.models.verification import Verification
 from app.schemas.social import (
     ChallengeRequest,
     ChallengeResponse,
+    CommentCreate,
+    CommentResponse,
     ModerationDecisionRequest,
     ModerationReviewResponse,
     PostCreate,
@@ -66,9 +70,12 @@ class SocialService:
             updated_at=post.updated_at,
             latest_verification_summary=None,
             challenge_state="none",
+            likes_count=0,
+            comments_count=0,
+            is_liked_by_me=False,
         )
 
-    async def list_posts(self) -> list[PostSummary]:
+    async def list_posts(self, current_user: Optional[User] = None) -> list[PostSummary]:
         result = await self.db.execute(
             select(Post)
             .options(
@@ -81,11 +88,110 @@ class SocialService:
             .order_by(Post.created_at.desc())
         )
         posts = result.scalars().unique().all()
-        return [self._serialize_post(post) for post in posts]
+        engagement = await self._engagement_for_posts([post.id for post in posts], current_user)
+        return [self._serialize_post(post, engagement) for post in posts]
 
-    async def get_post(self, post_id: int) -> PostSummary:
+    async def get_post(self, post_id: int, current_user: Optional[User] = None) -> PostSummary:
         post = await self._load_post(post_id)
-        return self._serialize_post(post)
+        engagement = await self._engagement_for_posts([post.id], current_user)
+        return self._serialize_post(post, engagement)
+
+    # ------------------------------------------------------------------
+    # Likes
+    # ------------------------------------------------------------------
+
+    async def like_post(self, user: User, post_id: int) -> None:
+        await self._load_post(post_id)
+        existing = await self.db.execute(
+            select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user.id)
+        )
+        if existing.scalar_one_or_none():
+            raise ValueError("You already liked this post")
+
+        self.db.add(PostLike(post_id=post_id, user_id=user.id))
+        await self.db.flush()
+
+    async def unlike_post(self, user: User, post_id: int) -> None:
+        result = await self.db.execute(
+            select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user.id)
+        )
+        like = result.scalar_one_or_none()
+        if like is None:
+            raise ValueError("You have not liked this post")
+
+        await self.db.delete(like)
+        await self.db.flush()
+
+    # ------------------------------------------------------------------
+    # Comments
+    # ------------------------------------------------------------------
+
+    async def list_comments(self, post_id: int) -> list[CommentResponse]:
+        await self._load_post(post_id)
+        result = await self.db.execute(
+            select(Comment)
+            .options(selectinload(Comment.author))
+            .where(Comment.post_id == post_id)
+            .order_by(Comment.created_at.asc())
+        )
+        comments = result.scalars().all()
+        return [
+            CommentResponse(
+                id=c.id, post_id=c.post_id, author=c.author, content=c.content, created_at=c.created_at
+            )
+            for c in comments
+        ]
+
+    async def add_comment(self, user: User, post_id: int, payload: CommentCreate) -> CommentResponse:
+        await self._load_post(post_id)
+        comment = Comment(post_id=post_id, author_id=user.id, content=payload.content)
+        self.db.add(comment)
+        await self.db.flush()
+        await self.db.refresh(comment)
+        await self.db.refresh(comment, attribute_names=["author"])
+        return CommentResponse(
+            id=comment.id,
+            post_id=comment.post_id,
+            author=comment.author,
+            content=comment.content,
+            created_at=comment.created_at,
+        )
+
+    async def _engagement_for_posts(
+        self, post_ids: list[int], current_user: Optional[User]
+    ) -> dict[int, dict[str, Any]]:
+        engagement: dict[int, dict[str, Any]] = {
+            pid: {"likes": 0, "comments": 0, "liked_by_me": False} for pid in post_ids
+        }
+        if not post_ids:
+            return engagement
+
+        like_counts = await self.db.execute(
+            select(PostLike.post_id, func.count(PostLike.id))
+            .where(PostLike.post_id.in_(post_ids))
+            .group_by(PostLike.post_id)
+        )
+        for post_id, count in like_counts.all():
+            engagement[post_id]["likes"] = int(count)
+
+        comment_counts = await self.db.execute(
+            select(Comment.post_id, func.count(Comment.id))
+            .where(Comment.post_id.in_(post_ids))
+            .group_by(Comment.post_id)
+        )
+        for post_id, count in comment_counts.all():
+            engagement[post_id]["comments"] = int(count)
+
+        if current_user is not None:
+            liked = await self.db.execute(
+                select(PostLike.post_id).where(
+                    PostLike.post_id.in_(post_ids), PostLike.user_id == current_user.id
+                )
+            )
+            for post_id in liked.scalars().all():
+                engagement[post_id]["liked_by_me"] = True
+
+        return engagement
 
     async def verify_post(self, post_id: int) -> PostVerificationResponse:
         post = await self._load_post(post_id)
@@ -384,9 +490,12 @@ class SocialService:
             raise ValueError("Verification not found")
         return verification
 
-    def _serialize_post(self, post: Post) -> PostSummary:
+    def _serialize_post(
+        self, post: Post, engagement: Optional[dict[int, dict[str, Any]]] = None
+    ) -> PostSummary:
         latest = self._latest_verification(post)
         challenge_state = (latest.review_status or "none") if latest else "none"
+        stats = (engagement or {}).get(post.id, {"likes": 0, "comments": 0, "liked_by_me": False})
         return PostSummary(
             id=post.id,
             author=post.author,
@@ -396,6 +505,9 @@ class SocialService:
             updated_at=post.updated_at,
             latest_verification_summary=self._serialize_verification_summary(latest) if latest else None,
             challenge_state=challenge_state,
+            likes_count=stats["likes"],
+            comments_count=stats["comments"],
+            is_liked_by_me=stats["liked_by_me"],
         )
 
     def _serialize_verification_summary(self, verification: Verification) -> PostVerificationSummary:

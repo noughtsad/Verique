@@ -6,6 +6,8 @@ from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResp
 from app.schemas.social import (
     ChallengeRequest,
     ChallengeResponse,
+    CommentCreate,
+    CommentResponse,
     ModerationDecisionRequest,
     ModerationReviewResponse,
     PostCreate,
@@ -43,6 +45,8 @@ __all__ = [
     "AuthResponse",
     "ChallengeRequest",
     "ChallengeResponse",
+    "CommentCreate",
+    "CommentResponse",
     "ModerationDecisionRequest",
     "ModerationReviewResponse",
     "PostCreate",

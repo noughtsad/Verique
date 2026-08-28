@@ -15,6 +15,18 @@ class PostCreate(BaseModel):
     source_url: Optional[HttpUrl] = None
 
 
+class CommentCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000)
+
+
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int
+    author: PublicUserResponse
+    content: str
+    created_at: datetime
+
+
 class ChallengeRequest(BaseModel):
     reason_code: str = Field(..., min_length=3, max_length=50)
     comment: Optional[str] = Field(default=None, max_length=500)
@@ -49,6 +61,9 @@ class PostSummary(BaseModel):
     updated_at: datetime
     latest_verification_summary: Optional[PostVerificationSummary] = None
     challenge_state: str = "none"
+    likes_count: int = 0
+    comments_count: int = 0
+    is_liked_by_me: bool = False
 
 
 class PostVerificationResponse(BaseModel):
