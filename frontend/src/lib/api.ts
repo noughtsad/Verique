@@ -6,6 +6,7 @@ import {
   AuthResponse,
   Challenge,
   ChallengePayload,
+  Comment,
   CreatePostPayload,
   FollowerListItem,
   FollowResponse,
@@ -46,7 +47,7 @@ async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && requireAuth) {
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
@@ -58,6 +59,10 @@ async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false
       (typeof error === 'string' ? error : null) ||
       `Request failed with status ${response.status}`;
     throw new Error(message);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json();
@@ -113,6 +118,26 @@ export async function verifyPost(postId: number): Promise<PostVerification> {
 
 export async function getLatestPostVerification(postId: number): Promise<PostVerification | null> {
   return apiFetch<PostVerification | null>(`/api/v1/posts/${postId}/verifications/latest`);
+}
+
+export async function likePost(postId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}/like`, { method: 'POST' }, true);
+}
+
+export async function unlikePost(postId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}/like`, { method: 'DELETE' }, true);
+}
+
+export async function listComments(postId: number): Promise<Comment[]> {
+  return apiFetch<Comment[]>(`/api/v1/posts/${postId}/comments`);
+}
+
+export async function addComment(postId: number, content: string): Promise<Comment> {
+  return apiFetch<Comment>(
+    `/api/v1/posts/${postId}/comments`,
+    { method: 'POST', body: JSON.stringify({ content }) },
+    true,
+  );
 }
 
 export async function challengeVerification(
@@ -173,6 +198,16 @@ export async function healthCheck(): Promise<{ status: string }> {
 // -----------------------------------------------------------------------
 // Social — User profiles & follow system
 // -----------------------------------------------------------------------
+
+export async function getFollowSuggestions(limit = 5): Promise<FollowerListItem[]> {
+  return apiFetch<FollowerListItem[]>(`/api/v1/users/suggestions/for-me?limit=${limit}`, undefined, true);
+}
+
+export async function searchUsers(query: string, limit = 5): Promise<FollowerListItem[]> {
+  return apiFetch<FollowerListItem[]>(
+    `/api/v1/users/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+  );
+}
 
 export async function getUserProfile(username: string): Promise<UserProfile> {
   return apiFetch<UserProfile>(`/api/v1/users/${username}`);

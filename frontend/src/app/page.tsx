@@ -9,23 +9,31 @@ import {
   Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin, UserCircle
+  Plus, Upload, X, MapPin, UserCircle, Send, Check
 } from 'lucide-react';
 
 import {
+  addComment,
   challengeVerification,
   clearAuthToken,
   createPost,
+  followUser,
   getCurrentUser,
+  getFollowSuggestions,
   getLatestPostVerification,
+  likePost,
+  listComments,
   listModerationReviews,
   listPosts,
   login,
   register,
   resolveModerationReview,
+  searchUsers,
+  unfollowUser,
+  unlikePost,
   verifyPost,
 } from '@/lib/api';
-import { ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '@/lib/types';
+import { FollowerListItem, FollowResponse, ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '@/lib/types';
 import { cn, formatDate, getDomainFromUrl } from '@/lib/utils';
 import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 import { Sidebar } from '@/app/components/Sidebar';
@@ -52,8 +60,57 @@ export default function Home() {
   const [overrideScore, setOverrideScore] = useState('');
   const [overrideSummary, setOverrideSummary] = useState('');
   const [showComposerModal, setShowComposerModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const postsQuery = useQuery({ queryKey: ['posts'], queryFn: listPosts });
+
+  const userSearchQuery = useQuery({
+    queryKey: ['user-search', debouncedSearch],
+    queryFn: () => searchUsers(debouncedSearch, 5),
+    enabled: debouncedSearch.length > 0,
+  });
+
+  const searchFollowMutation = useMutation<
+    void | FollowResponse,
+    Error,
+    { username: string; isFollowing: boolean },
+    { previous?: FollowerListItem[] }
+  >({
+    mutationFn: ({ username, isFollowing }) =>
+      isFollowing ? unfollowUser(username) : followUser(username),
+    onMutate: async ({ username, isFollowing }) => {
+      const key = ['user-search', debouncedSearch];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<FollowerListItem[]>(key);
+      queryClient.setQueryData<FollowerListItem[]>(key, (old) =>
+        old?.map((person) =>
+          person.username === username ? { ...person, is_followed_by_me: !isFollowing } : person,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['user-search', debouncedSearch], context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['user-search', debouncedSearch] }),
+  });
+
+  const filteredPosts = useMemo(() => {
+    const posts = postsQuery.data ?? [];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return posts;
+    return posts.filter((post) =>
+      post.content.toLowerCase().includes(query) ||
+      post.author.username.toLowerCase().includes(query) ||
+      (post.author.full_name?.toLowerCase().includes(query) ?? false),
+    );
+  }, [postsQuery.data, searchQuery]);
   const moderationQuery = useQuery({
     queryKey: ['moderation-reviews'],
     queryFn: listModerationReviews,
@@ -161,9 +218,24 @@ export default function Home() {
           {/* Top Search Bar */}
           <div className="max-w-2xl mx-auto w-full mb-8">
             <div className="relative">
-              <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-6 pr-12 text-sm font-medium text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white/10 transition" placeholder="Search" />
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-6 pr-12 text-sm font-medium text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white/10 transition"
+                placeholder="Search posts, people…"
+              />
+              <div className="absolute inset-y-0 right-4 flex items-center">
+                {searchQuery ? (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="pointer-events-auto text-slate-400 hover:text-white transition"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <Search className="h-4 w-4 text-slate-400 pointer-events-none" />
+                )}
               </div>
             </div>
           </div>
@@ -207,9 +279,50 @@ export default function Home() {
             )}
           </div>
 
+          {/* Matching Profiles */}
+          {debouncedSearch && userSearchQuery.data?.length ? (
+            <div className="max-w-2xl mx-auto w-full mb-8">
+              <h2 className="font-semibold text-white mb-4 text-[14px] uppercase tracking-wide">People</h2>
+              <div className="flex flex-col gap-2">
+                {userSearchQuery.data.map((person) => (
+                  <div
+                    key={person.id}
+                    className="bg-[#18181b]/55 backdrop-blur-md border border-white/10 rounded-xl p-3 flex items-center justify-between"
+                  >
+                    <Link href={`/profile/${person.username}`} className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.username}&backgroundColor=18181b`} alt="avatar" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-white truncate">{person.full_name || person.username}</div>
+                        <div className="text-[11px] font-medium text-slate-400 truncate">@{person.username}</div>
+                      </div>
+                    </Link>
+                    {user && (
+                      <button
+                        onClick={() => searchFollowMutation.mutate({ username: person.username, isFollowing: person.is_followed_by_me })}
+                        disabled={searchFollowMutation.isPending}
+                        className={cn(
+                          "px-4 py-1.5 rounded-md text-xs font-semibold transition flex-shrink-0",
+                          person.is_followed_by_me
+                            ? "bg-white/10 text-slate-400 border border-transparent"
+                            : "bg-white/5 text-slate-200 border border-white/10 backdrop-blur-sm hover:bg-white/10",
+                        )}
+                      >
+                        {person.is_followed_by_me ? 'Followed' : 'Follow'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {/* Timeline Header */}
           <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-            <h1 className="text-lg font-semibold text-white tracking-tight">Timeline</h1>
+            <h1 className="text-lg font-semibold text-white tracking-tight">
+              {debouncedSearch ? 'Matching Posts' : 'Timeline'}
+            </h1>
             <div className="flex gap-4 sm:gap-6 text-sm font-medium text-slate-400">
                 <button className="text-white border-b-2 border-white pb-1 font-semibold">All</button>
                 <button className="hover:text-white pb-1">Following</button>
@@ -222,8 +335,8 @@ export default function Home() {
           <div className="flex flex-col gap-6 pb-20 max-w-2xl mx-auto w-full">
             {postsQuery.isLoading ? (
               <div className="flex justify-center p-8 w-full"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
-            ) : postsQuery.data?.length ? (
-              postsQuery.data.map((post) => (
+            ) : filteredPosts.length ? (
+              filteredPosts.map((post) => (
                 <TimelinePostCard
                   key={post.id}
                   post={post}
@@ -234,6 +347,10 @@ export default function Home() {
                   onVerify={() => verifyMutation.mutate(post.id)}
                 />
               ))
+            ) : searchQuery ? (
+              <div className="p-8 text-center text-slate-500 w-full col-span-2">
+                No posts match "<span className="text-slate-300 font-medium">{searchQuery}</span>".
+              </div>
             ) : (
               <div className="p-8 text-center text-slate-500 w-full col-span-2">No posts yet.</div>
             )}
@@ -342,6 +459,36 @@ export default function Home() {
 // --- Components ---
 
 function ActivitySidebarContent() {
+  const queryClient = useQueryClient();
+  const suggestionsQuery = useQuery({
+    queryKey: ['follow-suggestions'],
+    queryFn: () => getFollowSuggestions(5),
+  });
+
+  const followMutation = useMutation<
+    void | FollowResponse,
+    Error,
+    { username: string; isFollowing: boolean },
+    { previous?: FollowerListItem[] }
+  >({
+    mutationFn: ({ username, isFollowing }) =>
+      isFollowing ? unfollowUser(username) : followUser(username),
+    onMutate: async ({ username, isFollowing }) => {
+      await queryClient.cancelQueries({ queryKey: ['follow-suggestions'] });
+      const previous = queryClient.getQueryData<FollowerListItem[]>(['follow-suggestions']);
+      queryClient.setQueryData<FollowerListItem[]>(['follow-suggestions'], (old) =>
+        old?.map((person) =>
+          person.username === username ? { ...person, is_followed_by_me: !isFollowing } : person,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['follow-suggestions'], context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['follow-suggestions'] }),
+  });
+
   return (
     <div className="space-y-10">
       {/* People to Follow */}
@@ -351,23 +498,29 @@ function ActivitySidebarContent() {
           <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
         </div>
         <div className="space-y-5">
-          {[
-            { name: 'Khoulod Mohamed', handle: '@khmohamed', followed: false },
-            { name: 'Mostafa Mohamed', handle: '@mostafa2020', followed: true },
-            { name: 'Nada Ahmed', handle: '@nadaahmed', followed: false }
-          ].map((person, i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}&backgroundColor=18181b`} alt="avatar" className="w-full h-full object-cover" />
+          {suggestionsQuery.isLoading && (
+            <div className="text-xs text-slate-500">Loading…</div>
+          )}
+          {!suggestionsQuery.isLoading && suggestionsQuery.data?.length === 0 && (
+            <div className="text-xs text-slate-500">No suggestions right now.</div>
+          )}
+          {suggestionsQuery.data?.map((person) => (
+            <div key={person.id} className="flex items-center justify-between">
+              <Link href={`/profile/${person.username}`} className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0">
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.username}&backgroundColor=18181b`} alt="avatar" className="w-full h-full object-cover" />
                 </div>
-                <div>
-                  <div className="text-sm font-bold text-white">{person.name}</div>
-                  <div className="text-[11px] font-medium text-slate-400">{person.handle}</div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white truncate">{person.full_name || person.username}</div>
+                  <div className="text-[11px] font-medium text-slate-400 truncate">@{person.username}</div>
                 </div>
-              </div>
-              <button className={`px-4 py-1.5 rounded-md text-xs font-semibold transition ${person.followed ? "bg-white/10 text-slate-400 border border-transparent" : "bg-white/5 text-slate-200 border border-white/10 backdrop-blur-sm hover:bg-white/10"}`}>
-                {person.followed ? 'Followed' : 'Follow'}
+              </Link>
+              <button
+                onClick={() => followMutation.mutate({ username: person.username, isFollowing: person.is_followed_by_me })}
+                disabled={followMutation.isPending}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition ${person.is_followed_by_me ? "bg-white/10 text-slate-400 border border-transparent" : "bg-white/5 text-slate-200 border border-white/10 backdrop-blur-sm hover:bg-white/10"}`}
+              >
+                {person.is_followed_by_me ? 'Followed' : 'Follow'}
               </button>
             </div>
           ))}
@@ -509,11 +662,63 @@ function TimelinePostCard({
   onVerify: () => void;
 }) {
   const verification = post.latest_verification_summary;
-  
-  // Mock numbers for UI
-  const likes = Math.floor(Math.random() * 500) + 10;
-  const comments = Math.floor(Math.random() * 50) + 5;
-  const isLiked = Math.random() > 0.5;
+  const queryClient = useQueryClient();
+  const [showComments, setShowComments] = useState(false);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [justShared, setJustShared] = useState(false);
+
+  const likeMutation = useMutation({
+    mutationFn: () => (post.is_liked_by_me ? unlikePost(post.id) : likePost(post.id)),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['posts'] });
+      const previous = queryClient.getQueryData<Post[]>(['posts']);
+      queryClient.setQueryData<Post[]>(['posts'], (old) =>
+        old?.map((p) =>
+          p.id === post.id
+            ? { ...p, is_liked_by_me: !p.is_liked_by_me, likes_count: p.likes_count + (p.is_liked_by_me ? -1 : 1) }
+            : p,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['posts'], context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
+  });
+
+  const commentsQuery = useQuery({
+    queryKey: ['comments', post.id],
+    queryFn: () => listComments(post.id),
+    enabled: showComments,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: (content: string) => addComment(post.id, content),
+    onSuccess: () => {
+      setCommentDraft('');
+      queryClient.invalidateQueries({ queryKey: ['comments', post.id] });
+      queryClient.setQueryData<Post[]>(['posts'], (old) =>
+        old?.map((p) => (p.id === post.id ? { ...p, comments_count: p.comments_count + 1 } : p)),
+      );
+    },
+  });
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/?post=${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Verique', text: post.content.slice(0, 100), url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setJustShared(true);
+      setTimeout(() => setJustShared(false), 1500);
+    } catch {
+      // user cancelled the share sheet — no-op
+    }
+  };
 
   return (
     <div 
@@ -574,19 +779,79 @@ function TimelinePostCard({
 
       {/* Footer (Actions) */}
       <div className="px-5 py-3 bg-white/5 border-t border-white/10 flex items-center gap-6 text-slate-400">
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <Heart className={cn("w-4 h-4 transition", isLiked ? "text-red-500 fill-red-500" : "group-hover/icon:text-red-500")} />
-          <span className="text-[13px] font-bold">{likes}</span>
-        </div>
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <MessageSquare className="w-4 h-4 transition group-hover/icon:text-blue-400" />
-          <span className="text-[13px] font-bold">{comments}</span>
-        </div>
-        <div className="flex items-center gap-1.5 group/icon cursor-pointer">
-          <Share2 className="w-4 h-4 transition group-hover/icon:text-emerald-400" />
-          <span className="text-[13px] font-bold">Share</span>
-        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); likeMutation.mutate(); }}
+          disabled={likeMutation.isPending}
+          className="flex items-center gap-1.5 group/icon cursor-pointer"
+        >
+          <Heart className={cn("w-4 h-4 transition", post.is_liked_by_me ? "text-red-500 fill-red-500" : "group-hover/icon:text-red-500")} />
+          <span className="text-[13px] font-bold">{post.likes_count}</span>
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowComments((v) => !v); }}
+          className="flex items-center gap-1.5 group/icon cursor-pointer"
+        >
+          <MessageSquare className={cn("w-4 h-4 transition", showComments ? "text-blue-400" : "group-hover/icon:text-blue-400")} />
+          <span className="text-[13px] font-bold">{post.comments_count}</span>
+        </button>
+        <button onClick={handleShare} className="flex items-center gap-1.5 group/icon cursor-pointer">
+          {justShared ? (
+            <Check className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <Share2 className="w-4 h-4 transition group-hover/icon:text-emerald-400" />
+          )}
+          <span className="text-[13px] font-bold">{justShared ? 'Copied!' : 'Share'}</span>
+        </button>
       </div>
+
+      {/* Comments */}
+      {showComments && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="px-5 py-4 bg-black/20 border-t border-white/10 space-y-4"
+        >
+          {commentsQuery.isLoading ? (
+            <div className="text-xs text-slate-500">Loading comments…</div>
+          ) : commentsQuery.data?.length ? (
+            <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar">
+              {commentsQuery.data.map((comment) => (
+                <div key={comment.id} className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-white/5 overflow-hidden flex-shrink-0">
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author.username}`} alt="avatar" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="text-[13px] text-slate-300 bg-white/5 rounded-lg px-3 py-2 flex-1">
+                    <span className="font-bold text-white mr-1.5">@{comment.author.username}</span>
+                    {comment.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500">No comments yet. Be the first to reply.</div>
+          )}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (commentDraft.trim()) addCommentMutation.mutate(commentDraft.trim());
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              value={commentDraft}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              placeholder="Write a comment…"
+              className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-[13px] text-white placeholder-slate-500 outline-none focus:border-blue-500/50 transition"
+            />
+            <button
+              type="submit"
+              disabled={!commentDraft.trim() || addCommentMutation.isPending}
+              className="w-9 h-9 flex-shrink-0 rounded-lg bg-blue-600 text-white flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

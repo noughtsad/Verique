@@ -159,6 +159,17 @@ export interface Post {
   updated_at: string;
   latest_verification_summary?: PostVerificationSummary | null;
   challenge_state: string;
+  likes_count: number;
+  comments_count: number;
+  is_liked_by_me: boolean;
+}
+
+export interface Comment {
+  id: number;
+  post_id: number;
+  author: PublicUser;
+  content: string;
+  created_at: string;
 }
 
 export interface PostVerification {
