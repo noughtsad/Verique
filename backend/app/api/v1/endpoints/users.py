@@ -45,6 +45,39 @@ async def get_optional_user(
 
 
 # -----------------------------------------------------------------------
+# Search & Suggestions
+# -----------------------------------------------------------------------
+
+
+@router.get(
+    "/search",
+    response_model=list[FollowerListItem],
+    summary="Search users by username or full name",
+)
+async def search_users(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
+    return await FollowService(db).search_users(q, current_user=current_user, limit=limit)
+
+
+@router.get(
+    "/suggestions/for-me",
+    response_model=list[FollowerListItem],
+    summary="Suggest people to follow",
+)
+async def get_follow_suggestions(
+    limit: int = Query(default=5, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Authenticated: suggest active users not already followed."""
+    return await FollowService(db).suggest_users(current_user, limit=limit)
+
+
+# -----------------------------------------------------------------------
 # Profile endpoints
 # -----------------------------------------------------------------------
 

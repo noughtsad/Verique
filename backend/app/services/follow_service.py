@@ -194,6 +194,43 @@ class FollowService:
         following = result.scalars().all()
         return await self._to_follower_items(following, current_user)
 
+    async def search_users(
+        self, query: str, current_user: Optional[User] = None, limit: int = 10
+    ) -> list[FollowerListItem]:
+        """Search active users by username or full name (case-insensitive, partial match)."""
+        pattern = f"%{query.strip()}%"
+        stmt = select(User).where(
+            User.is_active.is_(True),
+            (User.username.ilike(pattern) | User.full_name.ilike(pattern)),
+        )
+        if current_user is not None:
+            stmt = stmt.where(User.id != current_user.id)
+        stmt = stmt.order_by(User.username).limit(limit)
+
+        result = await self.db.execute(stmt)
+        users = result.scalars().all()
+        return await self._to_follower_items(users, current_user)
+
+    async def suggest_users(
+        self, current_user: User, limit: int = 10
+    ) -> list[FollowerListItem]:
+        """Suggest active users the current user isn't already following."""
+        already_followed = select(UserFollow.followed_id).where(
+            UserFollow.follower_id == current_user.id
+        )
+        result = await self.db.execute(
+            select(User)
+            .where(
+                User.id != current_user.id,
+                User.is_active.is_(True),
+                User.id.not_in(already_followed),
+            )
+            .order_by(func.random())
+            .limit(limit)
+        )
+        suggestions = result.scalars().all()
+        return await self._to_follower_items(suggestions, current_user)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
