@@ -7,10 +7,12 @@ import {
   Challenge,
   ChallengePayload,
   Comment,
+  Conversation,
   CreatePostPayload,
   FollowerListItem,
   FollowResponse,
   LoginPayload,
+  Message,
   ModerationDecisionPayload,
   ModerationReview,
   Post,
@@ -243,4 +245,55 @@ export async function unfollowUser(username: string): Promise<void> {
     { method: 'DELETE' },
     true,
   );
+}
+
+// -----------------------------------------------------------------------
+// Chat — Direct messages
+// -----------------------------------------------------------------------
+
+export async function listConversations(): Promise<Conversation[]> {
+  return apiFetch<Conversation[]>('/api/v1/chat/conversations', undefined, true);
+}
+
+export async function getOrCreateConversation(username: string): Promise<Conversation> {
+  return apiFetch<Conversation>(
+    `/api/v1/chat/conversations/${username}`,
+    { method: 'POST' },
+    true,
+  );
+}
+
+export async function listMessages(
+  conversationId: number,
+  beforeId?: number,
+  limit = 50,
+): Promise<Message[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (beforeId !== undefined) params.set('before_id', String(beforeId));
+  return apiFetch<Message[]>(
+    `/api/v1/chat/conversations/${conversationId}/messages?${params}`,
+    undefined,
+    true,
+  );
+}
+
+export async function sendMessageRest(conversationId: number, content: string): Promise<Message> {
+  return apiFetch<Message>(
+    `/api/v1/chat/conversations/${conversationId}/messages`,
+    { method: 'POST', body: JSON.stringify({ content }) },
+    true,
+  );
+}
+
+export async function markConversationRead(conversationId: number): Promise<void> {
+  return apiFetch<void>(
+    `/api/v1/chat/conversations/${conversationId}/read`,
+    { method: 'POST' },
+    true,
+  );
+}
+
+export function getChatWebSocketUrl(): string {
+  const wsBase = API_BASE_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+  return `${wsBase}/api/v1/chat/ws`;
 }

@@ -19,6 +19,7 @@ import {
   Users,
   FileText,
   AlertCircle,
+  MessageCircle,
   TrendingUp,
   Award,
 } from 'lucide-react';
@@ -398,32 +399,41 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="pb-2">
+            <div className="pb-2 flex items-center gap-2">
               {!isOwnProfile && currentUser ? (
-                <button
-                  onClick={() => handleToggleFollow(profile.username, isFollowing)}
-                  disabled={isMutating}
-                  className={cn(
-                    'flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 disabled:opacity-60 shadow-sm',
-                    isFollowing
-                      ? 'bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 border border-transparent'
-                      : 'bg-blue-600 text-white hover:bg-blue-700',
-                  )}
-                >
-                  {isMutating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isFollowing ? (
-                    <>
-                      <UserMinus className="w-4 h-4" />
-                      Unfollow
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4" />
-                      Follow
-                    </>
-                  )}
-                </button>
+                <>
+                  <Link
+                    href={`/messages/${profile.username}`}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm bg-white/10 text-white hover:bg-white/15 border border-white/10 transition-all duration-200 shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Message
+                  </Link>
+                  <button
+                    onClick={() => handleToggleFollow(profile.username, isFollowing)}
+                    disabled={isMutating}
+                    className={cn(
+                      'flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 disabled:opacity-60 shadow-sm',
+                      isFollowing
+                        ? 'bg-white/10 text-slate-300 hover:bg-red-500/20 hover:text-red-400 border border-transparent'
+                        : 'bg-blue-600 text-white hover:bg-blue-700',
+                    )}
+                  >
+                    {isMutating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isFollowing ? (
+                      <>
+                        <UserMinus className="w-4 h-4" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4" />
+                        Follow
+                      </>
+                    )}
+                  </button>
+                </>
               ) : isOwnProfile ? (
                 <div className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-xs font-bold uppercase tracking-widest shadow-sm">
                   <UserIcon className="w-3.5 h-3.5" /> Your Profile

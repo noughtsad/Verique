@@ -2,21 +2,31 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bell, Bookmark, Compass, Home as HomeIcon,
   LogOut, MessageCircle, Settings, ShieldCheck, UserCircle
 } from 'lucide-react';
-import { clearAuthToken } from '@/lib/api';
+import { clearAuthToken, listConversations } from '@/lib/api';
+import { useChatSocket } from '@/hooks/useChatSocket';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export function Sidebar({ user, onLogout }: { user: User | null, onLogout: () => void }) {
   const pathname = usePathname();
-  
-  // Example state that might need to be passed down if we want the fact check panel globally,
-  // but for now we'll just style the button to look active if on the home page and clicked,
-  // or we can make it a regular button for this UI component.
-  
+
+  // The socket keeps ['conversations'] updated in real time; this query is
+  // just the safety net for the gap before the socket connects (or during a
+  // reconnect backoff window).
+  useChatSocket(user?.id);
+  const conversationsQuery = useQuery({
+    queryKey: ['conversations'],
+    queryFn: listConversations,
+    enabled: !!user,
+    refetchInterval: 30_000,
+  });
+  const unreadCount = conversationsQuery.data?.reduce((sum, c) => sum + c.unread_count, 0) ?? 0;
+
   return (
     <aside className="fixed top-0 left-0 h-screen w-[100px] hover:w-[240px] z-50 transition-all duration-300 ease-in-out bg-[#18181b]/55 backdrop-blur-xl flex flex-col py-8 overflow-hidden group shadow-xl hidden sm:flex border-r border-white/10">
       {/* User Profile / Logo */}
@@ -58,10 +68,18 @@ export function Sidebar({ user, onLogout }: { user: User | null, onLogout: () =>
           <Bell className="w-6 h-6 flex-shrink-0" />
           <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Notifications</span>
         </button>
-        <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-          <MessageCircle className="w-6 h-6 flex-shrink-0" />
+        <Link href="/messages" className={cn("flex items-center px-9 py-3 relative group/btn transition", pathname.startsWith('/messages') ? "text-white hover:bg-white/5" : "hover:text-white hover:bg-white/5")}>
+          <div className="relative flex-shrink-0">
+            <MessageCircle className="w-6 h-6" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
+          {pathname.startsWith('/messages') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>}
           <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Chat</span>
-        </button>
+        </Link>
         <Link href={user ? `/profile/${user.username}` : '/login'} className={cn("flex items-center px-9 py-3 relative group/btn transition", pathname.startsWith('/profile') ? "text-white hover:bg-white/5" : "hover:text-white hover:bg-white/5")}>
           <UserCircle className="w-6 h-6 flex-shrink-0" />
           {pathname.startsWith('/profile') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>}

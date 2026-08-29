@@ -346,3 +346,32 @@ export interface FollowResponse {
   created_at: string;
 }
 
+// -----------------------------------------------------------------------
+// Chat — Direct messages
+// -----------------------------------------------------------------------
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender: PublicUser;
+  content: string;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: number;
+  other_user: PublicUser;
+  last_message: Message | null;
+  unread_count: number;
+  created_at: string;
+  last_message_at: string | null;
+}
+
+export interface SendMessagePayload {
+  content: string;
+}
+
+export type ChatWsEnvelope =
+  | { type: 'message'; data: Message }
+  | { type: 'error'; data: { detail: string } };
+
