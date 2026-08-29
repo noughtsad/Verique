@@ -25,6 +25,20 @@ let backoffMs = 1000;
 const MAX_BACKOFF_MS = 30_000;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Grace period before actually tearing the socket down once refCount hits
+// zero. Sidebar and the messages page both call this hook on the same page,
+// and React's development-mode Strict Mode double-invokes every effect
+// (mount -> cleanup -> mount) independently per component — without this
+// grace period, the first component's synchronous cleanup+remount cycle
+// would close the socket out from under the second component (or under its
+// own still-pending connection), producing a visible "WebSocket is closed
+// before the connection is established" warning and a needless
+// reconnect. The same grace period also covers the brief window during a
+// client-side route change where the old page's components have already
+// unmounted but the new page's Sidebar hasn't mounted yet.
+const TEARDOWN_GRACE_MS = 1000;
+let teardownTimer: ReturnType<typeof setTimeout> | null = null;
+
 // Updated on every render of every useChatSocket caller, so the bridge below
 // always sees the latest values regardless of which component happened to
 // establish the connection first.
@@ -61,6 +75,10 @@ function bridgeIncomingMessage(message: Message) {
 }
 
 function connect() {
+  if (teardownTimer) {
+    clearTimeout(teardownTimer);
+    teardownTimer = null;
+  }
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     return;
   }
@@ -103,6 +121,21 @@ function connect() {
   };
 }
 
+function scheduleTeardown() {
+  if (teardownTimer) return;
+  teardownTimer = setTimeout(() => {
+    teardownTimer = null;
+    if (refCount > 0) return; // someone (re)mounted during the grace period
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    socket?.close();
+    socket = null;
+    setStatus('idle');
+  }, TEARDOWN_GRACE_MS);
+}
+
 export function useChatSocket(currentUserId?: number) {
   const queryClient = useQueryClient();
   const status = useChatStore((s) => s.status);
@@ -118,12 +151,7 @@ export function useChatSocket(currentUserId?: number) {
     return () => {
       refCount -= 1;
       if (refCount <= 0) {
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-          reconnectTimer = null;
-        }
-        socket?.close();
-        socket = null;
+        scheduleTeardown();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
