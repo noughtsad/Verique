@@ -371,19 +371,6 @@ trustlens/
 > Optional feature for tamper-proof receipts. If content changes later, you can detect it. SaaS-only works fine; blockchain is an extra layer.
 
 ---
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
----
-
 <div align="center">
 
 **Built with ❤️ for a more transparent web**
