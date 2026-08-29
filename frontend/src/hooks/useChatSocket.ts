@@ -148,7 +148,22 @@ export function useChatSocket(currentUserId?: number) {
   useEffect(() => {
     refCount += 1;
     connect();
+
+    // Browsers throttle timers (including our reconnect backoff) in
+    // backgrounded tabs, and can silently drop the underlying TCP
+    // connection while the tab/device is suspended without ever firing
+    // `onclose`. Re-checking on focus/visibility catches both: connect()
+    // is a no-op if the socket is genuinely still open, and reconnects
+    // immediately (bypassing the backoff wait) if it isn't.
+    const recheck = () => {
+      if (document.visibilityState === 'visible') connect();
+    };
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('focus', recheck);
+
     return () => {
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('focus', recheck);
       refCount -= 1;
       if (refCount <= 0) {
         scheduleTeardown();

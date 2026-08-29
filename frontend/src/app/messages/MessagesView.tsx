@@ -111,6 +111,7 @@ export function MessagesView({
     queryKey: ['conversations'],
     queryFn: listConversations,
     enabled: !!currentUser,
+    refetchInterval: 15_000,
   });
 
   const activeConversationQuery = useQuery({
@@ -121,10 +122,15 @@ export function MessagesView({
 
   const conversationId = activeConversationQuery.data?.id ?? null;
 
+  // The socket is the primary delivery path, but polling every few seconds
+  // as a fallback means a dropped/missed WS event (a flaky connection, a
+  // backend restart, anything) self-heals within seconds instead of leaving
+  // the open thread stuck until a manual reload.
   const messagesQuery = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => listMessages(conversationId as number),
     enabled: conversationId !== null,
+    refetchInterval: 8_000,
   });
 
   // Keep the active thread's unread count at zero while it's open, including
