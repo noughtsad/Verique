@@ -1,6 +1,6 @@
 """
 API endpoints module initialization
 """
-from app.api.v1.endpoints import auth, health, moderation, posts, verification
+from app.api.v1.endpoints import auth, chat, health, moderation, posts, verification
 
-__all__ = ["auth", "verification", "health", "posts", "moderation"]
+__all__ = ["auth", "chat", "verification", "health", "posts", "moderation"]
