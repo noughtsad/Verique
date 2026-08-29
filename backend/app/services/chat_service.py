@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import case, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,21 +34,37 @@ class ChatService:
             raise ValueError("You cannot message yourself")
 
         user_a_id, user_b_id = self._canonical_pair(current_user.id, other.id)
+        conversation = await self._find_conversation_pair(user_a_id, user_b_id)
+        if conversation is None:
+            conversation = Conversation(user_a_id=user_a_id, user_b_id=user_b_id)
+            self.db.add(conversation)
+            try:
+                await self.db.flush()
+            except IntegrityError:
+                # Lost a race with a concurrent get-or-create for the same
+                # pair (e.g. both participants' clients requesting it at
+                # once) — the other request already created the row, so
+                # just fetch what it inserted instead of failing.
+                await self.db.rollback()
+                conversation = await self._find_conversation_pair(user_a_id, user_b_id)
+                if conversation is None:
+                    raise
+            else:
+                await self.db.refresh(conversation)
+                await self.db.refresh(conversation, attribute_names=["user_a", "user_b"])
+
+        summaries = await self._annotate_conversations([conversation], current_user)
+        return summaries[0]
+
+    async def _find_conversation_pair(
+        self, user_a_id: int, user_b_id: int
+    ) -> Optional[Conversation]:
         result = await self.db.execute(
             select(Conversation)
             .options(selectinload(Conversation.user_a), selectinload(Conversation.user_b))
             .where(Conversation.user_a_id == user_a_id, Conversation.user_b_id == user_b_id)
         )
-        conversation = result.scalar_one_or_none()
-        if conversation is None:
-            conversation = Conversation(user_a_id=user_a_id, user_b_id=user_b_id)
-            self.db.add(conversation)
-            await self.db.flush()
-            await self.db.refresh(conversation)
-            await self.db.refresh(conversation, attribute_names=["user_a", "user_b"])
-
-        summaries = await self._annotate_conversations([conversation], current_user)
-        return summaries[0]
+        return result.scalar_one_or_none()
 
     async def list_conversations(
         self, current_user: User, limit: int = 50, offset: int = 0

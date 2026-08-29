@@ -1,8 +1,13 @@
 """
 Unit tests for ChatService.
 """
-import pytest
+import asyncio
 
+import pytest
+from sqlalchemy import func, select
+
+from app.models.chat import Conversation
+from app.models.user import User
 from app.services.chat_service import ChatService
 
 
@@ -79,6 +84,40 @@ async def test_unread_count_math(db_session, user_a, user_b):
 
     from_b_side_after = await service.list_conversations(user_b)
     assert from_b_side_after[0].unread_count == 0
+
+
+async def test_concurrent_get_or_create_conversation_does_not_raise(
+    db_session, session_maker, user_a, user_b
+):
+    """Regression test: two users' first messages to each other resolve to
+    the same canonical (min, max) pair, so their get-or-create requests can
+    race — both see "no conversation yet" and both try to INSERT. The
+    second insert used to raise an unhandled IntegrityError (surfaced to
+    the browser as a failed/CORS-looking request, leaving that side's
+    thread permanently unresolved until a manual reload retried it)."""
+    # Commit the fixture users so a second, independent session/connection
+    # can see them (SQLite connections don't see each other's uncommitted
+    # rows, matching real cross-request behavior).
+    await db_session.commit()
+
+    async def create_from(session, requester_id: int, other_username: str):
+        requester = await session.get(User, requester_id)
+        result = await ChatService(session).get_or_create_conversation(requester, other_username)
+        await session.commit()
+        return result
+
+    async with session_maker() as session_b:
+        result_a, result_b = await asyncio.gather(
+            create_from(db_session, user_a.id, user_b.username),
+            create_from(session_b, user_b.id, user_a.username),
+        )
+
+    assert result_a.id == result_b.id
+
+    count = await db_session.scalar(
+        select(func.count(Conversation.id)).where(Conversation.id == result_a.id)
+    )
+    assert count == 1
 
 
 async def test_non_participant_cannot_access_conversation(db_session, user_a, user_b, user_c):
