@@ -147,3 +147,6 @@ contracts/typechain-types/
 
 #for claude code
 .claude
+
+# Graphify
+graphify-out/
