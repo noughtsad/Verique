@@ -48,7 +48,7 @@ Base = declarative_base()
 async def init_db():
     """Validate database connectivity and load model metadata."""
     logger.info("Initializing database", url=DATABASE_URL[:50] + "...")
-    from app.models import article, claim, verification, source, domain, user, post, moderation  # noqa: F401
+    from app.models import article, chat, claim, verification, source, domain, user, post, moderation  # noqa: F401
 
     async with engine.connect() as conn:
         await conn.execute(text("SELECT 1"))

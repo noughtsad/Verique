@@ -2,6 +2,7 @@
 Models module initialization
 """
 from app.models.article import Article
+from app.models.chat import Conversation, Message
 from app.models.claim import Claim, ClaimVerdict
 from app.models.comment import Comment
 from app.models.follow import UserFollow
@@ -19,6 +20,8 @@ __all__ = [
     "ClaimVerdict",
     "Challenge",
     "Comment",
+    "Conversation",
+    "Message",
     "UserFollow",
     "PostLike",
     "Verification",
