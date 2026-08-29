@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MessageCircle, Send } from 'lucide-react';
@@ -107,6 +107,18 @@ export function MessagesView({
   const chatSocket = useChatSocket(currentUser?.id);
   const [draft, setDraft] = useState('');
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  // Only auto-scroll while the viewer is already at (or near) the bottom, so
+  // it doesn't yank them back down while they've scrolled up to read history.
+  const stickToBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
   const conversationsQuery = useQuery({
     queryKey: ['conversations'],
     queryFn: listConversations,
@@ -132,6 +144,23 @@ export function MessagesView({
     enabled: conversationId !== null,
     refetchInterval: 8_000,
   });
+
+  // Jump to the bottom instantly on first load / when switching threads.
+  useEffect(() => {
+    if (conversationId === null) return;
+    stickToBottomRef.current = true;
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [conversationId]);
+
+  // Scroll to the newest message whenever the list changes (a send, a
+  // socket push, or a poll refresh) — but only if the viewer was already
+  // near the bottom, so reading older history doesn't get interrupted.
+  useEffect(() => {
+    if (!messagesQuery.data?.length) return;
+    if (stickToBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messagesQuery.data]);
 
   // Keep the active thread's unread count at zero while it's open, including
   // when a new message for it arrives over the socket while we're looking.
@@ -254,19 +283,26 @@ export function MessagesView({
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-5 flex flex-col gap-4"
+            >
               {messagesQuery.isLoading ? (
                 <div className="flex justify-center p-8">
                   <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
                 </div>
               ) : messagesQuery.data?.length ? (
-                messagesQuery.data.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isMine={message.sender.id === currentUser?.id}
-                  />
-                ))
+                <>
+                  {messagesQuery.data.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isMine={message.sender.id === currentUser?.id}
+                    />
+                  ))}
+                  <div ref={bottomRef} />
+                </>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
                   No messages yet — say hello 👋
