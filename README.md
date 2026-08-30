@@ -51,6 +51,23 @@ TrustLens is an AI-powered multi-agent system that adds a transparent "trust ove
 
 ---
 
+## 💬 Social Platform & Direct Messaging
+
+Beyond the fact-checking engine, the app is a full social feed built around it:
+
+- **Posts** – create posts, attach a source URL, and run AI verification inline on any post
+- **Follow system** – follow/unfollow users, search people, and get follow suggestions
+- **Likes & comments** – engage with posts from other users
+- **Direct messages** – real-time 1:1 chat between users:
+  - Conversation list with unread counts and last-message previews
+  - Instant delivery over a WebSocket (`/api/v1/chat/ws`), with a REST fallback for sending while reconnecting
+  - Auto-scroll to the newest message, plus a polling safety net so a dropped connection self-heals within seconds instead of needing a manual refresh
+  - Reachable from the sidebar's Chat icon (with a live unread badge) or a "Message" button on any profile
+
+See `graphify-out/GRAPH_REPORT.md` for how `SocialService`, `FollowService`, and `ChatService` connect to the verification engine.
+
+---
+
 ## 🗽 Architecture
 
 ### Multi-Agent System (LangGraph)
@@ -103,6 +120,7 @@ API Response -> Next.js Frontend / Chrome Extension
 | ------------- | --------------------------------------------------- |
 | **Backend**   | Python 3.10+, FastAPI 0.141+, LangGraph 1.2+        |
 | **Frontend**  | Next.js 16, React 19, TypeScript, Tailwind CSS 4    |
+| **Real-time** | FastAPI/Starlette WebSockets, TanStack Query as the client-side cache |
 | **Extension** | Chrome Manifest V3                                  |
 | **Database**  | Supabase PostgreSQL + SQLAlchemy + Alembic          |
 | **LLMs**      | Groq (`openai/gpt-oss-120b` – FREE)                 |
@@ -293,19 +311,18 @@ trustlens/
 ├── backend/                 # Python FastAPI backend
 │   ├── app/
 │   │   ├── agents/         # LangGraph agent definitions
-│   │   ├── api/            # API routes
-│   │   ├── core/           # Config, security, database
-│   │   ├── models/         # SQLAlchemy models
+│   │   ├── api/            # API routes (verify, posts, users, chat, moderation, auth)
+│   │   ├── core/           # Config, security, database, WebSocket connection manager
+│   │   ├── models/         # SQLAlchemy models (posts, follows, chat, verification, ...)
 │   │   ├── schemas/        # Pydantic schemas
-│   │   └── services/       # Business logic
-│   ├── tests/
+│   │   └── services/       # Business logic (SocialService, FollowService, ChatService, ...)
+│   ├── tests/               # pytest suite (service, REST, and WebSocket coverage)
 │   └── alembic/            # Database migrations
-├── frontend/               # React web application
+├── frontend/               # Next.js web application
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom hooks
-│   │   └── lib/            # Utilities
+│   │   ├── app/             # App Router pages (feed, profile, messages, login)
+│   │   ├── hooks/           # Custom hooks (e.g. useChatSocket)
+│   │   └── lib/             # API client, types, utilities, chat store
 │   └── public/
 ├── extension/              # Chrome browser extension
 │   ├── src/
@@ -315,6 +332,13 @@ trustlens/
 │   └── public/
 ├── contracts/              # Solidity smart contracts (optional)
 └── docs/                   # Documentation
+```
+
+### Running Backend Tests
+
+```bash
+cd backend
+pytest tests/ -v
 ```
 
 ---
@@ -328,6 +352,13 @@ trustlens/
 - [x] Claim extraction & verification
 - [x] Color-coded highlighting
 - [x] Page scoring
+
+### ✅ Social Platform & Real-Time Chat
+
+- [x] Post feed with inline AI verification
+- [x] Follow system, search, and follow suggestions
+- [x] Likes & comments
+- [x] Real-time 1:1 direct messages (WebSocket, with REST + polling fallbacks)
 
 ### 📄 Phase 1 – Extension & Multi-Agent
 
