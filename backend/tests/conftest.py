@@ -1,8 +1,8 @@
 """
-Shared pytest fixtures for the chat test suite.
+Shared pytest fixtures.
 
-Uses an in-memory SQLite database scoped to just the tables the chat
-feature needs (User, Conversation, Message), so tests don't depend on a
+Uses a SQLite database scoped to just the tables the covered features
+need (User, Conversation, Message, Domain), so tests don't depend on a
 running Postgres instance.
 """
 import os
@@ -16,6 +16,7 @@ from app.core.database import Base, get_db
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.chat import Conversation, Message
+from app.models.domain import Domain
 from app.models.user import User
 
 
@@ -36,7 +37,7 @@ async def engine():
     async with test_engine.begin() as conn:
         await conn.run_sync(
             Base.metadata.create_all,
-            tables=[User.__table__, Conversation.__table__, Message.__table__],
+            tables=[User.__table__, Conversation.__table__, Message.__table__, Domain.__table__],
         )
     yield test_engine
     await test_engine.dispose()

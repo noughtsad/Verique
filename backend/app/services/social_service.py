@@ -16,6 +16,7 @@ from app.core.cache import cache
 from app.models.article import Article
 from app.models.claim import Claim, ClaimVerdict
 from app.models.comment import Comment
+from app.models.domain import Domain
 from app.models.like import PostLike
 from app.models.moderation import Challenge, ModerationReview
 from app.models.post import Post
@@ -38,10 +39,24 @@ from app.schemas.verification import (
     ClaimResult,
     ClaimSources,
     SourceInfo,
+    Verdict,
     VerificationMetadata,
     VerificationSummary,
 )
 from app.services.verification_service import VerificationService
+
+
+def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
+    """Bucket a claim's final verdict into "true" / "mixed" / "false" for
+    scoring the accuracy of the sources cited on it. `not_verifiable`
+    returns None (no signal either way — the claim was never resolved)."""
+    if verdict in (Verdict.STRONGLY_SUPPORTED, Verdict.SUPPORTED):
+        return "true"
+    if verdict in (Verdict.MIXED, Verdict.WEAK):
+        return "mixed"
+    if verdict in (Verdict.CONTRADICTED, Verdict.OUTDATED):
+        return "false"
+    return None
 
 
 class SocialService:
@@ -410,6 +425,7 @@ class SocialService:
             self.db.add(verdict)
             await self.db.flush()
 
+            claim_outcome = _claim_accuracy_outcome(claim_result.verdict)
             for role_name, items in (
                 ("supporting", claim_result.sources.supporting),
                 ("contradicting", claim_result.sources.contradicting),
@@ -425,6 +441,7 @@ class SocialService:
                             snippet_used=source_info.snippet,
                         )
                     )
+                    await self._record_domain_outcome(source_info.domain, role_name, claim_outcome)
 
     async def _get_or_create_source(self, source_info: SourceInfo) -> Source:
         result = await self.db.execute(select(Source).where(Source.url == source_info.url))
@@ -446,6 +463,51 @@ class SocialService:
         self.db.add(source)
         await self.db.flush()
         return source
+
+    async def _get_or_create_domain(self, domain_name: str) -> Domain:
+        result = await self.db.execute(select(Domain).where(Domain.domain == domain_name))
+        domain_row = result.scalar_one_or_none()
+        if domain_row is not None:
+            return domain_row
+
+        domain_row = Domain(
+            domain=domain_name,
+            total_claims_checked=0,
+            claims_supported=0,
+            claims_contradicted=0,
+            claims_mixed=0,
+        )
+        self.db.add(domain_row)
+        await self.db.flush()
+        return domain_row
+
+    async def _record_domain_outcome(
+        self, domain_name: str, role: str, claim_outcome: Optional[str]
+    ) -> None:
+        """Update a domain's running reputation stats based on whether its
+        cited stance (supporting/contradicting) matched the claim's eventual
+        verdict — e.g. a domain that contradicted a claim which then verified
+        as false was accurate, not "contradicted"."""
+        if claim_outcome is None:
+            return  # not_verifiable — no signal either way
+
+        domain_row = await self._get_or_create_domain(domain_name)
+
+        if claim_outcome == "mixed":
+            outcome = "mixed"
+        elif role == "supporting":
+            outcome = "accurate" if claim_outcome == "true" else "inaccurate"
+        else:
+            outcome = "accurate" if claim_outcome == "false" else "inaccurate"
+
+        domain_row.total_claims_checked = (domain_row.total_claims_checked or 0) + 1
+        if outcome == "accurate":
+            domain_row.claims_supported = (domain_row.claims_supported or 0) + 1
+        elif outcome == "mixed":
+            domain_row.claims_mixed = (domain_row.claims_mixed or 0) + 1
+        else:
+            domain_row.claims_contradicted = (domain_row.claims_contradicted or 0) + 1
+        domain_row.update_reputation()
 
     async def _next_version(self, post_id: int) -> int:
         result = await self.db.execute(
