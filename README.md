@@ -1,8 +1,8 @@
-# 🔍 TrustLens – AI Trust & Context Layer for Web Content
+# 🔍 Verique – AI Trust & Context Layer for Web Content
 
 <div align="center">
 
-![TrustLens](https://img.shields.io/badge/TrustLens-AI%20Trust%20Layer-00875A?style=for-the-badge&logo=shield&logoColor=white)
+![Verique](https://img.shields.io/badge/Verique-AI%20Trust%20Layer-00875A?style=for-the-badge&logo=shield&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-FF6B6B?style=flat-square)
@@ -16,9 +16,9 @@
 
 ---
 
-## 🎯 What is TrustLens?
+## 🎯 What is Verique?
 
-TrustLens is an AI-powered multi-agent system that adds a transparent "trust overlay" to any webpage. Instead of blindly trusting online content or spending hours manually fact-checking, TrustLens:
+Verique is an AI-powered multi-agent system that adds a transparent "trust overlay" to any webpage. Instead of blindly trusting online content or spending hours manually fact-checking, Verique:
 
 - **Extracts factual claims** from any webpage or text
 - **Retrieves evidence** from authoritative sources across the web
@@ -321,7 +321,7 @@ npm run build
 ### Usage
 
 1. Navigate to any webpage
-2. Click the TrustLens icon in your toolbar
+2. Click the Verique icon in your toolbar
 3. Wait for analysis (15-30 seconds)
 4. View highlighted claims with color coding
 5. Hover for quick tooltips, click for detailed evidence
@@ -331,7 +331,7 @@ npm run build
 ## 📁 Project Structure
 
 ```
-trustlens/
+verique/
 ├── backend/                 # Python FastAPI backend
 │   ├── app/
 │   │   ├── agents/         # LangGraph agent definitions
@@ -430,6 +430,6 @@ pytest tests/ -v
 
 **Built with ❤️ for a more transparent web**
 
-[⬆ Back to Top](#-trustlens--ai-trust--context-layer-for-web-content)
+[⬆ Back to Top](#-verique--ai-trust--context-layer-for-web-content)
 
 </div>
