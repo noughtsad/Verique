@@ -150,3 +150,6 @@ contracts/typechain-types/
 
 # Graphify
 graphify-out/
+
+# Reference documents (large PDFs)
+docs/*.pdf
