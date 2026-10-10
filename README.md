@@ -126,6 +126,30 @@ API Response -> Next.js Frontend / Chrome Extension
 | **LLMs**      | Groq (`openai/gpt-oss-120b` – FREE)                 |
 | **Search**    | DuckDuckGo (FREE), optional: SerpAPI                |
 
+### Domain Reputation (MBFC)
+
+Source reputation scores (0–1) come from a bundled copy of the
+[Media Bias/Fact Check](https://mediabiasfactcheck.com/) (MBFC) ratings in
+`backend/app/data/mbfc_data.json` (~9,000 sources). `backend/app/agents/mbfc_loader.py`
+loads it once at startup and converts MBFC's accuracy grade, objective-reporting
+level, and bias label into a score.
+
+Lookup order in `get_domain_reputation()` (`backend/app/agents/domain_reputation.py`):
+
+1. **MBFC dataset** – exact domain, then parent domains (`news.bbc.com` → `bbc.com`)
+2. **Hand-curated `DOMAIN_REPUTATION`** – fills gaps for domains MBFC doesn't cover
+3. **`SUFFIX_REPUTATION`** – `.gov`, `.edu`, etc.
+4. **Default** – neutral `0.5`
+
+Each result includes a `source` field (`mbfc`, `manual`, `suffix`, `default`);
+MBFC results also include `bias`, `accuracy`, `country`, and `rating_url`.
+
+Notes:
+- MBFC takes priority wherever it has a score, so it can override hand-set values
+  (e.g. `cdc.gov` scores low under MBFC). Run `find_mbfc_disagreements()` to list conflicts.
+- MBFC retains copyright on its ratings; confirm the dataset's licensing before commercial use.
+- MBFC rates sources as publishers, which may not match how individual claims are weighed.
+
 ---
 
 ## 🚀 Quick Start

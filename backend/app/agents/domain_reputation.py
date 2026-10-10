@@ -3,7 +3,12 @@ Domain Reputation Database
 
 Comprehensive categorized database of 100+ domains with trust scores.
 Used by the RetrievalAgent to score evidence sources.
+
+Scores from the MBFC dataset (see mbfc_loader.py) take priority; the
+hand-curated dict below fills gaps for domains MBFC doesn't cover.
 """
+
+from app.agents.mbfc_loader import get_mbfc_rating, normalize_domain
 
 # Domain reputation scores:
 # 0.95 = Tier 1: Authoritative, highly trusted
@@ -132,34 +137,74 @@ SUFFIX_REPUTATION = {
 }
 
 
-def get_domain_reputation(domain: str) -> dict:
-    """
-    Get reputation information for a domain.
-    
-    Args:
-        domain: Domain name to look up
-        
-    Returns:
-        Dictionary with 'score' and 'category' keys
-    """
-    domain = domain.lower().strip()
-    
-    # Check exact domain match first
+_MBFC_CATEGORY = {
+    "Pro-Science": "science",
+    "Satire": "satire",
+    "Conspiracy-Pseudoscience": "conspiracy",
+}
+
+
+def _manual_reputation(domain: str) -> dict | None:
+    """Look up the hand-curated DOMAIN_REPUTATION dict (exact, then subdomain)."""
     if domain in DOMAIN_REPUTATION:
         return DOMAIN_REPUTATION[domain]
-    
-    # Check if subdomain of known domain
     for known_domain, info in DOMAIN_REPUTATION.items():
         if domain.endswith('.' + known_domain):
             return info
-    
+    return None
+
+
+def get_domain_reputation(domain: str) -> dict:
+    """
+    Get reputation information for a domain.
+
+    Lookup order: MBFC dataset -> hand-curated DOMAIN_REPUTATION ->
+    SUFFIX_REPUTATION -> neutral default.
+
+    Args:
+        domain: Domain name to look up
+
+    Returns:
+        Dictionary with 'score', 'category' and 'source' keys
+        ('mbfc' | 'manual' | 'suffix' | 'default'). MBFC results also carry
+        'bias', 'accuracy', 'country' and 'rating_url'.
+    """
+    domain = normalize_domain(domain)
+
+    mbfc = get_mbfc_rating(domain)
+    if mbfc is not None:
+        manual = _manual_reputation(domain)
+        category = manual["category"] if manual else _MBFC_CATEGORY.get(mbfc["bias"], "news")
+        return {**mbfc, "category": category, "source": "mbfc"}
+
+    manual = _manual_reputation(domain)
+    if manual is not None:
+        return {**manual, "source": "manual"}
+
     # Check suffix patterns (.gov, .edu, etc.)
     for suffix, info in SUFFIX_REPUTATION.items():
         if domain.endswith(suffix):
-            return info
-    
+            return {**info, "source": "suffix"}
+
     # Default: unknown domain
-    return {"score": 0.5, "category": "unknown"}
+    return {"score": 0.5, "category": "unknown", "source": "default"}
+
+
+def find_mbfc_disagreements(threshold: float = 0.2) -> list[dict]:
+    """
+    List hand-curated domains whose score differs from MBFC's by more than
+    `threshold`, for reviewing/pruning DOMAIN_REPUTATION.
+    """
+    out = []
+    for domain, info in DOMAIN_REPUTATION.items():
+        mbfc = get_mbfc_rating(domain)
+        if mbfc is None:
+            continue
+        diff = mbfc["score"] - info["score"]
+        if abs(diff) > threshold:
+            out.append({"domain": domain, "manual": info["score"], "mbfc": mbfc["score"],
+                        "bias": mbfc["bias"], "diff": round(diff, 2)})
+    return sorted(out, key=lambda r: -abs(r["diff"]))
 
 
 def get_domain_score(domain: str) -> float:
