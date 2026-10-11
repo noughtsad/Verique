@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     LLM_MODEL_FAST: str = "openai/gpt-oss-20b"  # Faster model (replaces llama-3.1-8b-instant)
     
     # Search APIs - DuckDuckGo is free, no API key needed
-    # Optional: SerpAPI or Google CSE for better results
+    # Optional: Tavily (preferred when set), SerpAPI or Google CSE for better results
+    TAVILY_API_KEY: Optional[str] = None
     SERPAPI_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     GOOGLE_CSE_ID: Optional[str] = None

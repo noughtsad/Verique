@@ -17,10 +17,12 @@ class RetrievalAgent:
     """
     Fetches evidence from web sources for claim verification.
     
-    Uses DuckDuckGo as primary search, falls back to SerpAPI or Google CSE.
+    Uses Tavily when TAVILY_API_KEY is set (falling back to DuckDuckGo if it
+    fails or returns nothing); otherwise DuckDuckGo, SerpAPI or Google CSE.
     """
-    
+
     def __init__(self):
+        self.tavily_key = settings.TAVILY_API_KEY
         self.serpapi_key = settings.SERPAPI_API_KEY
         self.google_api_key = settings.GOOGLE_API_KEY
         self.google_cse_id = settings.GOOGLE_CSE_ID
@@ -99,7 +101,14 @@ class RetrievalAgent:
         Returns:
             List of evidence items
         """
-        # Priority: DuckDuckGo (free) -> SerpAPI -> Google CSE -> Mock
+        # Priority: Tavily (if keyed, DuckDuckGo as fallback) -> DuckDuckGo (free)
+        # -> SerpAPI -> Google CSE
+        if self.tavily_key:
+            results = await self._search_tavily(query)
+            if results:
+                return results
+            logger.warning("Tavily gave no results, falling back to DuckDuckGo", query=query[:50])
+            return await self._search_duckduckgo(query)
         if self.use_free_search:
             return await self._search_duckduckgo(query)
         elif self.serpapi_key:
@@ -109,6 +118,43 @@ class RetrievalAgent:
         else:
             return await self._search_duckduckgo(query)
     
+    async def _search_tavily(self, query: str) -> List[Dict[str, Any]]:
+        """Search using the Tavily API (LLM-oriented search with cleaned content)."""
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.post(
+                    "https://api.tavily.com/search",
+                    headers={"Authorization": f"Bearer {self.tavily_key}"},
+                    json={
+                        "query": query,
+                        "max_results": self.max_results_per_query,
+                        "search_depth": "basic",
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+
+            results = []
+            for item in data.get("results", [])[:self.max_results_per_query]:
+                url = item.get("url", "")
+                domain = urlparse(url).netloc if url else ""
+                results.append({
+                    "url": url,
+                    "title": item.get("title", ""),
+                    "snippet": item.get("content", ""),
+                    "domain": domain,
+                    "published_at": item.get("published_date"),
+                    "relevance_score": item.get("score", 0.5),
+                    "domain_reputation": self._get_domain_reputation(domain)
+                })
+
+            logger.info("Tavily search returned results", query=query[:50], count=len(results))
+            return results
+
+        except Exception as e:
+            logger.error("Tavily search failed", error=str(e), query=query[:50])
+            return []
+
     async def _search_duckduckgo(self, query: str) -> List[Dict[str, Any]]:
         """Search using DuckDuckGo via duckduckgo-search library."""
         try:

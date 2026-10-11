@@ -124,7 +124,7 @@ API Response -> Next.js Frontend / Chrome Extension
 | **Extension** | Chrome Manifest V3                                  |
 | **Database**  | Supabase PostgreSQL + SQLAlchemy + Alembic          |
 | **LLMs**      | Groq (`openai/gpt-oss-120b` – FREE)                 |
-| **Search**    | DuckDuckGo (FREE), optional: SerpAPI                |
+| **Search**    | Tavily (if `TAVILY_API_KEY` set), DuckDuckGo (FREE) fallback, optional: SerpAPI |
 
 ### Domain Reputation (MBFC)
 
