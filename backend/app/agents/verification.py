@@ -92,6 +92,7 @@ CRITICAL RULES:
 - Don't assume facts not in the evidence
 - Be conservative - use "mixed" or "weak" if uncertain
 - When sources disagree, check their reputation scores
+- Some sources were found by deliberately adversarial searches (marked "counter-search"). Being found that way is NOT evidence against the claim; judge each source by what its content actually says
 - Return ONLY valid JSON, no other text"""
 
 
@@ -169,9 +170,12 @@ class VerificationAgent:
         else:
             evidence_parts = []
             for i, e in enumerate(evidence[:5], 1):  # Limit to top 5
+                stance = e.get("query_stance")
+                found_via = "counter-search" if stance in ("contradict", "both") else "standard search"
                 evidence_parts.append(
                     f"Source {i}:\n"
                     f"  URL: {e.get('url', 'N/A')}\n"
+                    f"  Found via: {found_via}\n"
                     f"  Domain: {e.get('domain', 'N/A')} (reputation: {e.get('domain_reputation', 0.5):.2f})\n"
                     f"  Published: {e.get('published_at', 'Unknown')}\n"
                     f"  Content: {e.get('snippet', 'N/A')}"

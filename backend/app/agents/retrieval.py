@@ -1,7 +1,7 @@
 """
 Retrieval Agent - Fetches evidence from web sources
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import asyncio
 import httpx
 from urllib.parse import urlparse, quote_plus
@@ -31,13 +31,17 @@ class RetrievalAgent:
     
     async def fetch_evidence(
         self,
-        queries: Dict[str, List[str]]
+        queries: Dict[str, List[Union[str, Dict[str, str]]]]
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Fetch evidence for all claims in parallel.
         
         Args:
-            queries: Dictionary mapping claim_id to list of search queries
+            queries: Dictionary mapping claim_id to a list of search queries.
+                Each is either a plain string (treated as a standard "support"
+                query) or {"query": str, "stance": "support" | "contradict"}.
+                Evidence is tagged with the stance of the query that found it
+                as "query_stance" ("support", "contradict" or "both").
             
         Returns:
             Dictionary mapping claim_id to list of evidence items
@@ -50,11 +54,17 @@ class RetrievalAgent:
         # Collect all search tasks
         tasks = []
         claim_query_map = []  # Track which task belongs to which claim
+        stance_map = []  # Track the stance of each task's query
         
         for claim_id, claim_queries in queries.items():
             for query in claim_queries:
-                tasks.append(self._search(query))
+                if isinstance(query, dict):
+                    query_text, stance = query["query"], query.get("stance", "support")
+                else:
+                    query_text, stance = query, "support"
+                tasks.append(self._search(query_text))
                 claim_query_map.append(claim_id)
+                stance_map.append(stance)
         
         # Execute searches in parallel (with some concurrency limit)
         semaphore = asyncio.Semaphore(3)  # Limit concurrent requests
@@ -71,7 +81,7 @@ class RetrievalAgent:
         # Aggregate results by claim
         evidence: Dict[str, List[Dict[str, Any]]] = {}
         
-        for claim_id, result in zip(claim_query_map, results):
+        for claim_id, stance, result in zip(claim_query_map, stance_map, results):
             if claim_id not in evidence:
                 evidence[claim_id] = []
             
@@ -79,12 +89,17 @@ class RetrievalAgent:
                 logger.warning("Search failed", claim_id=claim_id, error=str(result))
                 continue
             
-            # Add results, avoiding duplicates
-            existing_urls = {e["url"] for e in evidence[claim_id]}
+            # Add results, avoiding duplicates (a URL found by both kinds of
+            # query is tagged "both")
+            by_url = {e["url"]: e for e in evidence[claim_id]}
             for item in result:
-                if item["url"] not in existing_urls:
+                existing = by_url.get(item["url"])
+                if existing is None:
+                    item["query_stance"] = stance
                     evidence[claim_id].append(item)
-                    existing_urls.add(item["url"])
+                    by_url[item["url"]] = item
+                elif existing["query_stance"] != stance:
+                    existing["query_stance"] = "both"
         
         total_evidence = sum(len(e) for e in evidence.values())
         logger.info("Evidence fetched", total=total_evidence)

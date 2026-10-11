@@ -52,7 +52,7 @@ class PipelineState(TypedDict):
     verifiable_claims: List[Dict[str, Any]]
     
     # After query planning
-    search_queries: Dict[str, List[str]]  # claim_id -> queries
+    search_queries: Dict[str, List[Dict[str, str]]]  # claim_id -> [{"query", "stance"}]
     
     # After retrieval
     raw_evidence: Dict[str, List[Dict[str, Any]]]  # claim_id -> evidence items
