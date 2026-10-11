@@ -9,7 +9,7 @@ import {
   Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin, UserCircle, Send, Check
+  Plus, Upload, X, MapPin, UserCircle, Send, Check, RefreshCw
 } from 'lucide-react';
 
 import {
@@ -390,6 +390,24 @@ export default function Home() {
                 {verificationQuery.isLoading ? (
                   <Loading text="Analyzing claims..." />
                 ) : verificationQuery.data ? (
+                  <>
+                  {/* Dev/testing only: stripped from production builds */}
+                  {process.env.NODE_ENV === 'development' && selectedPostId !== null && (
+                    <div className="mb-4">
+                      <button
+                        type="button"
+                        onClick={() => verifyMutation.mutate(selectedPostId)}
+                        disabled={!user || verifyMutation.isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs font-semibold text-amber-400 transition hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <RefreshCw className={cn("h-3.5 w-3.5", verifyMutation.isPending && "animate-spin")} />
+                        {verifyMutation.isPending ? 'Re-verifying...' : 'Re-verify (dev only)'}
+                      </button>
+                      {verifyMutation.error instanceof Error && (
+                        <p className="mt-2 text-xs text-red-400">{verifyMutation.error.message}</p>
+                      )}
+                    </div>
+                  )}
                   <VerificationPanel
                     verification={verificationQuery.data}
                     canChallenge={Boolean(user)}
@@ -401,6 +419,7 @@ export default function Home() {
                     busy={challengeMutation.isPending}
                     error={challengeMutation.error instanceof Error ? challengeMutation.error.message : null}
                   />
+                  </>
                 ) : (
                   <div className="text-sm text-slate-500 text-center py-10">
                     This post has not been analyzed by AI yet.
