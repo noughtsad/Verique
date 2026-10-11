@@ -420,6 +420,7 @@ class SocialService:
                 verdict=claim_result.verdict.value,
                 confidence=claim_result.confidence,
                 reasoning=claim_result.reasoning,
+                caveats=claim_result.caveats,
                 model_used="human" if verification.is_human_final else "pipeline",
             )
             self.db.add(verdict)
@@ -621,6 +622,7 @@ class SocialService:
                     verdict=verdict.verdict,
                     confidence=verdict.confidence,
                     reasoning=verdict.reasoning,
+                    caveats=verdict.caveats or [],
                     sources=ClaimSources(supporting=supporting, contradicting=contradicting),
                 )
             )

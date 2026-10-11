@@ -2,7 +2,7 @@
 Claim Model - Individual claims extracted from articles
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean, JSON
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -53,6 +53,7 @@ class ClaimVerdict(Base):
     verdict = Column(String(30), nullable=False)  # strongly_supported, supported, etc.
     confidence = Column(Float, nullable=False)
     reasoning = Column(Text, nullable=False)
+    caveats = Column(JSON, nullable=True)  # list[str]: qualifications that don't change the verdict
     
     # Model information
     model_used = Column(String(50), nullable=False)

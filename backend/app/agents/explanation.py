@@ -75,6 +75,7 @@ class ExplanationAgent:
                 verdict=self._parse_enum(Verdict, verdict_data.get("verdict", "not_verifiable")),
                 confidence=verdict_data.get("confidence", 0.0),
                 reasoning=verdict_data.get("reasoning", "Unable to verify this claim."),
+                caveats=verdict_data.get("caveats", []),
                 sources=sources
             )
             

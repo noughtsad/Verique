@@ -957,6 +957,17 @@ function VerificationPanel({
               <p className="text-sm font-semibold text-white mb-2 leading-relaxed">{claim.text}</p>
               <p className="text-[13px] leading-relaxed text-slate-300 font-medium">{claim.reasoning}</p>
 
+              {claim.caveats && claim.caveats.length > 0 && (
+                <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-500">Caveats</div>
+                  <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[12.5px] leading-relaxed text-amber-200/90">
+                    {claim.caveats.map((caveat, i) => (
+                      <li key={i}>{caveat}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {(claim.sources.supporting.length > 0 || claim.sources.contradicting.length > 0) && (
                 <div className="mt-5 pt-4 border-t border-white/10 grid gap-4">
                   {claim.sources.supporting.length > 0 && <SourceBox title="Supporting Evidence" sources={claim.sources.supporting} />}

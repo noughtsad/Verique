@@ -144,6 +144,7 @@ class ClaimResult(BaseModel):
     verdict: Verdict
     confidence: float = Field(..., ge=0, le=1)
     reasoning: str
+    caveats: List[str] = Field(default_factory=list)
     sources: ClaimSources
 
     class Config:

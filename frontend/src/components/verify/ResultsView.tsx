@@ -298,6 +298,18 @@ function ClaimCard({
           {claim.reasoning}
         </p>
 
+        {/* Caveats: qualifications that don't change the verdict */}
+        {claim.caveats && claim.caveats.length > 0 && (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-700">Caveats</div>
+            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-amber-900">
+              {claim.caveats.map((caveat, i) => (
+                <li key={i}>{caveat}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Expand indicator */}
         <div className="flex items-center justify-center">
           <ChevronDown className={cn(

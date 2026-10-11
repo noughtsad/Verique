@@ -129,3 +129,43 @@ async def test_verification_prompt_marks_counter_search_sources(monkeypatch):
     assert prompt.count("Found via: counter-search") == 1
     assert prompt.count("Found via: standard search") == 2
     assert "adversarial searches" in prompt
+
+
+# ---- caveats ----
+
+from app.agents.verification import VerdictResponse
+
+
+def _verdict(**extra):
+    return {"verdict": "supported", "confidence": 0.8,
+            "reasoning": "Sources agree with the claim.", **extra}
+
+
+def test_caveats_default_to_empty_and_tolerate_bad_input():
+    assert VerdictResponse(**_verdict()).caveats == []
+    assert VerdictResponse(**_verdict(caveats=None)).caveats == []
+    assert VerdictResponse(**_verdict(caveats="not a list")).caveats == []
+
+
+def test_caveats_are_cleaned_and_capped():
+    caveats = ["  rising point shifts seasonally ", "", 5, "b", "c", "d"]
+    result = VerdictResponse(**_verdict(caveats=caveats)).caveats
+    assert result == ["rising point shifts seasonally", "b", "c"]
+    long = VerdictResponse(**_verdict(caveats=["x" * 1000])).caveats
+    assert len(long[0]) == 300
+
+
+async def test_caveats_reach_claim_result():
+    from app.agents.explanation import ExplanationAgent
+
+    claim = {"id": "c1", "text": "The sun rises in the east", "span_start": 0, "span_end": 25}
+    verdicts = [{"claim_id": "c1", "verdict": "supported", "confidence": 0.8,
+                 "reasoning": "Sources agree with the claim.", "supporting_sources": [],
+                 "contradicting_sources": [], "caveats": ["Due east only at equinoxes"]}]
+    results = await ExplanationAgent().format_results([claim], verdicts, {"c1": []})
+    assert results[0].caveats == ["Due east only at equinoxes"]
+
+    # A verdict without caveats (e.g. the failure fallback) yields an empty list
+    del verdicts[0]["caveats"]
+    results = await ExplanationAgent().format_results([claim], verdicts, {"c1": []})
+    assert results[0].caveats == []

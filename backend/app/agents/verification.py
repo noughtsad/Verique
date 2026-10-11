@@ -27,6 +27,16 @@ class VerdictResponse(BaseModel):
     reasoning: str = Field(..., min_length=10, description="Reasoning for the verdict")
     supporting_sources: List[str] = Field(default_factory=list, description="URLs supporting the claim")
     contradicting_sources: List[str] = Field(default_factory=list, description="URLs contradicting the claim")
+    caveats: List[str] = Field(default_factory=list, description="Qualifications that don't change the verdict")
+    
+    @field_validator('caveats', mode='before')
+    @classmethod
+    def clean_caveats(cls, v: Any) -> List[str]:
+        """Keep at most 3 short non-empty strings; tolerate null/garbage from the LLM."""
+        if not isinstance(v, list):
+            return []
+        cleaned = [c.strip()[:300] for c in v if isinstance(c, str) and c.strip()]
+        return cleaned[:3]
     
     @field_validator('confidence')
     @classmethod
@@ -76,13 +86,16 @@ Based on the evidence, provide your verdict:
 
 5. **Contradicting Sources**: List URLs that contradict the claim (if any)
 
+6. **Caveats**: Short qualifications a reader should know that do NOT change your verdict, e.g. exceptions, seasonal/regional variation, ranges, or limits on when the claim holds (max 3). Use an empty list if there are none. Do not use this field to hedge when you are simply unsure.
+
 Respond in JSON format:
 {{
     "verdict": "...",
     "confidence": 0.X,
     "reasoning": "...",
     "supporting_sources": ["url1", "url2"],
-    "contradicting_sources": ["url1"]
+    "contradicting_sources": ["url1"],
+    "caveats": ["short qualification, or leave the list empty"]
 }}
 
 CRITICAL RULES:
@@ -151,6 +164,7 @@ class VerificationAgent:
                     "reasoning": "Verification failed due to an error.",
                     "supporting_sources": [],
                     "contradicting_sources": [],
+                    "caveats": [],
                     "model_used": self.model
                 })
         

@@ -61,6 +61,7 @@ export interface ClaimResult {
   verdict: Verdict;
   confidence: number;
   reasoning: string;
+  caveats?: string[];
   sources: ClaimSources;
 }
 
