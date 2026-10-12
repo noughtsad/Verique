@@ -200,12 +200,35 @@ class VerificationPipeline:
         return state
     
     async def _run_claim_classification(self, state: PipelineState) -> PipelineState:
-        """Skip classification — treat all extracted claims as verifiable."""
-        # Bypass classifier: pass all claims through directly
-        state["verifiable_claims"] = state["extracted_claims"]
-        for c in state["verifiable_claims"]:
-            c["is_verifiable"] = True
-        logger.info("Classification bypassed, treating all claims as verifiable", count=len(state["verifiable_claims"]))
+        """Classify extracted claims and keep only verifiable claims, excluding personal reflections and opinions."""
+        if not state["extracted_claims"]:
+            state["verifiable_claims"] = []
+            return state
+
+        if not getattr(settings, "ENABLE_CLAIM_CLASSIFIER", True):
+            logger.info("Claim classifier disabled via config, treating all claims as verifiable")
+            state["verifiable_claims"] = state["extracted_claims"]
+            for c in state["verifiable_claims"]:
+                c["is_verifiable"] = True
+            return state
+
+        try:
+            verifiable = await self.claim_classifier.filter_claims(state["extracted_claims"])
+            state["verifiable_claims"] = verifiable
+            if self.claim_classifier.model not in state["models_used"]:
+                state["models_used"].append(self.claim_classifier.model)
+            logger.info(
+                "Claim classification completed",
+                total_extracted=len(state["extracted_claims"]),
+                verifiable_count=len(verifiable),
+                filtered_out=len(state["extracted_claims"]) - len(verifiable)
+            )
+        except Exception as e:
+            logger.error("Claim classification failed, falling back to all claims", error=str(e))
+            state["errors"].append(f"Claim classification error: {str(e)}")
+            state["verifiable_claims"] = state["extracted_claims"]
+            for c in state["verifiable_claims"]:
+                c["is_verifiable"] = True
         return state
     
     async def _run_query_planning(self, state: PipelineState) -> PipelineState:

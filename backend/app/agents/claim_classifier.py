@@ -24,54 +24,57 @@ class ClassificationResponse(BaseModel):
     classifications: List[ClaimClassification] = Field(..., description="List of classifications")
 
 
-CLASSIFICATION_PROMPT = """Analyze these claims and determine if each is objectively verifiable.
+CLASSIFICATION_PROMPT = """You are a rigorous claim classifier. Your goal is to distinguish verifiable factual claims from unverifiable statements such as personal reflections, opinions, beliefs, and emotional statements.
 
-A claim is VERIFIABLE if:
-- It makes a factual assertion that can be checked against external sources
-- It contains specific, measurable details (numbers, names, dates)
-- It could theoretically be proven true or false
+A claim is VERIFIABLE (is_verifiable = true) if and only if:
+- It makes an objective, factual assertion that can be corroborated or disproved by external, authoritative evidence, public records, or verifiable data.
+- It contains specific, measurable, or historical details (numbers, statistics, named entities, dates, locations, scientific facts, concrete events).
+- It is a statement of external fact rather than an internal mental state, personal judgment, or subjective reflection.
 
-A claim is NOT VERIFIABLE if:
-- It's a pure opinion or subjective preference
-- It's too vague to check
-- It's about personal experiences
-- It's a prediction about the future
-- It's rhetorical or promotional fluff
+A claim is NOT VERIFIABLE (is_verifiable = false) if:
+- PERSONAL REFLECTIONS or introspections: Statements about one's personal growth, how an experience felt, personal epiphanies, inner thoughts, or lessons learned (e.g. "I realized I had changed", "Looking back, that experience defined me", "I felt overwhelmed by the project").
+- SUBJECTIVE OPINIONS or value judgments: Subjective preferences, aesthetic opinions, moral stances, or recommendations (e.g. "This is the best product on the market", "In my opinion, remote work is superior", "Python is more beautiful than Java").
+- PERSONAL EXPERIENCES or anecdotes: Statements describing purely subjective or private experiences not recorded in external sources (e.g. "I had a wonderful conversation yesterday", "My coffee was delicious this morning").
+- PREDICTIONS or speculations: Statements about what will happen in the future (e.g. "Revenue will double next year", "AI will replace humans by 2035").
+- VAGUE / RHETORICAL / MARKETING FLUFF: Non-specific claims that lack concrete criteria to evaluate truth or falsehood (e.g. "Our innovative solution unlocks human potential").
 
 EXAMPLES:
 
-Example 1:
-Claim: "We have over 10,000 active users worldwide."
+Claim: "Tesla delivered 1.8 million vehicles in 2023."
 Classification: VERIFIABLE
-Reason: Contains specific number that can be verified through company records or independent verification
+Reason: Contains verifiable statistics and dates checkable via public financial reports.
 
-Example 2:
-Claim: "I think this is the best product on the market."
+Claim: "I felt a profound sense of peace while walking through the forest."
 Classification: NOT VERIFIABLE
-Reason: Pure subjective opinion; "best" is not objectively measurable
+Reason: Personal reflection and subjective emotional experience.
 
-Example 3:
-Claim: "Revenue will increase by 200% next year."
+Claim: "In my opinion, this framework is the most elegant solution ever created."
 Classification: NOT VERIFIABLE
-Reason: Prediction about future; cannot be verified until it happens
+Reason: Subjective opinion and personal value judgment; elegance is not objectively measurable.
 
-Example 4:
-Claim: "The study was published in Nature journal in March 2024."
+Claim: "NASA launched the Artemis 1 mission on November 16, 2022."
 Classification: VERIFIABLE
-Reason: Specific publication details can be checked against journal archives
+Reason: Historical event with a specific verifiable date and entity.
 
-Example 5:
-Claim: "Our innovative solution transforms the industry."
+Claim: "Reflecting on my career, failure was my greatest teacher."
 Classification: NOT VERIFIABLE
-Reason: Vague marketing language; no specific metrics or claims to verify
+Reason: Personal reflection and philosophical belief.
+
+Claim: "The company was founded in 2015 by Jane Doe and John Smith."
+Classification: VERIFIABLE
+Reason: Factual assertion regarding founding date and founders that can be verified in corporate registries.
+
+Claim: "I think everyone should learn programming."
+Classification: NOT VERIFIABLE
+Reason: Personal opinion and normative recommendation.
 
 Now analyze these claims:
 {claims}
 
-For each claim, respond with JSON array:
+For each claim, return a JSON array:
 [
-    {{"claim_id": "clm_xxx", "is_verifiable": true, "reason": "contains specific numbers"}},
-    {{"claim_id": "clm_yyy", "is_verifiable": false, "reason": "subjective opinion"}}
+    {{"claim_id": "clm_xxx", "is_verifiable": true, "reason": "Specific verifiable fact..."}},
+    {{"claim_id": "clm_yyy", "is_verifiable": false, "reason": "Personal reflection or opinion..."}}
 ]
 
 Return ONLY the JSON array, no other text.
@@ -80,7 +83,7 @@ Return ONLY the JSON array, no other text.
 
 class ClaimClassifierAgent:
     """
-    Filters claims to keep only verifiable ones.
+    Filters claims to keep only verifiable ones, rejecting personal reflections and opinions.
     """
     
     def __init__(self):
@@ -118,57 +121,61 @@ class ClaimClassifierAgent:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a claim classifier. Return only valid JSON."},
+                    {"role": "system", "content": "You are a precise claim classifier. Return only valid JSON array."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
                 max_tokens=2000
             )
             
-            content = response.choices[0].message.content
+            msg = response.choices[0].message
+            content = msg.content or msg.reasoning or ""
             
-            # Parse and validate JSON response with retry logic
+            # Parse and validate JSON response
             classifications = self._parse_and_validate_response(content, attempt=1)
             
             if classifications is None:
-                # Keep all claims if parsing fails
-                logger.warning("Could not parse classifications after retries, keeping all claims")
+                # Keep all claims if parsing fails as a conservative fallback
+                logger.warning("Could not parse classifications, keeping all claims as fallback")
                 return claims
             
-            # Build lookup of verifiability
-            verifiable_ids = set()
-            for c in classifications:
-                if c.get("is_verifiable", True):
-                    verifiable_ids.add(c.get("claim_id"))
+            # Build lookup of verifiability and reasons
+            classification_by_id = {c["claim_id"]: c for c in classifications}
             
-            # Filter claims
-            filtered = [c for c in claims if c["id"] in verifiable_ids]
-            
-            # Mark remaining as not verifiable for reference
+            # Update verification metadata on every claim
             for c in claims:
-                c["is_verifiable"] = c["id"] in verifiable_ids
+                info = classification_by_id.get(c["id"])
+                if info is not None:
+                    c["is_verifiable"] = bool(info.get("is_verifiable", True))
+                    c["classification_reason"] = info.get("reason", "")
+                else:
+                    c["is_verifiable"] = True
+            
+            # Filter claims to keep ONLY verifiable claims
+            filtered = [c for c in claims if c.get("is_verifiable") is True]
             
             logger.info(
-                "Claims classified",
+                "Claims classified successfully",
                 total=len(claims),
-                verifiable=len(filtered)
+                verifiable=len(filtered),
+                filtered_out=len(claims) - len(filtered)
             )
             
             return filtered
             
         except Exception as e:
             logger.error("Classification failed", error=str(e))
-            # On failure, return all claims (conservative approach)
+            # On unexpected failure, return all claims (conservative fallback)
             return claims
     
     def _parse_and_validate_response(
         self,
         content: str,
-        attempt: int,
+        attempt: int = 1,
         max_attempts: int = 3
     ) -> List[Dict[str, Any]] | None:
         """
-        Parse and validate LLM response with retry logic.
+        Parse and validate LLM response with robust JSON extraction.
         
         Args:
             content: Raw LLM response
@@ -178,28 +185,48 @@ class ClaimClassifierAgent:
         Returns:
             Validated list of classifications or None if parsing fails
         """
+        if not content:
+            return None
+
         try:
+            cleaned = content.strip()
+            # Strip markdown fences if present
+            if cleaned.startswith("```"):
+                lines = cleaned.split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                cleaned = "\n".join(lines).strip()
+
+            # Attempt direct parse of cleaned string
+            try:
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, dict):
+                    parsed = parsed.get("classifications") or parsed.get("claims") or list(parsed.values())[0]
+                if isinstance(parsed, list):
+                    validated = [ClaimClassification(**item) for item in parsed]
+                    return [v.model_dump() for v in validated]
+            except Exception:
+                pass
+
             # Find JSON array in response
             start = content.find('[')
             end = content.rfind(']') + 1
             
-            if start < 0 or end <= start:
-                logger.warning(
-                    "No JSON array found in response",
-                    attempt=attempt,
-                    content_preview=content[:100]
-                )
-                return None
-            
-            # Extract and parse JSON
-            json_str = content[start:end]
-            parsed = json.loads(json_str)
-            
-            # Validate with Pydantic
-            validated = [ClaimClassification(**item) for item in parsed]
-            
-            # Convert back to dict format
-            return [v.model_dump() for v in validated]
+            if start >= 0 and end > start:
+                json_str = content[start:end]
+                parsed = json.loads(json_str)
+                if isinstance(parsed, list):
+                    validated = [ClaimClassification(**item) for item in parsed]
+                    return [v.model_dump() for v in validated]
+
+            logger.warning(
+                "No valid JSON array found in classification response",
+                attempt=attempt,
+                content_preview=content[:150]
+            )
+            return None
             
         except json.JSONDecodeError as e:
             logger.warning(

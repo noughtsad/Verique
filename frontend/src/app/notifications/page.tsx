@@ -71,6 +71,12 @@ function notifActionText(n: Notification): string {
   }
 }
 
+function parseUtcDate(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : `${dateStr}Z`;
+  return new Date(normalized);
+}
+
 // ─── Single Notification Item ─────────────────────────────────────────────────
 
 function NotificationRow({
@@ -85,7 +91,7 @@ function NotificationRow({
   // Format relative timestamp with safety fallback
   const timeAgo = useMemo(() => {
     try {
-      return formatDistanceToNow(new Date(notif.created_at), { addSuffix: true });
+      return formatDistanceToNow(parseUtcDate(notif.created_at), { addSuffix: true });
     } catch {
       return 'recently';
     }
@@ -93,7 +99,7 @@ function NotificationRow({
 
   const fullDate = useMemo(() => {
     try {
-      return format(new Date(notif.created_at), 'PPP · p');
+      return format(parseUtcDate(notif.created_at), 'PPP · p');
     } catch {
       return '';
     }
@@ -313,7 +319,7 @@ export default function NotificationsPage() {
     const earlierItems: Notification[] = [];
 
     for (const item of filteredNotifications) {
-      const d = new Date(item.created_at).toDateString();
+      const d = parseUtcDate(item.created_at).toDateString();
       if (d === todayStr) {
         todayItems.push(item);
       } else if (d === yesterdayStr) {

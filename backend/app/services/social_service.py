@@ -270,8 +270,17 @@ class SocialService:
                 vertical=None,
                 language="en",
             )
-            verification.status = "completed"
-            verification.overall_score = result["page_score"]
+            has_verifiable_claims = len(result["claims"]) > 0
+            if not has_verifiable_claims:
+                verification.status = "unverifiable"
+                verification.overall_score = None
+                verification.final_decision_note = (
+                    "No verifiable factual claims detected. This post consists of personal reflections, feelings, or subjective opinions."
+                )
+            else:
+                verification.status = "completed"
+                verification.overall_score = result["page_score"]
+                verification.final_decision_note = None
             verification.summary = result["summary"].model_dump()
             verification.models_used = result["models_used"]
             verification.sources_checked = result["sources_checked"]

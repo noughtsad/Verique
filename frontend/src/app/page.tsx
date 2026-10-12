@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertCircle, Loader2, LogOut, ShieldCheck,
+  AlertCircle, Loader2, LogOut, ShieldCheck, HelpCircle, Info,
   Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
@@ -34,7 +34,7 @@ import {
   verifyPost,
 } from '@/lib/api';
 import { FollowerListItem, FollowResponse, ModerationReview, Post, PostVerification, User, VERDICT_CONFIG } from '@/lib/types';
-import { cn, formatDate, getDomainFromUrl } from '@/lib/utils';
+import { cn, formatDate, getDomainFromUrl, isUnverifiableVerification } from '@/lib/utils';
 import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 import { Sidebar } from '@/app/components/Sidebar';
 
@@ -681,6 +681,7 @@ function TimelinePostCard({
   onVerify: () => void;
 }) {
   const verification = post.latest_verification_summary;
+  const isUnverifiable = isUnverifiableVerification(verification);
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
@@ -761,13 +762,19 @@ function TimelinePostCard({
         {/* Badges */}
         <div className="flex items-center gap-2">
          {verification ? (
-            <div className={cn("px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border flex items-center gap-1.5 shadow-sm", 
-               verification.score && verification.score > 70 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
-               verification.score && verification.score < 40 ? "bg-red-500/10 text-red-400 border-red-500/20" : 
-               "bg-amber-500/10 text-amber-400 border-amber-500/20")}
-            >
-               <ShieldCheck className="w-3.5 h-3.5"/> Fact-Checked: {verification.score}
-            </div>
+            isUnverifiable ? (
+              <div className="px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border flex items-center gap-1.5 shadow-sm bg-slate-500/10 text-slate-300 border-slate-500/20 whitespace-nowrap">
+                <HelpCircle className="w-3.5 h-3.5 text-slate-400" /> Opinion / Unverifiable
+              </div>
+            ) : (
+              <div className={cn("px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border flex items-center gap-1.5 shadow-sm", 
+                 verification.score && verification.score > 70 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+                 verification.score && verification.score < 40 ? "bg-red-500/10 text-red-400 border-red-500/20" : 
+                 "bg-amber-500/10 text-amber-400 border-amber-500/20")}
+              >
+                 <ShieldCheck className="w-3.5 h-3.5"/> Fact-Checked: {verification.score}
+              </div>
+            )
          ) : (
             <button 
               onClick={(e) => { e.stopPropagation(); onVerify(); }}
@@ -896,12 +903,13 @@ function VerificationPanel({
   busy: boolean;
   error: string | null;
 }) {
+  const isUnverifiable = isUnverifiableVerification(verification);
   const score = verification.score ?? 0;
-  const hasScore = verification.score !== null && verification.score !== undefined;
+  const hasScore = !isUnverifiable && verification.score !== null && verification.score !== undefined;
   
   let containerColor = "border-slate-500/20 bg-slate-500/10";
-  let labelColor = "text-slate-500";
-  let scoreColor = "text-slate-400";
+  let labelColor = "text-slate-400";
+  let scoreColor = "text-slate-300";
   let badgeColor = "text-slate-300 bg-slate-500/20 border-slate-500/20";
   let iconColor = "text-slate-400";
 
@@ -933,17 +941,59 @@ function VerificationPanel({
         <div className="absolute -right-4 -bottom-4 opacity-10">
           <ShieldCheck className={cn("w-32 h-32", iconColor)} />
         </div>
-        <div className="flex items-end justify-between relative z-10">
-          <div>
-            <div className={cn("text-[10px] uppercase font-semibold tracking-widest", labelColor)}>Verity Score</div>
-            <div className={cn("text-4xl font-bold mt-1", scoreColor)}>{verification.score ?? '--'}</div>
+        {/* Header row: Label & Badge */}
+        <div className="flex items-center justify-between mb-2 relative z-10 gap-2">
+          <div className={cn("text-[10px] uppercase font-semibold tracking-widest", labelColor)}>
+            {isUnverifiable ? "Claim Assessment" : "Verity Score"}
           </div>
-          <div className={cn("text-right text-xs font-semibold backdrop-blur px-3 py-1.5 rounded border shadow-sm", badgeColor)}>
-            <div>{verification.status}</div>
+          <div className={cn("text-xs font-semibold backdrop-blur px-2.5 py-1 rounded border shadow-sm whitespace-nowrap flex items-center gap-1.5 flex-shrink-0", badgeColor)}>
+            {isUnverifiable ? (
+              <>
+                <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                <span>Opinion / Reflection</span>
+              </>
+            ) : (
+              <div>{verification.status}</div>
+            )}
           </div>
         </div>
-        {verification.final_decision_note && <p className={cn("mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border font-medium leading-relaxed", containerColor.split(' ')[0])}>{verification.final_decision_note}</p>}
+
+        {/* Value row */}
+        <div className="relative z-10">
+          {isUnverifiable ? (
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-baseline gap-2">
+              <span>Unverifiable</span>
+              <span className="text-xs font-normal text-slate-400">Claim</span>
+            </div>
+          ) : (
+            <div className={cn("text-4xl font-bold", scoreColor)}>
+              {verification.score ?? '--'}
+            </div>
+          )}
+        </div>
+        {isUnverifiable ? (
+          <p className="mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border border-slate-500/20 font-medium leading-relaxed">
+            {verification.final_decision_note || "No verifiable factual claims detected. This statement consists of personal reflections, feelings, or subjective opinions rather than empirical facts."}
+          </p>
+        ) : (
+          verification.final_decision_note && (
+            <p className={cn("mt-4 rounded-lg bg-black/20 px-4 py-3 text-sm text-slate-200 shadow-sm border font-medium leading-relaxed", containerColor.split(' ')[0])}>
+              {verification.final_decision_note}
+            </p>
+          )
+        )}
       </div>
+
+      {isUnverifiable && verification.claims.length === 0 && (
+        <div className="rounded-xl border border-white/10 p-5 bg-white/5 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
+            <Info className="w-4 h-4 text-blue-400" /> Non-Factual Content
+          </div>
+          <p className="text-[13px] text-slate-300 leading-relaxed font-medium">
+            Verique only assigns truth scores to objectively verifiable claims with measurable data, dates, or public records. Personal feelings and subjective thoughts are labeled as unverifiable.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         {verification.claims.map((claim) => {

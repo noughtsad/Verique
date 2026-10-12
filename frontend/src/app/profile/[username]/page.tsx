@@ -12,6 +12,7 @@ import {
   Loader2,
   Shield,
   ShieldCheck,
+  HelpCircle,
   User as UserIcon,
   UserCheck,
   UserMinus,
@@ -40,7 +41,7 @@ import {
   UserProfile,
   VERDICT_CONFIG,
 } from '@/lib/types';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, isUnverifiableVerification } from '@/lib/utils';
 import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 import { Sidebar } from '@/app/components/Sidebar';
 
@@ -196,8 +197,10 @@ function UserCard({
 }
 
 function PostCard({ post }: { post: Post }) {
-  const score = post.latest_verification_summary?.score;
-  const status = post.latest_verification_summary?.status;
+  const verification = post.latest_verification_summary;
+  const isUnverifiable = isUnverifiableVerification(verification);
+  const score = verification?.score;
+  const status = verification?.status;
 
   return (
     <div className="p-5 rounded-xl bg-[#18181b]/55 backdrop-blur-md border border-white/10 hover:shadow-sm transition-all duration-300">
@@ -206,21 +209,30 @@ function PostCard({ post }: { post: Post }) {
         <span className="text-xs font-medium text-slate-400">{formatDate(post.created_at)}</span>
         <div className="flex items-center gap-2">
           {status && status !== 'pending' ? (
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className={cn('w-4 h-4', getScoreColor(score))} />
-              <span className={cn('text-xs font-semibold tabular-nums', getScoreColor(score))}>
-                {score !== null && score !== undefined ? `${score}%` : '—'}
-              </span>
-              <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
-                score !== undefined && score !== null && score >= 80
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : score !== undefined && score !== null && score >= 60
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : 'bg-red-500/15 text-red-400'
-              )}>
-                {getScoreLabel(score)}
-              </span>
-            </div>
+            isUnverifiable ? (
+              <div className="flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-500/15 text-slate-300 border border-slate-500/20">
+                  Opinion / Unverifiable
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className={cn('w-4 h-4', getScoreColor(score))} />
+                <span className={cn('text-xs font-semibold tabular-nums', getScoreColor(score))}>
+                  {score !== null && score !== undefined ? `${score}%` : '—'}
+                </span>
+                <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
+                  score !== undefined && score !== null && score >= 80
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : score !== undefined && score !== null && score >= 60
+                    ? 'bg-amber-500/15 text-amber-400'
+                    : 'bg-red-500/15 text-red-400'
+                )}>
+                  {getScoreLabel(score)}
+                </span>
+              </div>
+            )
           ) : (
             <span className="text-xs text-white/30 flex items-center gap-1">
               <Shield className="w-3.5 h-3.5" /> Unverified

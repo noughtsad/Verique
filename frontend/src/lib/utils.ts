@@ -192,3 +192,47 @@ export function formatNumber(num: number): string {
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * Check whether a verification represents an unverifiable statement, personal reflection, or opinion.
+ */
+export function isUnverifiableVerification(verification?: {
+  status?: string | null;
+  score?: number | null;
+  summary?: {
+    strongly_supported?: number;
+    supported?: number;
+    mixed?: number;
+    weak?: number;
+    contradicted?: number;
+    outdated?: number;
+    not_verifiable?: number;
+  } | null;
+  claims?: any[];
+} | null): boolean {
+  if (!verification) return false;
+  if (verification.status === 'unverifiable') return true;
+
+  // If claims array is provided and empty
+  if (Array.isArray(verification.claims) && verification.claims.length === 0 && verification.status === 'completed') {
+    return true;
+  }
+
+  // If summary exists, check if all factual claims are 0
+  if (verification.summary) {
+    const factualCount =
+      (verification.summary.strongly_supported || 0) +
+      (verification.summary.supported || 0) +
+      (verification.summary.mixed || 0) +
+      (verification.summary.weak || 0) +
+      (verification.summary.contradicted || 0) +
+      (verification.summary.outdated || 0);
+
+    if (factualCount === 0 && (verification.status === 'completed' || verification.score === 50)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
