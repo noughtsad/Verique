@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "openai/gpt-oss-120b"  # Available on this Groq account (replaces llama-3.3-70b)
     LLM_MODEL_FAST: str = "openai/gpt-oss-20b"  # Faster model (replaces llama-3.1-8b-instant)
     
+    # Decision models (Jev / Laya) via Vercel AI Gateway.
+    # Off by default; with SHADOW_MODE on, results are logged but never used.
+    AI_GATEWAY_API_KEY: Optional[str] = None  # Vercel only
+    JEV_API_KEY: Optional[str] = None  # other providers; OpenCode Zen free tier needs none
+    AI_GATEWAY_BASE_URL: str = "https://ai-gateway.vercel.sh/typesafe"
+    JEV_MODEL: str = "typesafe-ai/jev"
+    JEV_ENABLED: bool = False
+    JEV_SHADOW_MODE: bool = True
+    JEV_CONFIDENCE: float = 0.8  # live mode: Jev decides when P >= this or <= 1 - this
+    JEV_TIMEOUT_SECONDS: float = 10.0
+    JEV_SHADOW_LOG_PATH: str = "logs/jev_shadow.jsonl"  # one JSON line per compared claim
+
     # Search APIs - DuckDuckGo is free, no API key needed
     # Optional: Tavily (preferred when set), SerpAPI or Google CSE for better results
     TAVILY_API_KEY: Optional[str] = None
