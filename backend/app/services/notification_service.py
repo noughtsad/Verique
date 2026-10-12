@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -70,12 +70,12 @@ class NotificationService:
 
     async def unread_count(self, owner_id: int) -> NotificationCountResponse:
         result = await self.db.execute(
-            select(Notification).where(
+            select(func.count(Notification.id)).where(
                 Notification.owner_id == owner_id,
                 Notification.is_read.is_(False),
             )
         )
-        count = len(result.scalars().all())
+        count = result.scalar_one()
         return NotificationCountResponse(unread_count=count)
 
     async def mark_all_read(self, owner_id: int) -> None:

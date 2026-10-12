@@ -99,10 +99,19 @@ function NotificationRow({
     }
   }, [notif.created_at]);
 
+  const router = useRouter();
+  const target = notif.post_id
+    ? `/?post=${notif.post_id}`
+    : notif.type === 'follow'
+      ? `/profile/${notif.actor.username}`
+      : null;
+
+  // The card holds nested links (avatar, name), so it can't be an <a> itself.
   const handleClick = () => {
     if (!notif.is_read) {
       onRead(notif.id);
     }
+    if (target) router.push(target);
   };
 
   const cardContent = (
@@ -198,22 +207,6 @@ function NotificationRow({
       )}
     </div>
   );
-
-  if (notif.post_id) {
-    return (
-      <Link href={`/?post=${notif.post_id}`} className="block">
-        {cardContent}
-      </Link>
-    );
-  }
-
-  if (notif.type === 'follow') {
-    return (
-      <Link href={`/profile/${notif.actor.username}`} className="block">
-        {cardContent}
-      </Link>
-    );
-  }
 
   return cardContent;
 }
