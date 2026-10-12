@@ -15,6 +15,8 @@ import {
   Message,
   ModerationDecisionPayload,
   ModerationReview,
+  Notification,
+  NotificationCountResponse,
   Post,
   PostVerification,
   RegisterPayload,
@@ -296,4 +298,28 @@ export async function markConversationRead(conversationId: number): Promise<void
 export function getChatWebSocketUrl(): string {
   const wsBase = API_BASE_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
   return `${wsBase}/api/v1/chat/ws`;
+}
+
+// -----------------------------------------------------------------------
+// Notifications
+// -----------------------------------------------------------------------
+
+export async function listNotifications(limit = 30, offset = 0): Promise<Notification[]> {
+  return apiFetch<Notification[]>(
+    `/api/v1/notifications/?limit=${limit}&offset=${offset}`,
+    undefined,
+    true,
+  );
+}
+
+export async function getUnreadNotificationCount(): Promise<NotificationCountResponse> {
+  return apiFetch<NotificationCountResponse>('/api/v1/notifications/unread-count', undefined, true);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  return apiFetch<void>('/api/v1/notifications/mark-all-read', { method: 'POST' }, true);
+}
+
+export async function markNotificationRead(notificationId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' }, true);
 }

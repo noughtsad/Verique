@@ -376,3 +376,20 @@ export type ChatWsEnvelope =
   | { type: 'message'; data: Message }
   | { type: 'error'; data: { detail: string } };
 
+// -----------------------------------------------------------------------
+// Notifications
+// -----------------------------------------------------------------------
+
+export interface Notification {
+  id: number;
+  type: 'like' | 'comment' | 'follow';
+  actor: PublicUser;
+  post_id?: number | null;
+  preview?: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationCountResponse {
+  unread_count: number;
+}

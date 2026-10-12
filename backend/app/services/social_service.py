@@ -44,6 +44,7 @@ from app.schemas.verification import (
     VerificationSummary,
 )
 from app.services.verification_service import VerificationService
+from app.services.notification_service import NotificationService
 
 
 def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
@@ -126,6 +127,15 @@ class SocialService:
         self.db.add(PostLike(post_id=post_id, user_id=user.id))
         await self.db.flush()
 
+        # Notify the post author that someone liked their post
+        post = await self._load_post(post_id)
+        await NotificationService(self.db).create(
+            owner_id=post.author_id,
+            actor_id=user.id,
+            type="like",
+            post_id=post_id,
+        )
+
     async def unlike_post(self, user: User, post_id: int) -> None:
         result = await self.db.execute(
             select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user.id)
@@ -164,6 +174,17 @@ class SocialService:
         await self.db.flush()
         await self.db.refresh(comment)
         await self.db.refresh(comment, attribute_names=["author"])
+
+        # Notify the post author that someone commented on their post
+        post = await self._load_post(post_id)
+        await NotificationService(self.db).create(
+            owner_id=post.author_id,
+            actor_id=user.id,
+            type="comment",
+            post_id=post_id,
+            preview=payload.content[:120],
+        )
+
         return CommentResponse(
             id=comment.id,
             post_id=comment.post_id,

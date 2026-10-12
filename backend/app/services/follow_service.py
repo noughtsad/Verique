@@ -16,6 +16,7 @@ from app.models.verification import Verification
 from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
 from app.schemas.social import PostSummary, PostVerificationSummary
 from app.schemas.verification import VerificationSummary
+from app.services.notification_service import NotificationService
 
 
 class FollowService:
@@ -48,6 +49,14 @@ class FollowService:
         self.db.add(follow)
         await self.db.flush()
         await self.db.refresh(follow)
+
+        # Notify the followed user
+        await NotificationService(self.db).create(
+            owner_id=followed.id,
+            actor_id=follower.id,
+            type="follow",
+        )
+
         return FollowResponse(
             follower_id=follow.follower_id,
             followed_id=follow.followed_id,

@@ -1,5 +1,4 @@
-from app.schemas.verification import ClaimResult, ClaimSources, ClaimType, TimeSensitivity
-from app.schemas.social import Verdict, Vertical
+from app.schemas.verification import ClaimResult, ClaimSources, ClaimType, TimeSensitivity, Verdict, Vertical
 import math
 from typing import List
 

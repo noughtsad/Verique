@@ -17,7 +17,14 @@ from app.core.security import get_password_hash
 from app.main import app
 from app.models.chat import Conversation, Message
 from app.models.domain import Domain
+from app.models.article import Article
+from app.models.comment import Comment
+from app.models.follow import UserFollow
+from app.models.like import PostLike
+from app.models.notification import Notification
+from app.models.post import Post
 from app.models.user import User
+from app.models.verification import Verification
 
 
 @pytest_asyncio.fixture
@@ -37,7 +44,19 @@ async def engine():
     async with test_engine.begin() as conn:
         await conn.run_sync(
             Base.metadata.create_all,
-            tables=[User.__table__, Conversation.__table__, Message.__table__, Domain.__table__],
+            tables=[
+                User.__table__,
+                UserFollow.__table__,
+                Article.__table__,
+                Post.__table__,
+                PostLike.__table__,
+                Comment.__table__,
+                Verification.__table__,
+                Notification.__table__,
+                Conversation.__table__,
+                Message.__table__,
+                Domain.__table__,
+            ],
         )
     yield test_engine
     await test_engine.dispose()

@@ -4,6 +4,7 @@ Schemas module initialization
 from app.schemas.auth import AuthResponse, PublicUserResponse, UserCreate, UserLogin, UserResponse
 from app.schemas.chat import ConversationSummary, MessageCreate, MessageResponse
 from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
+from app.schemas.notification import NotificationCountResponse, NotificationResponse
 from app.schemas.social import (
     ChallengeRequest,
     ChallengeResponse,
@@ -40,6 +41,8 @@ from app.schemas.verification import (
 )
 
 __all__ = [
+    "NotificationCountResponse",
+    "NotificationResponse",
     "FollowerListItem",
     "FollowResponse",
     "UserProfileResponse",

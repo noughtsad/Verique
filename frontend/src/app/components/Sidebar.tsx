@@ -7,7 +7,7 @@ import {
   Bell, Bookmark, Compass, Home as HomeIcon,
   LogOut, MessageCircle, Settings, ShieldCheck, UserCircle
 } from 'lucide-react';
-import { clearAuthToken, listConversations } from '@/lib/api';
+import { clearAuthToken, listConversations, getUnreadNotificationCount } from '@/lib/api';
 import { useChatSocket } from '@/hooks/useChatSocket';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,14 @@ export function Sidebar({ user, onLogout }: { user: User | null, onLogout: () =>
     refetchInterval: 30_000,
   });
   const unreadCount = conversationsQuery.data?.reduce((sum, c) => sum + c.unread_count, 0) ?? 0;
+
+  const { data: notifData } = useQuery({
+    queryKey: ['notifications-unread'],
+    queryFn: getUnreadNotificationCount,
+    enabled: !!user,
+    refetchInterval: 30_000,
+  });
+  const unreadNotifications = notifData?.unread_count ?? 0;
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-[100px] hover:w-[240px] z-50 transition-all duration-300 ease-in-out bg-[#18181b]/55 backdrop-blur-xl flex flex-col py-8 overflow-hidden group shadow-xl hidden sm:flex border-r border-white/10">
@@ -64,10 +72,18 @@ export function Sidebar({ user, onLogout }: { user: User | null, onLogout: () =>
           <Compass className="w-6 h-6 flex-shrink-0" />
           <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Explore Feed</span>
         </button>
-        <button className="flex items-center px-9 py-3 hover:text-white hover:bg-white/5 transition group/btn">
-          <Bell className="w-6 h-6 flex-shrink-0" />
+        <Link href="/notifications" className={cn("flex items-center px-9 py-3 relative group/btn transition", pathname.startsWith('/notifications') ? "text-white hover:bg-white/5" : "hover:text-white hover:bg-white/5")}>
+          <div className="relative flex-shrink-0">
+            <Bell className="w-6 h-6" />
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
+              </span>
+            )}
+          </div>
+          {pathname.startsWith('/notifications') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-500 rounded-r-full"></div>}
           <span className="ml-8 font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Notifications</span>
-        </button>
+        </Link>
         <Link href="/messages" className={cn("flex items-center px-9 py-3 relative group/btn transition", pathname.startsWith('/messages') ? "text-white hover:bg-white/5" : "hover:text-white hover:bg-white/5")}>
           <div className="relative flex-shrink-0">
             <MessageCircle className="w-6 h-6" />
