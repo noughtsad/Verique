@@ -58,6 +58,8 @@ Beyond the fact-checking engine, the app is a full social feed built around it:
 - **Posts** – create posts, attach a source URL, and run AI verification inline on any post
 - **Follow system** – follow/unfollow users, search people, and get follow suggestions
 - **Likes & comments** – engage with posts from other users
+- **Notifications** – get notified when someone likes or comments on your post or follows you
+  (`/notifications` page with unread highlighting, an unread count, and mark-all-read)
 - **Direct messages** – real-time 1:1 chat between users:
   - Conversation list with unread counts and last-message previews
   - Instant delivery over a WebSocket (`/api/v1/chat/ws`), with a REST fallback for sending while reconnecting
@@ -84,15 +86,19 @@ User Input (text or URL)
    - Tags claim type, topic, and time sensitivity
    - Returns claims with character span offsets
 
-3. Claim Classifier [Groq LLM - GPT-OSS 20B]
-   - Filters claims to only verifiable ones
+3. Claim Classifier [Groq LLM - GPT-OSS 20B, optionally Jev]
+   - Filters claims to only verifiable ones, dropping opinions, personal
+     reflections, predictions and marketing fluff (`ENABLE_CLAIM_CLASSIFIER`)
    - Marks each claim as verifiable or not verifiable
+   - A post with no verifiable claims gets the `unverifiable` status
+   - Optionally uses the Jev decision model, see "Jev Decision Model" below
 
 4. Query Planner [Groq LLM - GPT-OSS 20B]
-   - Generates targeted web search queries per claim
+   - Generates standard search queries (to support the claim) plus an
+     adversarial query that tries to disprove it
 
 5. Retrieval Agent [parallel]
-   - Uses DuckDuckGo by default
+   - Uses Tavily first when `TAVILY_API_KEY` is set, DuckDuckGo as fallback
    - Optionally uses SerpAPI / Google CSE when configured
    - Fetches and scores candidate evidence
 
@@ -101,7 +107,7 @@ User Input (text or URL)
    - Keeps top results per claim
 
 7. Verification Agent [Groq LLM - GPT-OSS 120B]
-   - Produces verdict, confidence, and reasoning for each claim
+   - Produces verdict, confidence, reasoning and caveats for each claim
 
 8. Explanation / Response Assembly
    - Builds the final API response
@@ -123,7 +129,7 @@ API Response -> Next.js Frontend / Chrome Extension
 | **Real-time** | FastAPI/Starlette WebSockets, TanStack Query as the client-side cache |
 | **Extension** | Chrome Manifest V3                                  |
 | **Database**  | Supabase PostgreSQL + SQLAlchemy + Alembic          |
-| **LLMs**      | Groq (`openai/gpt-oss-120b` – FREE)                 |
+| **LLMs**      | Groq (`openai/gpt-oss-120b` – FREE); optional Jev decision model for claim classification |
 | **Search**    | Tavily (if `TAVILY_API_KEY` set), DuckDuckGo (FREE) fallback, optional: SerpAPI |
 
 ### Domain Reputation (MBFC)
@@ -149,6 +155,35 @@ Notes:
   (e.g. `cdc.gov` scores low under MBFC). Run `find_mbfc_disagreements()` to list conflicts.
 - MBFC retains copyright on its ratings; confirm the dataset's licensing before commercial use.
 - MBFC rates sources as publishers, which may not match how individual claims are weighed.
+
+### Jev Decision Model (optional)
+
+The claim classifier can use [Jev](https://typesafe.ai) from TypeSafe AI, a model that
+answers typed yes/no questions with probabilities instead of generating text. It is
+faster and cheaper than an LLM call for a decision like "is this claim an objectively
+verifiable fact?". It is **off by default**; Groq classifies on its own unless you enable it.
+
+Enable it in `backend/.env` (see `backend/.env.example` for all options):
+
+```env
+JEV_ENABLED=true
+JEV_SHADOW_MODE=true      # true = Groq decides, Jev is only logged; false = Jev decides when confident
+AI_GATEWAY_BASE_URL=https://opencode.ai/zen
+JEV_MODEL=jev-1.13-free   # OpenCode Zen's free Jev, no API key needed
+```
+
+- **Shadow mode** (recommended first): Groq decides as usual and each Groq-vs-Jev comparison
+  is appended to `backend/logs/jev_shadow.jsonl`. Review it with
+  `python scripts/jev_shadow_report.py` (run from `backend/`).
+- **Live mode** (`JEV_SHADOW_MODE=false`): Jev decides claims it is confident about
+  (`JEV_CONFIDENCE`, default 0.8) and Groq handles only the unsure ones. If Jev is down or
+  rate-limited, Groq decides everything.
+- The free OpenCode model is a limited-time offer and free-tier prompts may be logged, so
+  don't send private text. Vercel AI Gateway is the paid alternative.
+- `python scripts/seed_shadow_posts.py` creates test posts under a `jev_test` user in
+  whatever database `DATABASE_URL` points to; `--cleanup` removes them.
+
+Design notes, evaluation results and caveats are in `CLAUDE.md` ("Jev decision model").
 
 ---
 
@@ -193,6 +228,8 @@ Copy-Item .env.example .env
 # - SUPABASE_URL
 # - SUPABASE_ANON_KEY
 # - GROQ_API_KEY
+# - TAVILY_API_KEY (optional, better search; DuckDuckGo is used without it)
+# - JEV_* (optional, see "Jev Decision Model")
 
 # 5. Run database migrations
 alembic upgrade head
@@ -304,19 +341,13 @@ GET /api/v1/posts/{post_id}/verifications/latest
 
 ### Installation
 
-1. Build the extension:
+The extension is an early Manifest V3 prototype. There is currently no build step (no
+`package.json` or `dist/` folder); load the source folder directly:
 
-```bash
-cd extension
-npm install
-npm run build
-```
-
-2. Load in Chrome:
-   - Navigate to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked"
-   - Select `extension/dist` folder
+- Navigate to `chrome://extensions/`
+- Enable "Developer mode"
+- Click "Load unpacked"
+- Select the `extension/` folder
 
 ### Usage
 
@@ -335,27 +366,27 @@ verique/
 ├── backend/                 # Python FastAPI backend
 │   ├── app/
 │   │   ├── agents/         # LangGraph agent definitions
-│   │   ├── api/            # API routes (verify, posts, users, chat, moderation, auth)
-│   │   ├── core/           # Config, security, database, WebSocket connection manager
+│   │   ├── api/            # API routes (verify, posts, users, chat, notifications, moderation, auth)
+│   │   ├── core/           # Config, security, database, WebSocket manager, Jev decision-model client
 │   │   ├── models/         # SQLAlchemy models (posts, follows, chat, verification, ...)
 │   │   ├── schemas/        # Pydantic schemas
-│   │   └── services/       # Business logic (SocialService, FollowService, ChatService, ...)
-│   ├── tests/               # pytest suite (service, REST, and WebSocket coverage)
+│   │   └── services/       # Business logic (SocialService, FollowService, ChatService, NotificationService, ...)
+│   ├── scripts/            # Jev shadow-log report, re-scoring and test-post seeding scripts
+│   ├── tests/               # pytest suite (service, REST, WebSocket, classifier and Jev coverage)
 │   └── alembic/            # Database migrations
 ├── frontend/               # Next.js web application
 │   ├── src/
-│   │   ├── app/             # App Router pages (feed, profile, messages, login)
+│   │   ├── app/             # App Router pages (feed, profile, messages, notifications, login, about, docs)
+│   │   ├── components/      # Shared UI components
 │   │   ├── hooks/           # Custom hooks (e.g. useChatSocket)
 │   │   └── lib/             # API client, types, utilities, chat store
 │   └── public/
-├── extension/              # Chrome browser extension
-│   ├── src/
-│   │   ├── popup/          # Extension popup
-│   │   ├── content/        # Content scripts
-│   │   └── background/     # Service worker
-│   └── public/
-├── contracts/              # Solidity smart contracts (optional)
-└── docs/                   # Documentation
+├── extension/              # Chrome browser extension (early prototype, no build step)
+│   ├── manifest.json
+│   ├── popup/              # Extension popup
+│   ├── content/            # Content scripts
+│   └── background.js       # Service worker
+└── docs/                   # Project documents
 ```
 
 ### Running Backend Tests
@@ -364,6 +395,10 @@ verique/
 cd backend
 pytest tests/ -v
 ```
+
+> [!NOTE]
+> `tests/test_claim_classifier.py` calls the real Groq API, so it needs `GROQ_API_KEY` and
+> network access. The other tests mock their network calls.
 
 ---
 
@@ -382,6 +417,7 @@ pytest tests/ -v
 - [x] Post feed with inline AI verification
 - [x] Follow system, search, and follow suggestions
 - [x] Likes & comments
+- [x] Notifications for likes, comments and new followers
 - [x] Real-time 1:1 direct messages (WebSocket, with REST + polling fallbacks)
 
 ### 📄 Phase 1 – Extension & Multi-Agent
