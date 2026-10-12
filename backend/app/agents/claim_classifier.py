@@ -1,13 +1,17 @@
 """
 Claim Classifier Agent - Filters and classifies claims
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+import asyncio
 import json
+import time
+from pathlib import Path
 import structlog
 from groq import AsyncGroq
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
+from app.core.jev_client import JevClient, JevError, jev_enabled, noul_question
 
 logger = structlog.get_logger()
 
@@ -80,6 +84,14 @@ For each claim, return a JSON array:
 Return ONLY the JSON array, no other text.
 """
 
+# Kept short on purpose: a long rubric-style question scored 1/6 on a hand-labelled
+# sample (inverted answers), this wording scored 5/6 on laya-free.
+JEV_VERIFIABLE_QUESTION = (
+    "Is this an objectively verifiable factual claim (not opinion, prediction or fluff)?"
+)
+# One request carries many questions; the free tier allows only ~5 requests/minute.
+JEV_BATCH_SIZE = 25
+
 
 class ClaimClassifierAgent:
     """
@@ -89,6 +101,7 @@ class ClaimClassifierAgent:
     def __init__(self):
         self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.model = settings.LLM_MODEL_FAST
+        self.jev = JevClient()
     
     async def filter_claims(
         self,
@@ -96,28 +109,88 @@ class ClaimClassifierAgent:
     ) -> List[Dict[str, Any]]:
         """
         Filter claims to keep only verifiable ones.
-        
+
+        With Jev enabled, JEV_SHADOW_MODE decides how it is used:
+        - shadow (default): Groq decides; Jev's answers are only logged.
+        - live: Jev decides claims it is confident about, Groq decides the rest,
+          and Groq decides everything if Jev is unavailable.
+
         Args:
             claims: List of extracted claims
-            
+
         Returns:
             Filtered list of verifiable claims
         """
         if not claims:
             return []
-        
+
         logger.info("Classifying claims", count=len(claims))
-        
+
         try:
-            # Format claims for prompt
+            live = jev_enabled() and not settings.JEV_SHADOW_MODE
+            shadow_task = (
+                asyncio.create_task(self._jev_probs(claims))
+                if jev_enabled() and settings.JEV_SHADOW_MODE
+                else None
+            )
+
+            # Live mode: let Jev settle the claims it is confident about
+            classification_by_id: Dict[str, Dict[str, Any]] = {}
+            if live:
+                classification_by_id = await self._jev_decisions(claims)
+            remaining = [c for c in claims if c["id"] not in classification_by_id]
+
+            if remaining:
+                groq_results = await self._groq_classify(remaining)
+                if groq_results is None:
+                    if not classification_by_id:
+                        # Keep all claims if classification fails as a conservative fallback
+                        return claims
+                else:
+                    classification_by_id.update(groq_results)
+
+            # Update verification metadata on every claim
+            for c in claims:
+                info = classification_by_id.get(c["id"])
+                if info is not None:
+                    c["is_verifiable"] = bool(info.get("is_verifiable", True))
+                    c["classification_reason"] = info.get("reason", "")
+                else:
+                    c["is_verifiable"] = True
+
+            # Filter claims to keep ONLY verifiable claims
+            filtered = [c for c in claims if c.get("is_verifiable") is True]
+
+            if shadow_task is not None:
+                await self._log_shadow_comparison(
+                    shadow_task, claims, {c["id"] for c in filtered}
+                )
+
+            logger.info(
+                "Claims classified successfully",
+                total=len(claims),
+                verifiable=len(filtered),
+                filtered_out=len(claims) - len(filtered)
+            )
+
+            return filtered
+
+        except Exception as e:
+            logger.error("Classification failed", error=str(e))
+            # On unexpected failure, return all claims (conservative fallback)
+            return claims
+
+    async def _groq_classify(
+        self, claims: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Dict[str, Any]]]:
+        """Classify claims with Groq. Returns claim_id -> classification, or None on failure."""
+        try:
             claims_text = "\n".join([
                 f"- ID: {c['id']}, Text: {c['text']}"
                 for c in claims
             ])
-            
             prompt = CLASSIFICATION_PROMPT.format(claims=claims_text)
-            
-            # Call Groq API
+
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -127,47 +200,145 @@ class ClaimClassifierAgent:
                 temperature=0,
                 max_tokens=2000
             )
-            
+
             msg = response.choices[0].message
             content = msg.content or msg.reasoning or ""
-            
+
             # Parse and validate JSON response
             classifications = self._parse_and_validate_response(content, attempt=1)
-            
             if classifications is None:
-                # Keep all claims if parsing fails as a conservative fallback
                 logger.warning("Could not parse classifications, keeping all claims as fallback")
-                return claims
-            
-            # Build lookup of verifiability and reasons
-            classification_by_id = {c["claim_id"]: c for c in classifications}
-            
-            # Update verification metadata on every claim
-            for c in claims:
-                info = classification_by_id.get(c["id"])
-                if info is not None:
-                    c["is_verifiable"] = bool(info.get("is_verifiable", True))
-                    c["classification_reason"] = info.get("reason", "")
-                else:
-                    c["is_verifiable"] = True
-            
-            # Filter claims to keep ONLY verifiable claims
-            filtered = [c for c in claims if c.get("is_verifiable") is True]
-            
-            logger.info(
-                "Claims classified successfully",
-                total=len(claims),
-                verifiable=len(filtered),
-                filtered_out=len(claims) - len(filtered)
-            )
-            
-            return filtered
-            
+                return None
+            return {c["claim_id"]: c for c in classifications}
         except Exception as e:
             logger.error("Classification failed", error=str(e))
-            # On unexpected failure, return all claims (conservative fallback)
-            return claims
-    
+            return None
+
+    async def _jev_decisions(
+        self, claims: List[Dict[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Live mode: classifications for the claims Jev is confident about.
+
+        A claim is decided when P(verifiable) >= JEV_CONFIDENCE or <= 1 - JEV_CONFIDENCE.
+        Claims Jev is unsure about, or could not score, are left out for Groq to decide.
+        """
+        probs = await self._jev_probs(claims)
+        threshold = settings.JEV_CONFIDENCE
+        decided: Dict[str, Dict[str, Any]] = {}
+        for claim in claims:
+            p = probs.get(claim["id"])
+            if p is None:
+                continue
+            if p >= threshold or p <= 1 - threshold:
+                decided[claim["id"]] = {
+                    "claim_id": claim["id"],
+                    "is_verifiable": p >= 0.5,
+                    "reason": f"Jev decision model, P(verifiable)={p:.2f}",
+                }
+        logger.info(
+            "jev_live_decisions",
+            total=len(claims),
+            decided_by_jev=len(decided),
+            left_for_groq=len(claims) - len(decided),
+            model=self.jev.model,
+        )
+        return decided
+
+    async def _jev_probs(self, claims: List[Dict[str, Any]]) -> Dict[str, Optional[float]]:
+        """
+        Ask the decision model P(verifiable) for each claim.
+
+        Claims are batched into one request, one question per claim, with the claim
+        text inside the question (putting it in the shared state scored worse).
+        Returns claim_id -> probability, or None where a batch failed. Never raises.
+        """
+        probs: Dict[str, Optional[float]] = {c["id"]: None for c in claims}
+        for start in range(0, len(claims), JEV_BATCH_SIZE):
+            batch = claims[start:start + JEV_BATCH_SIZE]
+            questions = {
+                c["id"]: noul_question(
+                    f'Text: "{c["text"]}"\n{JEV_VERIFIABLE_QUESTION}'
+                )
+                for c in batch
+            }
+            try:
+                result = await self.jev.decide(
+                    "Claims to classify, one per question.", questions
+                )
+            except JevError:
+                continue
+            except Exception as e:
+                logger.warning("Jev scoring failed", error=str(e))
+                continue
+            for c in batch:
+                probs[c["id"]] = result.noul(c["id"])
+        return probs
+
+    async def _log_shadow_comparison(
+        self,
+        shadow_task: "asyncio.Task",
+        claims: List[Dict[str, Any]],
+        groq_verifiable_ids: set,
+    ) -> None:
+        """Log Jev vs Groq verdicts per claim and an agreement summary."""
+        try:
+            probs = await shadow_task
+        except Exception as e:
+            logger.warning("Jev shadow comparison failed", error=str(e))
+            return
+
+        compared = agreed = 0
+        records: List[Dict[str, Any]] = []
+        for claim in claims:
+            p = probs.get(claim["id"])
+            if p is None:
+                continue
+            groq_says = claim["id"] in groq_verifiable_ids
+            jev_says = p >= 0.5
+            compared += 1
+            agreed += groq_says == jev_says
+            records.append({
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "model": self.jev.model,
+                "claim_id": claim["id"],
+                "text": claim["text"],
+                "groq_verifiable": groq_says,
+                "jev_p_verifiable": round(p, 4),
+                "agree": groq_says == jev_says,
+            })
+            logger.info(
+                "jev_shadow_claim",
+                claim_id=claim["id"],
+                text=claim["text"][:120],
+                groq_verifiable=groq_says,
+                jev_p_verifiable=round(p, 4),
+                agree=groq_says == jev_says,
+                model=self.jev.model,
+            )
+        self._append_shadow_records(records)
+        logger.info(
+            "jev_shadow_summary",
+            total=len(claims),
+            compared=compared,
+            agreed=agreed,
+            model=self.jev.model,
+        )
+
+    @staticmethod
+    def _append_shadow_records(records: List[Dict[str, Any]]) -> None:
+        """Append comparison records to the JSONL log. Never raises."""
+        if not records:
+            return
+        try:
+            path = Path(settings.JEV_SHADOW_LOG_PATH)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as f:
+                for record in records:
+                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except OSError as e:
+            logger.warning("Could not write Jev shadow log", error=str(e))
+
     def _parse_and_validate_response(
         self,
         content: str,
