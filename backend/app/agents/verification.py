@@ -210,7 +210,9 @@ class VerificationAgent:
                 {"role": "user", "content": prompt}
             ],
             temperature=0,
-            max_tokens=1000
+            # gpt-oss reasoning (~600-1000 tokens here) counts against max_tokens; at 1000 the
+            # JSON was sometimes cut off and the claim fell back to not_verifiable.
+            max_tokens=2500
         )
         
         # Parse response

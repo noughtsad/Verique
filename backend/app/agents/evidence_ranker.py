@@ -154,7 +154,9 @@ class EvidenceRankerAgent:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
-                max_tokens=10
+                # gpt-oss reasons (~60-75 tokens here) before answering, and that counts
+                # against max_tokens; at 10 the answer was always empty, so every item scored 0.5.
+                max_tokens=300
             )
             
             # Parse score
