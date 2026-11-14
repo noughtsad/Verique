@@ -20,6 +20,7 @@ import {
   Post,
   PostVerification,
   RegisterPayload,
+  ReportPostPayload,
   User,
   UserProfile,
   VerificationResult,
@@ -140,6 +141,14 @@ export async function addComment(postId: number, content: string): Promise<Comme
   return apiFetch<Comment>(
     `/api/v1/posts/${postId}/comments`,
     { method: 'POST', body: JSON.stringify({ content }) },
+    true,
+  );
+}
+
+export async function reportPost(postId: number, payload: ReportPostPayload): Promise<void> {
+  await apiFetch<unknown>(
+    `/api/v1/posts/${postId}/report`,
+    { method: 'POST', body: JSON.stringify(payload) },
     true,
   );
 }

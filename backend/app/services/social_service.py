@@ -20,6 +20,7 @@ from app.models.domain import Domain
 from app.models.like import PostLike
 from app.models.moderation import Challenge, ModerationReview
 from app.models.post import Post
+from app.models.report import PostReport
 from app.models.source import Source, VerificationSource
 from app.models.user import User
 from app.models.verification import Verification
@@ -31,6 +32,7 @@ from app.schemas.social import (
     ModerationDecisionRequest,
     ModerationReviewResponse,
     PostCreate,
+    PostReportCreate,
     PostSummary,
     PostVerificationResponse,
     PostVerificationSummary,
@@ -45,6 +47,14 @@ from app.schemas.verification import (
 )
 from app.services.verification_service import VerificationService
 from app.services.notification_service import NotificationService
+
+
+class SelfReportError(ValueError):
+    """The reporter is the post's author."""
+
+
+class DuplicateReportError(ValueError):
+    """The reporter has already reported this post."""
 
 
 def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
@@ -192,6 +202,34 @@ class SocialService:
             content=comment.content,
             created_at=comment.created_at,
         )
+
+    # ------------------------------------------------------------------
+    # Reports
+    # ------------------------------------------------------------------
+
+    async def report_post(self, user: User, post_id: int, payload: PostReportCreate) -> PostReport:
+        post = await self._load_post(post_id)
+        if post.author_id == user.id:
+            raise SelfReportError("You can't report your own post")
+
+        existing = await self.db.execute(
+            select(PostReport.id).where(
+                PostReport.post_id == post_id, PostReport.reporter_id == user.id
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            raise DuplicateReportError("You already reported this post")
+
+        report = PostReport(
+            post_id=post_id,
+            reporter_id=user.id,
+            reason_code=payload.reason_code,
+            details=(payload.details or "").strip() or None,
+        )
+        self.db.add(report)
+        await self.db.flush()
+        await self.db.refresh(report)
+        return report
 
     async def _engagement_for_posts(
         self, post_ids: list[int], current_user: Optional[User]

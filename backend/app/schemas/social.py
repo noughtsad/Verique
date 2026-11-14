@@ -27,6 +27,23 @@ class CommentResponse(BaseModel):
     created_at: datetime
 
 
+class PostReportCreate(BaseModel):
+    reason_code: str = Field(
+        ..., pattern="^(impersonation|misinformation|spam|harassment|scam|other)$"
+    )
+    details: Optional[str] = Field(default=None, max_length=500)
+
+
+class PostReportResponse(BaseModel):
+    id: int
+    post_id: int
+    reason_code: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ChallengeRequest(BaseModel):
     reason_code: str = Field(..., min_length=3, max_length=50)
     comment: Optional[str] = Field(default=None, max_length=500)

@@ -238,6 +238,23 @@ export interface ChallengePayload {
   comment?: string;
 }
 
+// Keep in sync with REPORT_REASONS in backend/app/models/report.py.
+export const REPORT_REASONS = [
+  { code: 'impersonation', label: "It's impersonating someone else", hint: 'Pretending to be another person, brand or organization.' },
+  { code: 'misinformation', label: "It's spreading misinformation", hint: 'False or misleading claims presented as fact.' },
+  { code: 'spam', label: "It's spam", hint: 'Repetitive, promotional or irrelevant content.' },
+  { code: 'harassment', label: 'Harassment or hate speech', hint: 'Attacks, threats or demeaning content aimed at people.' },
+  { code: 'scam', label: 'Scam or fraud', hint: 'Trying to trick people out of money or personal information.' },
+  { code: 'other', label: 'Something else', hint: "It doesn't fit the options above." },
+] as const;
+
+export type ReportReasonCode = (typeof REPORT_REASONS)[number]['code'];
+
+export interface ReportPostPayload {
+  reason_code: ReportReasonCode;
+  details?: string;
+}
+
 export interface ModerationDecisionPayload {
   decision: ReviewDecision;
   note: string;
