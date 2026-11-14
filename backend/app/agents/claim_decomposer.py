@@ -5,10 +5,11 @@ from typing import List, Dict, Any
 import json
 import uuid
 import structlog
-from groq import AsyncGroq
+from groq import AsyncGroq, RateLimitError
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.core.errors import LLMRateLimitError, parse_retry_after
 
 logger = structlog.get_logger()
 
@@ -141,6 +142,10 @@ class ClaimDecomposerAgent:
             logger.info("Claims extracted", count=len(claims))
             return claims
             
+        except RateLimitError as e:
+            # Not "no claims": let the caller report a retryable failure.
+            logger.error("Claim extraction rate limited", error=str(e))
+            raise LLMRateLimitError(str(e), parse_retry_after(str(e))) from e
         except Exception as e:
             logger.error("Claim extraction failed", error=str(e))
             # Return empty list on failure, let pipeline continue

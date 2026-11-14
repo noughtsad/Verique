@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.endpoints.users import get_optional_user
 from app.core.database import get_db
+from app.core.errors import LLMRateLimitError, rate_limit_http_error
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas import (
@@ -126,6 +127,8 @@ async def verify_post(
     service = SocialService(db)
     try:
         return await service.verify_post(post_id)
+    except LLMRateLimitError as exc:
+        raise rate_limit_http_error(exc) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
