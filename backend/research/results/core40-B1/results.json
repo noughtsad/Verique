@@ -1,0 +1,77 @@
+[
+ {
+  "config": "B1",
+  "description": "Vanilla RAG: d=0.5 for every domain, no per-domain dedup, no reputation in prompt",
+  "runs": 1,
+  "n_examples": 40,
+  "scores": {
+   "accuracy": {
+    "mean": 0.7894736842105263,
+    "std": 0.0
+   },
+   "macro_f1": {
+    "mean": 0.5718954248366013,
+    "std": 0.0
+   },
+   "ece": {
+    "mean": 0.13184210526315784,
+    "std": 0.0
+   },
+   "coverage": {
+    "mean": 0.95,
+    "std": 0.0
+   }
+  },
+  "per_class": {
+   "True": {
+    "precision": {
+     "mean": 0.8823529411764706,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.7894736842105263,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.8333333333333333,
+     "std": 0.0
+    }
+   },
+   "False": {
+    "precision": {
+     "mean": 0.8823529411764706,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.8823529411764706,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.8823529411764706,
+     "std": 0.0
+    }
+   },
+   "Mixed": {
+    "precision": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.0,
+     "std": 0.0
+    }
+   }
+  },
+  "system": {
+   "latency_cold_p50_s": 65.25618770900473,
+   "latency_cold_p95_s": 111.49771403781328,
+   "llm_calls_per_verification": 1.0,
+   "llm_tokens_per_verification": 2692.025,
+   "domain_coverage": 0.0
+  }
+ }
+]

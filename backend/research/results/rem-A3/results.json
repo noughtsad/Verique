@@ -1,0 +1,77 @@
+[
+ {
+  "config": "A3",
+  "description": "B3 without domain dedup",
+  "runs": 1,
+  "n_examples": 40,
+  "scores": {
+   "accuracy": {
+    "mean": 0.868421052631579,
+    "std": 0.0
+   },
+   "macro_f1": {
+    "mean": 0.7346092503987242,
+    "std": 0.0
+   },
+   "ece": {
+    "mean": 0.10578947368421049,
+    "std": 0.0
+   },
+   "coverage": {
+    "mean": 0.95,
+    "std": 0.0
+   }
+  },
+  "per_class": {
+   "True": {
+    "precision": {
+     "mean": 0.85,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.9444444444444444,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.8947368421052632,
+     "std": 0.0
+    }
+   },
+   "False": {
+    "precision": {
+     "mean": 1.0,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.8333333333333334,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.9090909090909091,
+     "std": 0.0
+    }
+   },
+   "Mixed": {
+    "precision": {
+     "mean": 0.3333333333333333,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.5,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.4,
+     "std": 0.0
+    }
+   }
+  },
+  "system": {
+   "latency_cold_p50_s": 65.24341404152801,
+   "latency_cold_p95_s": 159.32905972175487,
+   "llm_calls_per_verification": 1.0,
+   "llm_tokens_per_verification": 2830.55,
+   "domain_coverage": 0.3602015113350126
+  }
+ }
+]

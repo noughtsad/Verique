@@ -1,0 +1,19 @@
+{
+ "n_claims": 1,
+ "seed": 0,
+ "junk_credibility": 0.15,
+ "accuracy_vs_k": {
+  "B2": {
+   "1": {
+    "mean": 1.0,
+    "std": 0.0
+   }
+  },
+  "B3": {
+   "1": {
+    "mean": 1.0,
+    "std": 0.0
+   }
+  }
+ }
+}

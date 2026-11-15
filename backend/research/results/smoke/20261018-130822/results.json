@@ -1,0 +1,77 @@
+[
+ {
+  "config": "B2p",
+  "description": "B2 with the app's current lookup (MBFC, then table)",
+  "runs": 1,
+  "n_examples": 2,
+  "scores": {
+   "accuracy": {
+    "mean": 1.0,
+    "std": 0.0
+   },
+   "macro_f1": {
+    "mean": 0.3333333333333333,
+    "std": 0.0
+   },
+   "ece": {
+    "mean": 0.040000000000000036,
+    "std": 0.0
+   },
+   "coverage": {
+    "mean": 0.5,
+    "std": 0.0
+   }
+  },
+  "per_class": {
+   "True": {
+    "precision": {
+     "mean": 1.0,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 1.0,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 1.0,
+     "std": 0.0
+    }
+   },
+   "False": {
+    "precision": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.0,
+     "std": 0.0
+    }
+   },
+   "Mixed": {
+    "precision": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "recall": {
+     "mean": 0.0,
+     "std": 0.0
+    },
+    "f1": {
+     "mean": 0.0,
+     "std": 0.0
+    }
+   }
+  },
+  "system": {
+   "latency_cold_p50_s": 64.48961237500043,
+   "latency_cold_p95_s": 110.17519963750019,
+   "llm_calls_per_verification": 10.0,
+   "llm_tokens_per_verification": 7668.0,
+   "domain_coverage": 0.7058823529411765
+  }
+ }
+]

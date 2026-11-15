@@ -1,0 +1,4 @@
+# Everything here is tracked, including results/: the evaluation is final and its runs
+# cannot be reproduced exactly, so the outputs behind RESULTS.md are kept.
+__pycache__/
+.DS_Store
