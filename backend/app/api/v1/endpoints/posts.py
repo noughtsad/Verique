@@ -8,10 +8,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.endpoints.users import get_optional_user
 from app.core.database import get_db
+from app.core.errors import LLMRateLimitError, rate_limit_http_error
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas import CommentCreate, CommentResponse, PostCreate, PostSummary, PostVerificationResponse
-from app.services.social_service import SocialService
+from app.schemas import (
+    CommentCreate,
+    CommentResponse,
+    PostCreate,
+    PostReportCreate,
+    PostReportResponse,
+    PostSummary,
+    PostVerificationResponse,
+)
+from app.services.social_service import DuplicateReportError, SelfReportError, SocialService
 
 router = APIRouter()
 
@@ -91,6 +100,23 @@ async def add_comment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
+@router.post("/{post_id}/report", response_model=PostReportResponse, status_code=status.HTTP_201_CREATED)
+async def report_post(
+    post_id: int,
+    payload: PostReportCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await SocialService(db).report_post(current_user, post_id, payload)
+    except DuplicateReportError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except SelfReportError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
 @router.post("/{post_id}/verify", response_model=PostVerificationResponse)
 async def verify_post(
     post_id: int,
@@ -101,6 +127,8 @@ async def verify_post(
     service = SocialService(db)
     try:
         return await service.verify_post(post_id)
+    except LLMRateLimitError as exc:
+        raise rate_limit_http_error(exc) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

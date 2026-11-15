@@ -10,6 +10,7 @@ from app.models.like import PostLike
 from app.models.moderation import Challenge, ModerationReview
 from app.models.notification import Notification
 from app.models.post import Post
+from app.models.report import PostReport
 from app.models.verification import Verification
 from app.models.source import Source, VerificationSource
 from app.models.domain import Domain
@@ -29,6 +30,7 @@ __all__ = [
     "Verification",
     "ModerationReview",
     "Post",
+    "PostReport",
     "Source",
     "VerificationSource",
     "Domain",

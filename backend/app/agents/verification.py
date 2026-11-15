@@ -4,10 +4,11 @@ Verification Agent - Generates verdicts for claims based on evidence
 from typing import List, Dict, Any, Literal
 import json
 import structlog
-from groq import AsyncGroq
+from groq import AsyncGroq, RateLimitError
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from app.core.config import settings
+from app.core.errors import LLMRateLimitError, parse_retry_after
 
 logger = structlog.get_logger()
 
@@ -150,6 +151,11 @@ class VerificationAgent:
                 verdict["claim_id"] = claim_id
                 verdicts.append(verdict)
                 
+            except RateLimitError as e:
+                # Quota exhaustion is retryable, not a verdict: abort the run
+                # instead of saving "not_verifiable" for every claim.
+                logger.error("Verification rate limited", claim_id=claim_id, error=str(e))
+                raise LLMRateLimitError(str(e), parse_retry_after(str(e))) from e
             except Exception as e:
                 logger.error(
                     "Verification failed for claim",

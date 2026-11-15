@@ -23,6 +23,7 @@ from app.models.follow import UserFollow
 from app.models.like import PostLike
 from app.models.notification import Notification
 from app.models.post import Post
+from app.models.report import PostReport
 from app.models.user import User
 from app.models.verification import Verification
 
@@ -50,6 +51,7 @@ async def engine():
                 Article.__table__,
                 Post.__table__,
                 PostLike.__table__,
+                PostReport.__table__,
                 Comment.__table__,
                 Verification.__table__,
                 Notification.__table__,

@@ -10,6 +10,7 @@ import structlog
 
 from app.core.database import get_db
 from app.core.cache import cache
+from app.core.errors import LLMRateLimitError, rate_limit_http_error
 from app.schemas import (
     VerifyRequest,
     VerifyUrlRequest,
@@ -112,6 +113,8 @@ async def verify_content(
         
         return response
         
+    except LLMRateLimitError as e:
+        raise rate_limit_http_error(e) from e
     except Exception as e:
         logger.error(
             "Verification failed",

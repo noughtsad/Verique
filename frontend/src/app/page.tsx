@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,8 @@ import {
   Search, Home as HomeIcon, MessageCircle, Bell, Compass,
   MoreVertical, Heart, MessageSquare, Share2, Bookmark,
   Image as ImageIcon, Video, Globe, User as UserIcon, Settings,
-  Plus, Upload, X, MapPin, UserCircle, Send, Check, RefreshCw
+  Plus, Upload, X, MapPin, UserCircle, Send, Check, RefreshCw,
+  MoreHorizontal, Flag
 } from 'lucide-react';
 
 import {
@@ -37,6 +38,7 @@ import { FollowerListItem, FollowResponse, ModerationReview, Post, PostVerificat
 import { cn, formatDate, getDomainFromUrl, isUnverifiableVerification } from '@/lib/utils';
 import { AnimatedCanvas } from '@/app/components/AnimatedCanvas';
 import { Sidebar } from '@/app/components/Sidebar';
+import { ReportPostModal } from '@/app/components/ReportPostModal';
 
 const CHALLENGE_REASONS = [
   ['missing_context', 'Missing context'],
@@ -342,6 +344,7 @@ export default function Home() {
                   post={post}
                   selected={post.id === selectedPostId}
                   canVerify={Boolean(user)}
+                  canReport={Boolean(user) && user?.id !== post.author.id}
                   busy={verifyMutation.isPending && verifyMutation.variables === post.id}
                   onSelect={() => setSelectedPostId(post.id)}
                   onVerify={() => verifyMutation.mutate(post.id)}
@@ -669,6 +672,7 @@ function TimelinePostCard({
   post,
   selected,
   canVerify,
+  canReport,
   busy,
   onSelect,
   onVerify,
@@ -676,6 +680,7 @@ function TimelinePostCard({
   post: Post;
   selected: boolean;
   canVerify: boolean;
+  canReport: boolean;
   busy: boolean;
   onSelect: () => void;
   onVerify: () => void;
@@ -686,6 +691,25 @@ function TimelinePostCard({
   const [showComments, setShowComments] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [justShared, setJustShared] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const likeMutation = useMutation({
     mutationFn: () => (post.is_liked_by_me ? unlikePost(post.id) : likePost(post.id)),
@@ -784,6 +808,35 @@ function TimelinePostCard({
                {busy ? 'Running AI...' : 'Verify Claim'}
             </button>
          )}
+          {canReport && (
+            <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="More options"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-xl border border-white/10 bg-[#18181b] shadow-xl animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); setShowReport(true); }}
+                    className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-semibold text-red-400 transition hover:bg-white/5"
+                  >
+                    <Flag className="h-4 w-4" /> Report
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -877,6 +930,14 @@ function TimelinePostCard({
             </button>
           </form>
         </div>
+      )}
+
+      {showReport && (
+        <ReportPostModal
+          postId={post.id}
+          authorUsername={post.author.username}
+          onClose={() => setShowReport(false)}
+        />
       )}
     </div>
   );
