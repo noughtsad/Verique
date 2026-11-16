@@ -4,7 +4,6 @@ uvicorn[standard]>=0.27.1
 pydantic>=2.13.0
 pydantic-settings>=2.1.0
 python-multipart>=0.0.9
-email-validator>=2.1.0
 
 # Database
 sqlalchemy>=2.0.52
@@ -17,7 +16,6 @@ redis==5.0.1
 
 # LangGraph for multi-agent orchestration
 langgraph~=1.2.11
-langchain-core>=0.3.0
 
 # Groq API (FREE LLM provider)
 groq~=1.6.0
@@ -29,12 +27,9 @@ requests>=2.32.3,<3
 # Web Scraping & Processing
 beautifulsoup4>=4.12.3
 lxml>=5.1.0
-readability-lxml>=0.8.1
-trafilatura>=1.6.3
 
 # Search APIs
 ddgs>=9.11.0
-google-api-python-client==2.116.0
 
 # Security
 python-jose[cryptography]==3.3.0
@@ -42,10 +37,7 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 
 # Utilities
-python-dotenv==1.0.1
-tenacity>=9.0.0
 structlog==24.1.0
-python-dateutil==2.8.2
 
 # Testing
 pytest>=7.0.0,<8.0.0
