@@ -1,0 +1,353 @@
+2026-10-18 13:09:45 [info     ] Using PostgreSQL database
+2026-10-18 13:10:52 [info     ] Planning queries               claims_count=1
+2026-10-18 13:10:53 [info     ] Queries planned                total=3
+2026-10-18 13:10:53 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:10:55 [info     ] Tavily search returned results count=5 query="Edo State unemployment rate 2023 official statist
+2026-10-18 13:10:55 [info     ] Tavily search returned results count=5 query="Edo State unemployment rate 19%"
+2026-10-18 13:10:55 [info     ] Tavily search returned results count=5 query="Edo State unemployment rate 19% fact check"
+2026-10-18 13:10:55 [info     ] Evidence fetched               total=12
+2026-10-18 13:11:52 [info     ] Planning queries               claims_count=1
+2026-10-18 13:11:53 [info     ] Queries planned                total=3
+2026-10-18 13:11:53 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:11:55 [info     ] Tavily search returned results count=5 query=abortion rate increase under Democratic presidents
+2026-10-18 13:11:55 [info     ] Tavily search returned results count=5 query=CDC abortion surveillance 2016 2024 Democratic pre
+2026-10-18 13:11:55 [info     ] Tavily search returned results count=5 query=abortion rate decline during Democratic presidenti
+2026-10-18 13:11:55 [info     ] Evidence fetched               total=12
+2026-10-18 13:12:52 [info     ] Planning queries               claims_count=1
+2026-10-18 13:12:54 [info     ] Queries planned                total=3
+2026-10-18 13:12:54 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:12:55 [info     ] Tavily search returned results count=5 query="Joe Biden" "fracking" "ban" "US"
+2026-10-18 13:12:55 [info     ] Tavily search returned results count=5 query="Joe Biden" "said he wants to ban fracking" "US"
+2026-10-18 13:12:57 [info     ] Tavily search returned results count=5 query="Joe Biden" "fracking" "ban" "fact check"
+2026-10-18 13:12:57 [info     ] Evidence fetched               total=12
+2026-10-18 13:14:00 [info     ] Planning queries               claims_count=1
+2026-10-18 13:14:01 [info     ] Queries planned                total=3
+2026-10-18 13:14:01 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:14:03 [info     ] Tavily search returned results count=5 query="Oregon police statement political activists did n
+2026-10-18 13:14:03 [info     ] Tavily search returned results count=5 query="Oregon State Police press release wildfires not c
+2026-10-18 13:14:03 [info     ] Tavily search returned results count=5 query="Oregon wildfires caused by political activists de
+2026-10-18 13:14:03 [info     ] Evidence fetched               total=12
+2026-10-18 13:15:00 [info     ] Planning queries               claims_count=1
+2026-10-18 13:15:01 [info     ] Queries planned                total=3
+2026-10-18 13:15:01 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:15:03 [info     ] Tavily search returned results count=5 query="US election 2020 voter turnout projection 30-40%
+2026-10-18 13:15:03 [info     ] Tavily search returned results count=5 query="30% to 40% of Americans will have voted by Oct. 1
+2026-10-18 13:15:04 [info     ] Tavily search returned results count=5 query="30% to 40% of Americans will have voted by Oct. 1
+2026-10-18 13:15:04 [info     ] Evidence fetched               total=12
+2026-10-18 13:16:47 [info     ] Planning queries               claims_count=1
+2026-10-18 13:16:48 [info     ] Queries planned                total=3
+2026-10-18 13:16:48 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:16:50 [info     ] Tavily search returned results count=5 query="Broadcasting Act" Canada criminal offence false s
+2026-10-18 13:16:50 [info     ] Tavily search returned results count=5 query=debunking claim Canada Radio Act criminalizes lyin
+2026-10-18 13:16:50 [info     ] Tavily search returned results count=5 query="Radio Act" Canada crime lie to public via airwave
+2026-10-18 13:16:50 [info     ] Evidence fetched               total=12
+2026-10-18 13:17:47 [info     ] Planning queries               claims_count=1
+2026-10-18 13:17:48 [info     ] Queries planned                total=3
+2026-10-18 13:17:48 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:17:50 [info     ] Tavily search returned results count=5 query="Anthony Weiner laptop" evidence Hillary Clinton p
+2026-10-18 13:17:50 [info     ] Tavily search returned results count=5 query="Anthony Weiner laptop" child trafficking Hillary
+2026-10-18 13:17:50 [info     ] Tavily search returned results count=5 query="Anthony Weiner laptop" Hillary Clinton child traf
+2026-10-18 13:17:50 [info     ] Evidence fetched               total=13
+2026-10-18 13:18:53 [info     ] Planning queries               claims_count=1
+2026-10-18 13:18:54 [info     ] Queries planned                total=3
+2026-10-18 13:18:54 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:18:57 [info     ] Tavily search returned results count=5 query="CIA referral to FBI" "Hillary Clinton" "campaign
+2026-10-18 13:18:57 [info     ] Tavily search returned results count=5 query="debunk" "CIA referral to FBI" "Hillary Clinton" "
+2026-10-18 13:18:59 [info     ] Tavily search returned results count=5 query="Hillary Clinton" "approved" "campaign plan" "tie"
+2026-10-18 13:18:59 [info     ] Evidence fetched               total=8
+2026-10-18 13:19:54 [info     ] Planning queries               claims_count=1
+2026-10-18 13:19:56 [info     ] Queries planned                total=3
+2026-10-18 13:19:56 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:19:58 [info     ] Tavily search returned results count=5 query="Trump RNC acceptance speech" "White House" fact c
+2026-10-18 13:19:58 [info     ] Tavily search returned results count=5 query="White House" "RNC acceptance speech" 2024 officia
+2026-10-18 13:20:00 [info     ] Tavily search returned results count=5 query="Trump RNC acceptance speech" "White House" "first
+2026-10-18 13:20:00 [info     ] Evidence fetched               total=14
+2026-10-18 13:21:02 [info     ] Planning queries               claims_count=1
+2026-10-18 13:21:03 [info     ] Queries planned                total=3
+2026-10-18 13:21:03 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:21:05 [info     ] Tavily search returned results count=5 query="Ghana Electoral Commission voter registration ver
+2026-10-18 13:21:05 [info     ] Tavily search returned results count=5 query="Ghana voter ID card name not found in register De
+2026-10-18 13:21:06 [info     ] Tavily search returned results count=5 query="Ghana voter ID card name not in register still al
+2026-10-18 13:21:06 [info     ] Evidence fetched               total=15
+2026-10-18 13:22:06 [info     ] Planning queries               claims_count=1
+2026-10-18 13:22:07 [info     ] Queries planned                total=3
+2026-10-18 13:22:07 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:22:09 [info     ] Tavily search returned results count=5 query="debunk" "school book tax" India
+2026-10-18 13:22:09 [info     ] Tavily search returned results count=5 query="school books" "tax" "India" 2023
+2026-10-18 13:22:09 [info     ] Tavily search returned results count=5 query="tax on school books" "Government of India"
+2026-10-18 13:22:09 [info     ] Evidence fetched               total=7
+2026-10-18 13:23:05 [info     ] Planning queries               claims_count=1
+2026-10-18 13:23:05 [info     ] Queries planned                total=3
+2026-10-18 13:23:05 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:23:07 [info     ] Tavily search returned results count=5 query=Harley-Davidson official statement Milwaukee Biden
+2026-10-18 13:23:09 [info     ] Tavily search returned results count=5 query=Harley-Davidson Milwaukee Joe Biden and Kamala Har
+2026-10-18 13:23:11 [info     ] Tavily search returned results count=5 query=Harley-Davidson Milwaukee Joe Biden and Kamala Har
+2026-10-18 13:23:11 [info     ] Evidence fetched               total=11
+2026-10-18 13:24:11 [info     ] Planning queries               claims_count=1
+2026-10-18 13:24:12 [info     ] Queries planned                total=3
+2026-10-18 13:24:12 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:24:14 [info     ] Tavily search returned results count=5 query=Nigeria cumulative military rule 29 years
+2026-10-18 13:24:14 [info     ] Tavily search returned results count=5 query=Nigeria 29 years military rule debunk fact-check
+2026-10-18 13:24:14 [info     ] Tavily search returned results count=5 query="29 years" of military rule in Nigeria out of 60 y
+2026-10-18 13:24:14 [info     ] Evidence fetched               total=12
+2026-10-18 13:25:14 [info     ] Planning queries               claims_count=1
+2026-10-18 13:25:15 [info     ] Queries planned                total=3
+2026-10-18 13:25:15 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:25:17 [info     ] Tavily search returned results count=5 query="Jacob Blake" rape 14 year old girl fact check
+2026-10-18 13:25:18 [info     ] Tavily search returned results count=5 query="Jacob Blake" rape 14 year old girl
+2026-10-18 13:25:19 [info     ] Tavily search returned results count=5 query="Jacob Blake" 14-year-old sexual assault police re
+2026-10-18 13:25:19 [info     ] Evidence fetched               total=10
+2026-10-18 13:26:14 [info     ] Planning queries               claims_count=1
+2026-10-18 13:26:15 [info     ] Queries planned                total=3
+2026-10-18 13:26:15 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:26:17 [info     ] Tavily search returned results count=5 query="Judith Collins" "police minister" police workforc
+2026-10-18 13:26:19 [info     ] Tavily search returned results count=5 query="Judith Collins" "police minister" police workforc
+2026-10-18 13:26:19 [info     ] Tavily search returned results count=5 query="Judith Collins" "National Party" "police minister
+2026-10-18 13:26:19 [info     ] Evidence fetched               total=11
+2026-10-18 13:27:19 [info     ] Planning queries               claims_count=1
+2026-10-18 13:27:20 [info     ] Queries planned                total=3
+2026-10-18 13:27:20 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:27:22 [info     ] Tavily search returned results count=5 query="Iowa renewable energy share 40%" "official report
+2026-10-18 13:27:22 [info     ] Tavily search returned results count=5 query="Iowa renewable energy 40%" fact check
+2026-10-18 13:27:22 [info     ] Tavily search returned results count=5 query="40% of Iowa's energy resources are from renewable
+2026-10-18 13:27:22 [info     ] Evidence fetched               total=10
+2026-10-18 13:28:19 [info     ] Planning queries               claims_count=1
+2026-10-18 13:28:20 [info     ] Queries planned                total=3
+2026-10-18 13:28:20 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:28:22 [info     ] Tavily search returned results count=5 query="trade war with China" "300,000 manufacturing jobs
+2026-10-18 13:28:23 [info     ] Tavily search returned results count=5 query="US manufacturing jobs lost" 300,000 "trade war" C
+2026-10-18 13:28:24 [info     ] Tavily search returned results count=5 query="trade war China" 300,000 manufacturing jobs debun
+2026-10-18 13:28:24 [info     ] Evidence fetched               total=7
+2026-10-18 13:29:19 [info     ] Planning queries               claims_count=1
+2026-10-18 13:29:20 [info     ] Queries planned                total=3
+2026-10-18 13:29:20 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:29:22 [info     ] Tavily search returned results count=5 query="Donald Trump" climate change hoax
+2026-10-18 13:29:22 [info     ] Tavily search returned results count=5 query="detonate a nuclear bomb over the Atlantic" "Donal
+2026-10-18 13:29:23 [info     ] Tavily search returned results count=5 query="Donald Trump" climate change hoax fact check
+2026-10-18 13:29:23 [info     ] Evidence fetched               total=13
+2026-10-18 13:30:26 [error    ] No JSON object found in response content_preview={
+    "verdict": "contradicted",
+    "confidence": 0.92,
+    "reasoning": "Multiple reputable sources show Trump called the carbon footprint a hoax and criticized climate change, supporting that part
+2026-10-18 13:30:26 [error    ] Failed to parse verdict response error=No JSON object found in LLM response
+2026-10-18 13:30:26 [info     ] Planning queries               claims_count=1
+2026-10-18 13:30:27 [info     ] Queries planned                total=3
+2026-10-18 13:30:27 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:30:29 [info     ] Tavily search returned results count=5 query="GiveSendGo" "Kyle Rittenhouse" donations
+2026-10-18 13:30:29 [info     ] Tavily search returned results count=5 query="GiveSendGo Kyle Rittenhouse campaign" debunk
+2026-10-18 13:30:30 [info     ] Tavily search returned results count=5 query="GiveSendGo Kyle Rittenhouse crowdfunding campaign
+2026-10-18 13:30:30 [info     ] Evidence fetched               total=12
+2026-10-18 13:31:25 [info     ] Planning queries               claims_count=1
+2026-10-18 13:31:27 [info     ] Queries planned                total=3
+2026-10-18 13:31:27 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:31:29 [info     ] Tavily search returned results count=5 query="masks lower immune systems" OR "mask wearing lowe
+2026-10-18 13:31:29 [info     ] Tavily search returned results count=5 query="CDC" "mask wearing" "immune response" 2023
+2026-10-18 13:31:29 [info     ] Tavily search returned results count=5 query="mask wearing" "does not lower immune system" fact
+2026-10-18 13:31:29 [info     ] Evidence fetched               total=12
+2026-10-18 13:32:32 [info     ] Planning queries               claims_count=1
+2026-10-18 13:32:33 [info     ] Queries planned                total=3
+2026-10-18 13:32:33 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:32:35 [info     ] Tavily search returned results count=5 query="Shah Rukh Khan" "Kolkata Knight Riders" "1.28%" "
+2026-10-18 13:32:35 [info     ] Tavily search returned results count=5 query="Shah Rukh Khan" "Kolkata Knight Riders" "Reliance
+2026-10-18 13:32:36 [info     ] Tavily search returned results count=5 query="Shah Rukh Khan" "Kolkata Knight Riders" "Reliance
+2026-10-18 13:32:36 [info     ] Evidence fetched               total=12
+2026-10-18 13:33:36 [info     ] Planning queries               claims_count=1
+2026-10-18 13:33:37 [info     ] Queries planned                total=3
+2026-10-18 13:33:37 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:33:39 [info     ] Tavily search returned results count=5 query=German health ministry mask child death official s
+2026-10-18 13:33:39 [info     ] Tavily search returned results count=5 query="child died" "Germany" "mask"
+2026-10-18 13:33:40 [info     ] Tavily search returned results count=5 query=mask child death Germany debunk
+2026-10-18 13:33:40 [info     ] Evidence fetched               total=13
+2026-10-18 13:34:40 [info     ] Planning queries               claims_count=1
+2026-10-18 13:34:43 [info     ] Queries planned                total=2
+2026-10-18 13:34:58 [info     ] Planning queries               claims_count=1
+2026-10-18 13:34:59 [info     ] Queries planned                total=3
+2026-10-18 13:34:59 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:35:03 [info     ] Tavily search returned results count=5 query="Public Health England" "combine Covid-19 and infl
+2026-10-18 13:35:03 [info     ] Tavily search returned results count=5 query="PHE" "combined Covid-19 and influenza statistics"
+2026-10-18 13:35:03 [info     ] Tavily search returned results count=5 query="PHE" "does not combine Covid-19 and influenza sta
+2026-10-18 13:35:03 [info     ] Evidence fetched               total=12
+2026-10-18 13:36:06 [info     ] Planning queries               claims_count=1
+2026-10-18 13:36:07 [info     ] Queries planned                total=3
+2026-10-18 13:36:07 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:36:08 [info     ] Tavily search returned results count=5 query="AIIMS Nursing Officer Recruitment Common Eligibil
+2026-10-18 13:36:08 [info     ] Tavily search returned results count=5 query="AIIMS Nursing Officer Recruitment Common Eligibil
+2026-10-18 13:36:09 [info     ] Tavily search returned results count=5 query="AIIMS" "Common Eligibility Test" 2020 nursing off
+2026-10-18 13:36:09 [info     ] Evidence fetched               total=5
+2026-10-18 13:37:06 [info     ] Planning queries               claims_count=1
+2026-10-18 13:37:07 [info     ] Queries planned                total=3
+2026-10-18 13:37:07 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:37:09 [info     ] Tavily search returned results count=5 query="Biden law enforcement enemy" fact check
+2026-10-18 13:37:10 [info     ] Tavily search returned results count=5 query="Joe Biden 'law enforcement is the enemy'" transcr
+2026-10-18 13:37:10 [info     ] Tavily search returned results count=5 query="Biden law enforcement enemy"
+2026-10-18 13:37:10 [info     ] Evidence fetched               total=10
+2026-10-18 13:38:07 [error    ] No JSON object found in response content_preview={
+    "verdict": "contradicted",
+    "confidence": 0.93,
+    "reasoning": "Multiple high‑reputation fact‑checking sources (FactCheck.org, PolitiFact, WRAL) report that Biden's remark was that police \
+2026-10-18 13:38:07 [error    ] Failed to parse verdict response error=No JSON object found in LLM response
+2026-10-18 13:38:07 [info     ] Planning queries               claims_count=1
+2026-10-18 13:38:09 [info     ] Queries planned                total=2
+2026-10-18 13:38:24 [info     ] Planning queries               claims_count=1
+2026-10-18 13:38:26 [info     ] Queries planned                total=3
+2026-10-18 13:38:26 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:38:29 [info     ] Tavily search returned results count=5 query="217 cases of torture" "South African police" 2018
+2026-10-18 13:38:29 [info     ] Tavily search returned results count=5 query="217 cases of torture" "3,661 cases of assault" "S
+2026-10-18 13:38:29 [info     ] Tavily search returned results count=5 query=South African police 2018 assault cases
+2026-10-18 13:38:29 [info     ] Evidence fetched               total=12
+2026-10-18 13:39:32 [info     ] Planning queries               claims_count=1
+2026-10-18 13:39:33 [info     ] Queries planned                total=3
+2026-10-18 13:39:33 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:39:35 [info     ] Tavily search returned results count=5 query="free Android smartphones" "students in India" "on
+2026-10-18 13:39:35 [info     ] Tavily search returned results count=5 query=India government no free smartphones for students
+2026-10-18 13:39:37 [info     ] Tavily search returned results count=5 query=India government free Android smartphones for stud
+2026-10-18 13:39:37 [info     ] Evidence fetched               total=14
+2026-10-18 13:41:07 [info     ] Planning queries               claims_count=1
+2026-10-18 13:41:08 [info     ] Queries planned                total=3
+2026-10-18 13:41:08 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:41:10 [info     ] Tavily search returned results count=5 query="Pennsylvania ballots rejected without outer and i
+2026-10-18 13:41:10 [info     ] Tavily search returned results count=5 query="Pennsylvania Department of State ballot envelope
+2026-10-18 13:41:11 [info     ] Tavily search returned results count=5 query="Pennsylvania ballots not rejected without outer a
+2026-10-18 13:41:11 [info     ] Evidence fetched               total=14
+2026-10-18 13:42:10 [error    ] No JSON object found in response content_preview={
+    "verdict": "supported",
+    "confidence": 0.88,
+    "reasoning": "Multiple high‑reputation sources indicate that Pennsylvania mail‑in ballots can be rejected for envelope problems: missing or in
+2026-10-18 13:42:10 [error    ] Failed to parse verdict response error=No JSON object found in LLM response
+2026-10-18 13:42:25 [info     ] Planning queries               claims_count=1
+2026-10-18 13:42:26 [info     ] Queries planned                total=3
+2026-10-18 13:42:26 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:42:28 [info     ] Tavily search returned results count=5 query=Section 230 repeal not included in defense bill De
+2026-10-18 13:42:28 [info     ] Tavily search returned results count=5 query=49-46 vote to repeal Section 230 in the defense bi
+2026-10-18 13:42:29 [info     ] Tavily search returned results count=5 query=US Congress 49-46 vote repeal Section 230 defense
+2026-10-18 13:42:29 [info     ] Evidence fetched               total=13
+2026-10-18 13:43:32 [info     ] Planning queries               claims_count=1
+2026-10-18 13:43:33 [info     ] Queries planned                total=3
+2026-10-18 13:43:33 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:43:36 [info     ] Tavily search returned results count=5 query="Kyle Rittenhouse" "Lake County" "court hearing" "
+2026-10-18 13:43:36 [info     ] Tavily search returned results count=5 query="Kyle Rittenhouse" "Lake County" "court hearing" "
+2026-10-18 13:43:36 [info     ] Tavily search returned results count=5 query="Lake County Circuit Court" "Kyle Rittenhouse" "mi
+2026-10-18 13:43:36 [info     ] Evidence fetched               total=11
+2026-10-18 13:44:31 [info     ] Planning queries               claims_count=1
+2026-10-18 13:44:32 [info     ] Queries planned                total=3
+2026-10-18 13:44:32 [info     ] Fetching evidence              claims_count=1
+2026-10-18 13:44:35 [info     ] Tavily search returned results count=5 query="Joe Biden" "wealth after 2017" debunked
+2026-10-18 13:44:35 [info     ] Tavily search returned results count=5 query="Joe Biden" "recent wealth" "since leaving office"
+2026-10-18 13:44:35 [info     ] Tavily search returned results count=5 query="Joe Biden" "2023 net worth" "official source"
+2026-10-18 13:44:35 [info     ] Evidence fetched               total=15
+2026-10-18 14:15:50 [info     ] Planning queries               claims_count=1
+2026-10-18 14:15:50 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:15:50 [info     ] Queries planned                total=2
+2026-10-18 14:16:05 [info     ] Planning queries               claims_count=1
+2026-10-18 14:16:05 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:16:05 [info     ] Queries planned                total=2
+2026-10-18 14:16:35 [info     ] Planning queries               claims_count=1
+2026-10-18 14:16:35 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:16:35 [info     ] Queries planned                total=2
+2026-10-18 14:17:20 [info     ] Planning queries               claims_count=1
+2026-10-18 14:17:20 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:17:20 [info     ] Queries planned                total=2
+2026-10-18 14:18:20 [info     ] Fetching evidence              claims_count=1
+2026-10-18 14:18:22 [info     ] Tavily search returned results count=5 query=The New York post Endorsed Donald trumps bid for r
+2026-10-18 14:18:23 [info     ] Tavily search returned results count=5 query=The New York post Endorsed Donald trumps bid for r
+2026-10-18 14:18:23 [info     ] Evidence fetched               total=7
+2026-10-18 14:35:23 [info     ] Planning queries               claims_count=1
+2026-10-18 14:35:23 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:35:23 [info     ] Queries planned                total=2
+2026-10-18 14:35:38 [info     ] Planning queries               claims_count=1
+2026-10-18 14:35:38 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:35:38 [info     ] Queries planned                total=2
+2026-10-18 14:36:08 [info     ] Planning queries               claims_count=1
+2026-10-18 14:36:08 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:36:08 [info     ] Queries planned                total=2
+2026-10-18 14:36:53 [info     ] Planning queries               claims_count=1
+2026-10-18 14:36:54 [warning  ] Query planning failed for claim claim_id=c0 error=Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+2026-10-18 14:36:54 [info     ] Queries planned                total=2
+2026-10-18 14:37:54 [info     ] Fetching evidence              claims_count=1
+2026-10-18 14:37:56 [info     ] Tavily search returned results count=5 query=Pennsylvania US rejects 372,000 mail-in ballots.
+2026-10-18 14:37:57 [info     ] Tavily search returned results count=5 query=Pennsylvania US rejects 372,000 mail-in ballots. f
+2026-10-18 14:37:57 [info     ] Evidence fetched               total=9
+2026-10-18 15:20:10 [info     ] Planning queries               claims_count=1
+2026-10-18 15:20:12 [info     ] Queries planned                total=3
+2026-10-18 15:20:12 [info     ] Fetching evidence              claims_count=1
+2026-10-18 15:20:13 [info     ] Tavily search returned results count=5 query="Amelia Bassano" "died unpublished" "poverty"
+2026-10-18 15:20:14 [info     ] Tavily search returned results count=5 query=Amelia Bassano Shakespeare authorship claim
+2026-10-18 15:20:14 [info     ] Tavily search returned results count=5 query=debunk "Amelia Bassano" "Shakespeare" authorship c
+2026-10-18 15:20:14 [info     ] Evidence fetched               total=12
+2026-10-18 15:26:14 [warning  ] Relevance scoring failed       error=Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kmgg5zdfep199rkgy5sta5z8` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199977, Requested 484. Please try again in 3m19.152s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+Traceback (most recent call last):
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/snapshot.py", line 82, in create
+    response = await self._inner.create(**kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/venv/lib/python3.14/site-packages/groq/resources/chat/completions.py", line 943, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+    )
+    ^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/venv/lib/python3.14/site-packages/groq/_base_client.py", line 1856, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/venv/lib/python3.14/site-packages/groq/_base_client.py", line 1655, in request
+    raise self._make_status_error_from_response(err.response) from None
+groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kmgg5zdfep199rkgy5sta5z8` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199954, Requested 562. Please try again in 3m42.911999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/run_eval.py", line 64, in evaluate
+    rows.append(await system.run(example, inject_k=inject_k))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/systems.py", line 107, in run
+    ranked = await self.ranker.rank_evidence([claim], {claim["id"]: items})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/agents.py", line 51, in rank_evidence
+    item["combined_score"] = await self._score_evidence(claim, item)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/app/agents/evidence_ranker.py", line 113, in _score_evidence
+    relevance = await self._get_relevance_score(claim, evidence_item)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/app/agents/evidence_ranker.py", line 151, in _get_relevance_score
+    response = await self.client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/snapshot.py", line 91, in create
+    await asyncio.sleep(min(60, 10 * (attempt + 1)))
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py", line 702, in sleep
+    return await future
+           ^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/run_eval.py", line 172, in <module>
+    sys.exit(main(sys.argv[1:]))
+             ~~~~^^^^^^^^^^^^^^
+  File "/Users/rudralaheri/Documents/Universe/KJ Somaiya/Academics/projects/LY/the app/Verique/backend/research/eval/run_eval.py", line 154, in main
+    results = [asyncio.run(evaluate(name, examples, snapshot, args.runs)) for name in args.configs]
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 132, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
