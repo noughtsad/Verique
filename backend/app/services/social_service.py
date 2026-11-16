@@ -3,7 +3,7 @@ Social feed and moderation workflow service.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from typing import Any, Optional
 
@@ -14,9 +14,11 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.cache import cache
 from app.models.article import Article
+from app.models.bookmark import Bookmark
 from app.models.claim import Claim, ClaimVerdict
 from app.models.comment import Comment
 from app.models.domain import Domain
+from app.models.follow import UserFollow
 from app.models.like import PostLike
 from app.models.moderation import Challenge, ModerationReview
 from app.models.post import Post
@@ -47,6 +49,13 @@ from app.schemas.verification import (
 )
 from app.services.verification_service import VerificationService
 from app.services.notification_service import NotificationService
+from app.services.storage_service import is_own_upload_url
+
+# Roles that may remove other people's posts and comments.
+MODERATOR_ROLES = ("moderator", "admin")
+# How far back the "popular" feed looks.
+POPULAR_WINDOW_DAYS = 30
+FEEDS = ("all", "following", "popular")
 
 
 class SelfReportError(ValueError):
@@ -55,6 +64,10 @@ class SelfReportError(ValueError):
 
 class DuplicateReportError(ValueError):
     """The reporter has already reported this post."""
+
+
+class NotAllowedError(PermissionError):
+    """The user may not change this post or comment."""
 
 
 def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
@@ -78,10 +91,13 @@ class SocialService:
         self.verification_service = VerificationService(db)
 
     async def create_post(self, author: User, payload: PostCreate) -> PostSummary:
+        if payload.image_url and not is_own_upload_url(payload.image_url):
+            raise ValueError("Images must be uploaded through Verique")
         post = Post(
             author_id=author.id,
-            content=payload.content,
+            content=payload.content.strip(),
             source_url=str(payload.source_url) if payload.source_url else None,
+            image_url=payload.image_url or None,
         )
         self.db.add(post)
         await self.db.flush()
@@ -92,6 +108,7 @@ class SocialService:
             author=post.author,
             content=post.content,
             source_url=post.source_url,
+            image_url=post.image_url,
             created_at=post.created_at,
             updated_at=post.updated_at,
             latest_verification_summary=None,
@@ -101,7 +118,78 @@ class SocialService:
             is_liked_by_me=False,
         )
 
-    async def list_posts(self, current_user: Optional[User] = None) -> list[PostSummary]:
+    async def list_posts(
+        self,
+        current_user: Optional[User] = None,
+        *,
+        feed: str = "all",
+        limit: int = 20,
+        offset: int = 0,
+        author_id: Optional[int] = None,
+        query: Optional[str] = None,
+    ) -> list[PostSummary]:
+        """Newest-first posts, or most-engaged first for the "popular" feed.
+
+        "following" needs a signed-in user and shows posts by people they follow plus
+        their own. `author_id` limits to one author (profile pages) and `query` matches
+        post text (search)."""
+        if feed not in FEEDS:
+            raise ValueError(f"Unknown feed '{feed}'")
+        stmt = select(Post)
+        if author_id is not None:
+            stmt = stmt.where(Post.author_id == author_id)
+        if query:
+            stmt = stmt.where(Post.content.ilike(f"%{query.strip()}%"))
+
+        if feed == "following":
+            if current_user is None:
+                return []
+            followed = select(UserFollow.followed_id).where(UserFollow.follower_id == current_user.id)
+            stmt = stmt.where((Post.author_id.in_(followed)) | (Post.author_id == current_user.id))
+            stmt = stmt.order_by(Post.created_at.desc(), Post.id.desc())
+        elif feed == "popular":
+            likes = (
+                select(PostLike.post_id, func.count(PostLike.id).label("n"))
+                .group_by(PostLike.post_id)
+                .subquery()
+            )
+            comments = (
+                select(Comment.post_id, func.count(Comment.id).label("n"))
+                .group_by(Comment.post_id)
+                .subquery()
+            )
+            engagement = func.coalesce(likes.c.n, 0) + func.coalesce(comments.c.n, 0)
+            stmt = (
+                stmt.outerjoin(likes, likes.c.post_id == Post.id)
+                .outerjoin(comments, comments.c.post_id == Post.id)
+                .where(Post.created_at >= datetime.utcnow() - timedelta(days=POPULAR_WINDOW_DAYS))
+                .order_by(engagement.desc(), Post.created_at.desc(), Post.id.desc())
+            )
+        else:
+            stmt = stmt.order_by(Post.created_at.desc(), Post.id.desc())
+
+        ids = (await self.db.execute(stmt.with_only_columns(Post.id).limit(limit).offset(offset))).scalars().all()
+        return await self._posts_by_ids(list(ids), current_user)
+
+    async def list_bookmarked_posts(
+        self, user: User, *, limit: int = 20, offset: int = 0
+    ) -> list[PostSummary]:
+        """The user's bookmarks, most recently saved first."""
+        ids = (
+            await self.db.execute(
+                select(Bookmark.post_id)
+                .where(Bookmark.user_id == user.id)
+                .order_by(Bookmark.created_at.desc(), Bookmark.id.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+        ).scalars().all()
+        return await self._posts_by_ids(list(ids), user)
+
+    async def _posts_by_ids(self, ids: list[int], current_user: Optional[User]) -> list[PostSummary]:
+        """Load and serialize posts, keeping the order of `ids`."""
+        if not ids:
+            return []
         result = await self.db.execute(
             select(Post)
             .options(
@@ -111,11 +199,41 @@ class SocialService:
                 .selectinload(ClaimVerdict.sources)
                 .selectinload(VerificationSource.source),
             )
-            .order_by(Post.created_at.desc())
+            .where(Post.id.in_(ids))
         )
-        posts = result.scalars().unique().all()
+        by_id = {post.id: post for post in result.scalars().unique().all()}
+        posts = [by_id[i] for i in ids if i in by_id]
         engagement = await self._engagement_for_posts([post.id for post in posts], current_user)
         return [self._serialize_post(post, engagement) for post in posts]
+
+    async def delete_post(self, user: User, post_id: int) -> None:
+        post = await self._load_post(post_id)
+        if post.author_id != user.id and user.role not in MODERATOR_ROLES:
+            raise NotAllowedError("You can only delete your own posts")
+        await self.db.delete(post)
+        await self.db.flush()
+
+    # ------------------------------------------------------------------
+    # Bookmarks
+    # ------------------------------------------------------------------
+
+    async def bookmark_post(self, user: User, post_id: int) -> None:
+        await self._load_post(post_id)
+        existing = await self.db.execute(
+            select(Bookmark.id).where(Bookmark.post_id == post_id, Bookmark.user_id == user.id)
+        )
+        if existing.scalar_one_or_none() is None:
+            self.db.add(Bookmark(post_id=post_id, user_id=user.id))
+            await self.db.flush()
+
+    async def unbookmark_post(self, user: User, post_id: int) -> None:
+        result = await self.db.execute(
+            select(Bookmark).where(Bookmark.post_id == post_id, Bookmark.user_id == user.id)
+        )
+        bookmark = result.scalar_one_or_none()
+        if bookmark is not None:
+            await self.db.delete(bookmark)
+            await self.db.flush()
 
     async def get_post(self, post_id: int, current_user: Optional[User] = None) -> PostSummary:
         post = await self._load_post(post_id)
@@ -203,6 +321,17 @@ class SocialService:
             created_at=comment.created_at,
         )
 
+    async def delete_comment(self, user: User, post_id: int, comment_id: int) -> None:
+        """The comment's author, the post's author or a moderator may delete a comment."""
+        post = await self._load_post(post_id)
+        comment = await self.db.get(Comment, comment_id)
+        if comment is None or comment.post_id != post_id:
+            raise ValueError("Comment not found")
+        if user.id not in (comment.author_id, post.author_id) and user.role not in MODERATOR_ROLES:
+            raise NotAllowedError("You can't delete this comment")
+        await self.db.delete(comment)
+        await self.db.flush()
+
     # ------------------------------------------------------------------
     # Reports
     # ------------------------------------------------------------------
@@ -235,7 +364,8 @@ class SocialService:
         self, post_ids: list[int], current_user: Optional[User]
     ) -> dict[int, dict[str, Any]]:
         engagement: dict[int, dict[str, Any]] = {
-            pid: {"likes": 0, "comments": 0, "liked_by_me": False} for pid in post_ids
+            pid: {"likes": 0, "comments": 0, "liked_by_me": False, "bookmarked_by_me": False}
+            for pid in post_ids
         }
         if not post_ids:
             return engagement
@@ -264,6 +394,13 @@ class SocialService:
             )
             for post_id in liked.scalars().all():
                 engagement[post_id]["liked_by_me"] = True
+            saved = await self.db.execute(
+                select(Bookmark.post_id).where(
+                    Bookmark.post_id.in_(post_ids), Bookmark.user_id == current_user.id
+                )
+            )
+            for post_id in saved.scalars().all():
+                engagement[post_id]["bookmarked_by_me"] = True
 
         return engagement
 
@@ -308,8 +445,16 @@ class SocialService:
                 vertical=None,
                 language="en",
             )
+            errors = result.get("verification_errors") or []
             has_verifiable_claims = len(result["claims"]) > 0
-            if not has_verifiable_claims:
+            if errors:
+                # An LLM call failed (e.g. rate limit): say so instead of calling the post an opinion.
+                verification.status = "failed"
+                verification.overall_score = None
+                verification.final_decision_note = (
+                    f"Verification failed due to an error: {'; '.join(errors)}. Try verifying again later."
+                )
+            elif not has_verifiable_claims:
                 verification.status = "unverifiable"
                 verification.overall_score = None
                 verification.final_decision_note = (
@@ -626,12 +771,15 @@ class SocialService:
     ) -> PostSummary:
         latest = self._latest_verification(post)
         challenge_state = (latest.review_status or "none") if latest else "none"
-        stats = (engagement or {}).get(post.id, {"likes": 0, "comments": 0, "liked_by_me": False})
+        stats = (engagement or {}).get(
+            post.id, {"likes": 0, "comments": 0, "liked_by_me": False, "bookmarked_by_me": False}
+        )
         return PostSummary(
             id=post.id,
             author=post.author,
             content=post.content,
             source_url=post.source_url,
+            image_url=post.image_url,
             created_at=post.created_at,
             updated_at=post.updated_at,
             latest_verification_summary=self._serialize_verification_summary(latest) if latest else None,
@@ -639,6 +787,7 @@ class SocialService:
             likes_count=stats["likes"],
             comments_count=stats["comments"],
             is_liked_by_me=stats["liked_by_me"],
+            is_bookmarked_by_me=stats["bookmarked_by_me"],
         )
 
     def _serialize_verification_summary(self, verification: Verification) -> PostVerificationSummary:
@@ -747,6 +896,7 @@ class SocialService:
                 author=post.author,
                 content=post.content,
                 source_url=post.source_url,
+                image_url=post.image_url,
                 created_at=post.created_at,
                 updated_at=post.updated_at,
                 latest_verification_summary=self._serialize_verification_summary(review.verification),

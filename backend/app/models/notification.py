@@ -45,7 +45,7 @@ class Notification(Base):
 
     owner = relationship("User", foreign_keys=[owner_id])
     actor = relationship("User", foreign_keys=[actor_id])
-    post = relationship("Post", foreign_keys=[post_id])
+    post = relationship("Post", foreign_keys=[post_id], back_populates="notifications")
 
     def __repr__(self) -> str:
         return f"<Notification(id={self.id}, type={self.type}, owner={self.owner_id})>"

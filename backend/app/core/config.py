@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/postgres"
     SUPABASE_URL: Optional[str] = None
     SUPABASE_ANON_KEY: Optional[str] = None
+    # Image uploads go to Supabase Storage. The service-role key is used server-side only
+    # (never sent to the browser); the bucket must be public so images can be shown.
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_STORAGE_BUCKET: str = "media"
+    MAX_UPLOAD_BYTES: int = 5 * 1024 * 1024
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

@@ -18,6 +18,7 @@ from app.main import app
 from app.models.chat import Conversation, Message
 from app.models.domain import Domain
 from app.models.article import Article
+from app.models.bookmark import Bookmark
 from app.models.comment import Comment
 from app.models.follow import UserFollow
 from app.models.like import PostLike
@@ -52,6 +53,7 @@ async def engine():
                 Post.__table__,
                 PostLike.__table__,
                 PostReport.__table__,
+                Bookmark.__table__,
                 Comment.__table__,
                 Verification.__table__,
                 Notification.__table__,

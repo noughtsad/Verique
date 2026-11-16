@@ -148,5 +148,6 @@ class ClaimDecomposerAgent:
             raise LLMRateLimitError(str(e), parse_retry_after(str(e))) from e
         except Exception as e:
             logger.error("Claim extraction failed", error=str(e))
-            # Return empty list on failure, let pipeline continue
-            return []
+            # Re-raise so the pipeline records a failure; returning [] made a failed
+            # call look like a post with no factual claims (an "opinion").
+            raise

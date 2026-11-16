@@ -2,6 +2,7 @@
 Models module initialization
 """
 from app.models.article import Article
+from app.models.bookmark import Bookmark
 from app.models.chat import Conversation, Message
 from app.models.claim import Claim, ClaimVerdict
 from app.models.comment import Comment
@@ -18,6 +19,7 @@ from app.models.user import User
 
 __all__ = [
     "Article",
+    "Bookmark",
     "Claim",
     "ClaimVerdict",
     "Challenge",

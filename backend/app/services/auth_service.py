@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
-from app.schemas.auth import AuthResponse, UserCreate, UserResponse
+from app.schemas.auth import AuthResponse, UserCreate, UserResponse, UserUpdate
+from app.services.storage_service import is_own_upload_url
 
 
 class AuthService:
@@ -41,6 +42,23 @@ class AuthService:
         if user is None or not verify_password(password, user.password_hash):
             raise ValueError("Invalid email or password")
         return self._build_auth_response(user)
+
+    async def update_profile(self, user: User, payload: UserUpdate) -> User:
+        """Set only the fields present in the request; blank strings clear a field."""
+        for field in payload.model_fields_set & {"full_name", "bio", "avatar_url"}:
+            value = (getattr(payload, field) or "").strip() or None
+            if field == "avatar_url" and value and not is_own_upload_url(value):
+                raise ValueError("Avatars must be uploaded through Verique")
+            setattr(user, field, value)
+        await self.db.flush()
+        await self.db.refresh(user)
+        return user
+
+    async def change_password(self, user: User, current_password: str, new_password: str) -> None:
+        if not verify_password(current_password, user.password_hash):
+            raise ValueError("Current password is incorrect")
+        user.password_hash = get_password_hash(new_password)
+        await self.db.flush()
 
     async def ensure_seed_moderator(self) -> None:
         result = await self.db.execute(select(User).where(User.email == settings.SEED_MODERATOR_EMAIL))

@@ -3,19 +3,15 @@ Follow service — business logic for the social follow/unfollow system.
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.follow import UserFollow
 from app.models.post import Post
 from app.models.user import User
-from app.models.verification import Verification
 from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
-from app.schemas.social import PostSummary, PostVerificationSummary
-from app.schemas.verification import VerificationSummary
 from app.services.notification_service import NotificationService
 
 
@@ -121,6 +117,7 @@ class FollowService:
             username=user.username,
             full_name=user.full_name,
             bio=getattr(user, "bio", None),
+            avatar_url=user.avatar_url,
             role=user.role,
             is_active=user.is_active,
             created_at=user.created_at,
@@ -129,33 +126,6 @@ class FollowService:
             posts_count=posts_count,
             is_followed_by_me=is_followed,
         )
-
-    async def get_user_posts(
-        self, username: str, limit: int = 20, offset: int = 0
-    ) -> list[PostSummary]:
-        """Return paginated posts for a user."""
-        from app.models.claim import ClaimVerdict
-        from app.models.source import VerificationSource
-        from sqlalchemy.orm import selectinload
-
-        user = await self._get_user_by_username(username)
-
-        result = await self.db.execute(
-            select(Post)
-            .options(
-                selectinload(Post.author),
-                selectinload(Post.verifications)
-                .selectinload(Verification.claim_verdicts)
-                .selectinload(ClaimVerdict.sources)
-                .selectinload(VerificationSource.source),
-            )
-            .where(Post.author_id == user.id)
-            .order_by(Post.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        posts = result.scalars().unique().all()
-        return [self._serialize_post(post) for post in posts]
 
     # ------------------------------------------------------------------
     # Followers / Following lists
@@ -285,56 +255,9 @@ class FollowService:
                 username=u.username,
                 full_name=u.full_name,
                 bio=getattr(u, "bio", None),
+                avatar_url=u.avatar_url,
                 role=u.role,
                 is_followed_by_me=(u.id in followed_ids),
             )
             for u in users
         ]
-
-    def _serialize_post(self, post: Post) -> PostSummary:
-        """Serialize a Post ORM object to PostSummary schema."""
-        latest = self._latest_verification(post)
-        challenge_state = (latest.review_status or "none") if latest else "none"
-        return PostSummary(
-            id=post.id,
-            author=post.author,
-            content=post.content,
-            source_url=post.source_url,
-            created_at=post.created_at,
-            updated_at=post.updated_at,
-            latest_verification_summary=self._serialize_verification_summary(latest)
-            if latest
-            else None,
-            challenge_state=challenge_state,
-        )
-
-    def _serialize_verification_summary(
-        self, verification: Verification
-    ) -> PostVerificationSummary:
-        summary = (
-            VerificationSummary.model_validate(verification.summary)
-            if verification.summary and "human_summary" not in verification.summary
-            else None
-        )
-        return PostVerificationSummary(
-            id=verification.id,
-            status=verification.status or "pending",
-            score=int(verification.overall_score)
-            if verification.overall_score is not None
-            else None,
-            summary=summary,
-            challenge_count=verification.challenge_count or 0,
-            review_status=verification.review_status or "none",
-            final_decision=verification.final_decision,
-            final_decision_note=verification.final_decision_note,
-            is_human_final=bool(verification.is_human_final),
-            created_at=verification.created_at,
-        )
-
-    def _latest_verification(self, post: Post) -> Optional[Verification]:
-        if not post.verifications:
-            return None
-        latest = [v for v in post.verifications if v.is_latest]
-        if latest:
-            return sorted(latest, key=lambda v: v.created_at, reverse=True)[0]
-        return sorted(post.verifications, key=lambda v: v.created_at, reverse=True)[0]

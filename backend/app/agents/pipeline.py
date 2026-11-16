@@ -33,6 +33,23 @@ from app.core.errors import LLMRateLimitError
 
 logger = structlog.get_logger()
 
+# Errors from these stages mean the verification itself failed (as opposed to the
+# degraded-but-usable fallbacks of the other stages).
+DECOMPOSITION_ERROR = "Claim decomposition error"
+VERIFICATION_ERROR = "Verification error"
+
+
+def describe_llm_error(error: str) -> str:
+    """Turn a raw LLM/client error into a short reason a user can understand."""
+    lowered = error.lower()
+    if "429" in error or "rate limit" in lowered or "rate_limit" in lowered:
+        return "the AI provider's rate limit was reached"
+    if "timed out" in lowered or "timeout" in lowered:
+        return "the AI provider did not respond in time"
+    if "json" in lowered or "parse" in lowered:
+        return "the AI returned an answer that could not be read"
+    return "the AI service returned an error"
+
 
 class PipelineState(TypedDict):
     """State passed through the pipeline."""
@@ -169,10 +186,17 @@ class VerificationPipeline:
             errors=final_state.get("errors", [])
         )
         
+        raw_failures = [
+            e for e in final_state.get("errors", [])
+            if e.startswith((DECOMPOSITION_ERROR, VERIFICATION_ERROR))
+        ] + [v["error"] for v in final_state["verdicts"] if v.get("error")]
+
         return {
             "claims": final_state["claims"],
             "models_used": final_state["models_used"],
-            "sources_checked": final_state["sources_checked"]
+            "sources_checked": final_state["sources_checked"],
+            # Distinct user-facing reasons; empty when every claim got a real verdict.
+            "verification_errors": list(dict.fromkeys(describe_llm_error(e) for e in raw_failures)),
         }
     
     async def _run_ingestion(self, state: PipelineState) -> PipelineState:
@@ -198,7 +222,7 @@ class VerificationPipeline:
         except LLMRateLimitError:
             raise
         except Exception as e:
-            state["errors"].append(f"Claim decomposition error: {str(e)}")
+            state["errors"].append(f"{DECOMPOSITION_ERROR}: {str(e)}")
             state["extracted_claims"] = []
         return state
     
@@ -285,7 +309,7 @@ class VerificationPipeline:
         except LLMRateLimitError:
             raise
         except Exception as e:
-            state["errors"].append(f"Verification error: {str(e)}")
+            state["errors"].append(f"{VERIFICATION_ERROR}: {str(e)}")
         return state
     
     async def _run_explanation(self, state: PipelineState) -> PipelineState:

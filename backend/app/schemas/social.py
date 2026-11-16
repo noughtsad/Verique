@@ -13,6 +13,7 @@ from app.schemas.verification import ClaimResult, VerificationMetadata, Verifica
 class PostCreate(BaseModel):
     content: str = Field(..., min_length=10, max_length=5000)
     source_url: Optional[HttpUrl] = None
+    image_url: Optional[str] = Field(default=None, max_length=1024)
 
 
 class CommentCreate(BaseModel):
@@ -25,6 +26,10 @@ class CommentResponse(BaseModel):
     author: PublicUserResponse
     content: str
     created_at: datetime
+
+
+class UploadResponse(BaseModel):
+    url: str
 
 
 class PostReportCreate(BaseModel):
@@ -74,6 +79,7 @@ class PostSummary(BaseModel):
     author: PublicUserResponse
     content: str
     source_url: Optional[str] = None
+    image_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     latest_verification_summary: Optional[PostVerificationSummary] = None
@@ -81,6 +87,7 @@ class PostSummary(BaseModel):
     likes_count: int = 0
     comments_count: int = 0
     is_liked_by_me: bool = False
+    is_bookmarked_by_me: bool = False
 
 
 class PostVerificationResponse(BaseModel):

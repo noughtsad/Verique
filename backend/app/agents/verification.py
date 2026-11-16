@@ -4,11 +4,13 @@ Verification Agent - Generates verdicts for claims based on evidence
 from typing import List, Dict, Any, Literal
 import json
 import structlog
+
 from groq import AsyncGroq, RateLimitError
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from app.core.config import settings
 from app.core.errors import LLMRateLimitError, parse_retry_after
+
 
 logger = structlog.get_logger()
 
@@ -64,6 +66,14 @@ Based on the evidence, provide your verdict:
    - contradicted: Evidence contradicts this claim
    - outdated: Evidence suggests information is no longer current
    - not_verifiable: Cannot find sufficient evidence to verify
+
+   FOR NUMERIC CLAIMS (percentages, counts, amounts, rankings), choose the verdict this way:
+   - Compare the claim's figure with the evidence's figure, and note what each measures (e.g. "energy" vs "electricity") and when
+   - Within about 10% of the evidence figure: supported
+   - The evidence shows at least the claimed amount (the claim understates it): supported, with a caveat giving the evidence figure
+   - Accurate at an earlier date but no longer, and the claim presents it as current: outdated
+   - Overstated, or off by enough to change what the claim means (e.g. 50 million when it is 220 million): contradicted
+   - The evidence measures something different from the claim: say so in a caveat and lower your confidence
 
 2. **Confidence** (0.0 to 1.0): How confident are you in this verdict?
 
@@ -171,7 +181,8 @@ class VerificationAgent:
                     "supporting_sources": [],
                     "contradicting_sources": [],
                     "caveats": [],
-                    "model_used": self.model
+                    "model_used": self.model,
+                    "error": str(e),  # lets the pipeline report a failure, not an opinion
                 })
         
         logger.info("Claims verified", count=len(verdicts))

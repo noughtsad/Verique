@@ -3,7 +3,7 @@ Social post endpoints.
 """
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.endpoints.users import get_optional_user
@@ -20,17 +20,40 @@ from app.schemas import (
     PostSummary,
     PostVerificationResponse,
 )
-from app.services.social_service import DuplicateReportError, SelfReportError, SocialService
+from app.services.social_service import (
+    FEEDS,
+    DuplicateReportError,
+    NotAllowedError,
+    SelfReportError,
+    SocialService,
+)
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[PostSummary])
 async def list_posts(
+    feed: str = Query(default="all", pattern=f"^({'|'.join(FEEDS)})$"),
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    q: Optional[str] = Query(default=None, max_length=200),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
-    return await SocialService(db).list_posts(current_user)
+    return await SocialService(db).list_posts(
+        current_user, feed=feed, limit=limit, offset=offset, query=(q or "").strip() or None
+    )
+
+
+# Declared before /{post_id} so "bookmarks" is not parsed as a post id.
+@router.get("/bookmarks", response_model=list[PostSummary])
+async def list_bookmarks(
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await SocialService(db).list_bookmarked_posts(current_user, limit=limit, offset=offset)
 
 
 @router.post("/", response_model=PostSummary)
@@ -39,7 +62,10 @@ async def create_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await SocialService(db).create_post(current_user, payload)
+    try:
+        return await SocialService(db).create_post(current_user, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get("/{post_id}", response_model=PostSummary)
@@ -53,6 +79,41 @@ async def get_post(
         return await service.get_post(post_id, current_user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await SocialService(db).delete_post(current_user, post_id)
+    except NotAllowedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/{post_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT)
+async def bookmark_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await SocialService(db).bookmark_post(current_user, post_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.delete("/{post_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT)
+async def unbookmark_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await SocialService(db).unbookmark_post(current_user, post_id)
 
 
 @router.post("/{post_id}/like", status_code=status.HTTP_204_NO_CONTENT)
@@ -96,6 +157,21 @@ async def add_comment(
 ):
     try:
         return await SocialService(db).add_comment(current_user, post_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.delete("/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(
+    post_id: int,
+    comment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await SocialService(db).delete_comment(current_user, post_id, comment_id)
+    except NotAllowedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

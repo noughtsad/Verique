@@ -3,6 +3,8 @@ TrustLens Backend - Main Application Entry Point
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import structlog
@@ -114,6 +116,22 @@ async def root():
         "docs": "/docs",
         "health": "/health"
     }
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Give 422s a readable `detail` string ("content: String should have at least 10
+    characters") so clients can show it as is; the full error list stays in `errors`."""
+    errors = exc.errors()
+    detail = "Invalid request"
+    if errors:
+        first = errors[0]
+        loc = [str(part) for part in first.get("loc", ()) if part not in ("body", "query", "path")]
+        detail = f"{loc[-1]}: {first.get('msg', '')}" if loc else first.get("msg", detail)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": detail, "errors": jsonable_encoder(errors)},
+    )
 
 
 @app.exception_handler(Exception)

@@ -14,6 +14,7 @@ class FollowerListItem(BaseModel):
     username: str
     full_name: Optional[str] = None
     bio: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: str
     is_followed_by_me: bool = False
 
@@ -28,6 +29,7 @@ class UserProfileResponse(BaseModel):
     username: str
     full_name: Optional[str] = None
     bio: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: str
     is_active: bool
     created_at: datetime

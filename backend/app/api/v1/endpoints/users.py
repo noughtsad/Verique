@@ -16,6 +16,7 @@ from app.models.user import User
 from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
 from app.schemas.social import PostSummary
 from app.services.follow_service import FollowService
+from app.services.social_service import SocialService
 
 router = APIRouter()
 
@@ -100,12 +101,14 @@ async def get_user_posts(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """Paginated list of posts by this user, newest first."""
-    try:
-        return await FollowService(db).get_user_posts(username, limit=limit, offset=offset)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    """Paginated list of posts by this user, newest first, with the viewer's like and
+    bookmark state."""
+    user = (await db.execute(select(User).where(User.username == username))).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return await SocialService(db).list_posts(current_user, author_id=user.id, limit=limit, offset=offset)
 
 
 @router.get(

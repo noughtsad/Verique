@@ -18,6 +18,7 @@ class Post(Base):
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     content = Column(Text, nullable=False)
     source_url = Column(String(2048), nullable=True)
+    image_url = Column(String(1024), nullable=True)
     visibility = Column(String(20), default="public", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -27,6 +28,8 @@ class Post(Base):
     verifications = relationship("Verification", back_populates="post", cascade="all, delete-orphan")
     likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
     reports = relationship("PostReport", back_populates="post", cascade="all, delete-orphan")
+    bookmarks = relationship("Bookmark", back_populates="post", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="post", cascade="all, delete-orphan")
     comments = relationship(
         "Comment", back_populates="post", cascade="all, delete-orphan", order_by="Comment.created_at"
     )

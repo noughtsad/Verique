@@ -84,10 +84,12 @@ async def verify_content(
         # Calculate processing time
         processing_time_ms = int((time.time() - start_time) * 1000)
         
+        failed = bool(result.get("verification_errors"))
+
         # Build response
         response = VerificationResponse(
             verification_id=verification_id,
-            status="completed",
+            status="failed" if failed else "completed",
             page_score=result["page_score"],
             summary=result["summary"],
             claims=result["claims"],
@@ -100,8 +102,9 @@ async def verify_content(
             content_hash=content_hash
         )
         
-        # Cache the result
-        await cache.cache_verification(content_hash, response.model_dump())
+        # Cache the result; never a failed one, or it would be served for the whole TTL
+        if not failed:
+            await cache.cache_verification(content_hash, response.model_dump())
         
         logger.info(
             "Verification completed",

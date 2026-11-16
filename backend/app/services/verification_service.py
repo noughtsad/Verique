@@ -67,7 +67,8 @@ class VerificationService:
             "page_score": page_score,
             "summary": summary,
             "models_used": result.get("models_used", ["gpt-4o"]),
-            "sources_checked": result.get("sources_checked", 0)
+            "sources_checked": result.get("sources_checked", 0),
+            "verification_errors": result.get("verification_errors", []),
         }
     
     def _calculate_page_score(self, claims: List[ClaimResult]) -> int:

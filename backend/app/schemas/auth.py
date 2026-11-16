@@ -24,6 +24,7 @@ class PublicUserResponse(BaseModel):
     id: int
     username: str
     full_name: str | None = None
+    avatar_url: str | None = None
     role: str
     is_active: bool
     created_at: datetime
@@ -39,12 +40,28 @@ class UserResponse(BaseModel):
     email: str
     username: str
     full_name: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
     role: str
     is_active: bool
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    """Profile fields the owner can change. Omitted fields stay as they are; an empty
+    string clears full_name, bio or avatar_url."""
+
+    full_name: str | None = Field(default=None, max_length=120)
+    bio: str | None = Field(default=None, max_length=300)
+    avatar_url: str | None = Field(default=None, max_length=1024)
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
 
 
 class AuthResponse(BaseModel):

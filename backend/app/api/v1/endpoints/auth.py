@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas import AuthResponse, UserCreate, UserLogin, UserResponse
+from app.schemas import AuthResponse, PasswordChange, UserCreate, UserLogin, UserResponse, UserUpdate
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -79,3 +79,30 @@ async def logout_user(response: Response):
 async def get_me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user's full profile (including email)."""
     return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the signed-in user's name, bio or avatar."""
+    try:
+        return await AuthService(db).update_profile(current_user, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    payload: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await AuthService(db).change_password(
+            current_user, payload.current_password, payload.new_password
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

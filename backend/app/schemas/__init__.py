@@ -1,7 +1,15 @@
 """
 Schemas module initialization
 """
-from app.schemas.auth import AuthResponse, PublicUserResponse, UserCreate, UserLogin, UserResponse
+from app.schemas.auth import (
+    AuthResponse,
+    PasswordChange,
+    PublicUserResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    UserUpdate,
+)
 from app.schemas.chat import ConversationSummary, MessageCreate, MessageResponse
 from app.schemas.follow import FollowerListItem, FollowResponse, UserProfileResponse
 from app.schemas.notification import NotificationCountResponse, NotificationResponse
@@ -18,6 +26,7 @@ from app.schemas.social import (
     PostSummary,
     PostVerificationResponse,
     PostVerificationSummary,
+    UploadResponse,
 )
 from app.schemas.verification import (
     Vertical,
@@ -59,6 +68,7 @@ __all__ = [
     "ModerationDecisionRequest",
     "ModerationReviewResponse",
     "PostCreate",
+    "UploadResponse",
     "PostReportCreate",
     "PostReportResponse",
     "PostSummary",
@@ -68,6 +78,8 @@ __all__ = [
     "UserCreate",
     "UserLogin",
     "UserResponse",
+    "UserUpdate",
+    "PasswordChange",
     "Vertical",
     "TimeSensitivity",
     "ClaimType",
