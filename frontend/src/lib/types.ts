@@ -118,6 +118,8 @@ export interface User {
   email: string;
   username: string;
   full_name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
   role: UserRole;
   is_active: boolean;
   created_at: string;
@@ -127,6 +129,7 @@ export interface PublicUser {
   id: number;
   username: string;
   full_name?: string | null;
+  avatar_url?: string | null;
   role: UserRole;
   is_active: boolean;
   created_at: string;
@@ -156,6 +159,7 @@ export interface Post {
   author: PublicUser;
   content: string;
   source_url?: string | null;
+  image_url?: string | null;
   created_at: string;
   updated_at: string;
   latest_verification_summary?: PostVerificationSummary | null;
@@ -163,7 +167,25 @@ export interface Post {
   likes_count: number;
   comments_count: number;
   is_liked_by_me: boolean;
+  is_bookmarked_by_me: boolean;
 }
+
+export type Feed = 'all' | 'following' | 'popular';
+
+export interface ListPostsParams {
+  feed?: Feed;
+  limit?: number;
+  offset?: number;
+  q?: string;
+}
+
+export interface UpdateMePayload {
+  full_name?: string;
+  bio?: string;
+  avatar_url?: string;
+}
+
+export type UploadKind = 'post' | 'avatar';
 
 export interface Comment {
   id: number;
@@ -231,6 +253,7 @@ export interface LoginPayload {
 export interface CreatePostPayload {
   content: string;
   source_url?: string;
+  image_url?: string;
 }
 
 export interface ChallengePayload {
@@ -262,75 +285,6 @@ export interface ModerationDecisionPayload {
   override_summary?: string;
 }
 
-export const VERDICT_CONFIG: Record<
-  Verdict,
-  {
-    label: string;
-    icon: string;
-    color: string;
-    bgColor: string;
-    borderColor: string;
-    score: number;
-  }
-> = {
-  strongly_supported: {
-    label: 'Strongly Supported',
-    icon: '++',
-    color: 'text-green-800',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-600',
-    score: 100,
-  },
-  supported: {
-    label: 'Supported',
-    icon: '+',
-    color: 'text-green-700',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-500',
-    score: 80,
-  },
-  mixed: {
-    label: 'Mixed Evidence',
-    icon: '+/-',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-500',
-    score: 60,
-  },
-  weak: {
-    label: 'Weak Evidence',
-    icon: '?',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-500',
-    score: 40,
-  },
-  contradicted: {
-    label: 'Contradicted',
-    icon: 'x',
-    color: 'text-red-700',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-500',
-    score: 20,
-  },
-  outdated: {
-    label: 'Outdated',
-    icon: 'old',
-    color: 'text-violet-700',
-    bgColor: 'bg-violet-50',
-    borderColor: 'border-violet-500',
-    score: 30,
-  },
-  not_verifiable: {
-    label: 'Not Verifiable',
-    icon: 'o',
-    color: 'text-slate-700',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-400',
-    score: 50,
-  },
-};
-
 // -----------------------------------------------------------------------
 // Social networking — Follow system
 // -----------------------------------------------------------------------
@@ -340,6 +294,7 @@ export interface UserProfile {
   username: string;
   full_name?: string | null;
   bio?: string | null;
+  avatar_url?: string | null;
   role: UserRole;
   is_active: boolean;
   created_at: string;
@@ -354,6 +309,7 @@ export interface FollowerListItem {
   username: string;
   full_name?: string | null;
   bio?: string | null;
+  avatar_url?: string | null;
   role: UserRole;
   is_followed_by_me: boolean;
 }

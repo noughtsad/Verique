@@ -1,190 +1,115 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Logo } from '@/app/components/Sidebar';
 
-import { Header } from '@/components/layout/Header';
-import { Shield, Target, Users, Eye, AlertTriangle } from 'lucide-react';
+export const metadata: Metadata = {
+  title: 'How Verique works',
+  description: 'Verique is a social app where any post can be fact-checked against live web evidence, and every verdict can be challenged.',
+};
+
+const STEPS = [
+  {
+    title: 'Split the post into claims',
+    body: 'A language model pulls out each separate statement of fact, so a post that mixes a true claim and a false one gets judged claim by claim.',
+  },
+  {
+    title: 'Set opinions aside',
+    body: 'Feelings, predictions and opinions can’t be checked against evidence, so they get no score. A post made only of opinions is labelled as such.',
+  },
+  {
+    title: 'Search for and against',
+    body: 'For each claim, Verique runs two searches looking for direct evidence and one looking specifically for refutations and fact-checks.',
+  },
+  {
+    title: 'Weigh the sources',
+    body: 'Results are ranked by how relevant they are and how reliable the site is, using Media Bias/Fact Check ratings. Each site counts once, so volume can’t outvote quality.',
+  },
+  {
+    title: 'Give a verdict with its evidence',
+    body: 'Each claim gets one of seven verdicts, from strongly supported to contradicted, with the sources it rests on. The post gets a Verique score from 0 to 100.',
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <Header />
+    <div className="min-h-screen bg-[#080808] text-zinc-100">
+      <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-6 sm:px-8">
+        <Link href="/" aria-label="Verique home">
+          <Logo withName />
+        </Link>
+        <nav className="flex items-center gap-2 text-sm font-semibold">
+          <Link href="/login" className="rounded-full px-4 py-2 text-zinc-300 hover:text-white">
+            Log in
+          </Link>
+          <Link href="/login" className="rounded-full bg-accent px-4 py-2 text-white hover:bg-accent-strong">
+            Sign up
+          </Link>
+        </nav>
+      </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Hero */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-green-100 mb-6">
-            <Shield className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
-            About Verique
+      <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-8">
+        <section className="py-12 sm:py-20">
+          <h1 className="max-w-2xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl">
+            Check a claim in the place you read it.
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            We believe trust comes from transperacny and availbality of information. Verique helps
-            you understand the factual basis of any content without friction.
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-zinc-400">
+            Verique is a social app where every post has a Verify button. Tap it and the post’s factual claims are checked
+            against evidence from the web, right there in the feed.
           </p>
-        </div>
-
-        {/* Mission */}
-        <section className="mb-16">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-100">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-              <Target className="w-6 h-6 text-green-600" />
-              Our Mission
-            </h2>
-            <p className="text-slate-700 text-lg leading-relaxed">
-              In a world flooded with content, separating fact from fiction shouldn&apos;t
-              require hours of research. Verique uses AI to do the heavy lifting —
-              extracting claims, finding evidence, and presenting it transparently so
-              <strong> you</strong> can make informed decisions.
-            </p>
-          </div>
         </section>
 
-        {/* What We Are NOT */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
-            What We&apos;re NOT
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-              <h3 className="font-semibold text-red-900 mb-2">❌ Not a Truth Arbiter</h3>
-              <p className="text-red-800 text-sm">
-                We don&apos;t tell you what&apos;s &quot;true&quot; or &quot;false.&quot; We show you evidence
-                and let you decide.
-              </p>
-            </div>
-            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-              <h3 className="font-semibold text-red-900 mb-2">❌ Not Political</h3>
-              <p className="text-red-800 text-sm">
-                We deliberately avoid political content. Our focus is on
-                practical, everyday claims.
-              </p>
-            </div>
-            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-              <h3 className="font-semibold text-red-900 mb-2">❌ Not a Censor</h3>
-              <p className="text-red-800 text-sm">
-                We never hide, block, or modify content. We add context,
-                that&apos;s all.
-              </p>
-            </div>
-            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-              <h3 className="font-semibold text-red-900 mb-2">❌ Not Perfect</h3>
-              <p className="text-red-800 text-sm">
-                AI can make mistakes. We show our confidence level and sources
-                so you can verify yourself.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* What We ARE */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <Eye className="w-6 h-6 text-green-600" />
-            What We ARE
-          </h2>
-          <div className="space-y-4">
-            <FeatureRow
-              title="Evidence Surface"
-              description="We find and present supporting and contradicting evidence from the web"
-            />
-            <FeatureRow
-              title="Confidence Scores"
-              description="Every verdict comes with a confidence level — no false certainty"
-            />
-            <FeatureRow
-              title="Source Links"
-              description="Click through to original sources and verify for yourself"
-            />
-            <FeatureRow
-              title="Transparent Reasoning"
-              description="We explain why each claim is rated the way it is"
-            />
-            <FeatureRow
-              title="Privacy-First"
-              description="We don't store your content or build profiles on users"
-            />
-          </div>
-        </section>
-
-        {/* Use Cases */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <Users className="w-6 h-6 text-blue-600" />
-            Built For
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <UseCaseCard
-              emoji="🛒"
-              title="Shoppers"
-              description="Verify product claims before you buy"
-            />
-            <UseCaseCard
-              emoji="📚"
-              title="Learners"
-              description="Check if that tutorial is actually accurate"
-            />
-            <UseCaseCard
-              emoji="💼"
-              title="Professionals"
-              description="Validate competitor claims and market data"
-            />
-            <UseCaseCard
-              emoji="✍️"
-              title="Content Creators"
-              description="Fact-check your own work before publishing"
-            />
-            <UseCaseCard
-              emoji="🏢"
-              title="Enterprises"
-              description="Integrate verification into your workflows"
-            />
-            <UseCaseCard
-              emoji="🔧"
-              title="Developers"
-              description="Build trust layers into your applications"
-            />
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="text-center bg-slate-900 rounded-2xl p-12">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Ready to verify smarter?
-          </h2>
-          <p className="text-slate-300 mb-8">
-            Start verifying content for free. No signup required.
+        <section aria-labelledby="why" className="border-t border-line py-12">
+          <h2 id="why" className="text-2xl font-bold text-white">Why it exists</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-zinc-300">
+            False claims spread faster than fact-checkers can answer them, and checking one usually means leaving the app to
+            search on your own. AI models can help, but on their own they don’t know recent events and they treat every web
+            page as equally trustworthy. Verique searches the live web for each check and weighs sources by their track
+            record.
           </p>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold transition-colors"
-          >
-            Try Verique Now →
-          </a>
+        </section>
+
+        <section aria-labelledby="how" className="border-t border-line py-12">
+          <h2 id="how" className="text-2xl font-bold text-white">What happens when you tap Verify</h2>
+          <ol className="mt-8 space-y-8">
+            {STEPS.map((step, i) => (
+              <li key={step.title} className="grid grid-cols-[2.5rem_1fr] gap-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-sm font-bold tabular-nums text-blue-300">
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className="font-semibold text-white">{step.title}</h3>
+                  <p className="mt-1 leading-relaxed text-zinc-400">{step.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="challenge" className="border-t border-line py-12">
+          <h2 id="challenge" className="text-2xl font-bold text-white">When a verdict is wrong</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-zinc-300">
+            Any verdict can be challenged. A challenge goes to a human moderator, who can uphold it, revise it or remove it,
+            and their decision is shown on the post. Every check is kept, so re-verifying a post adds a new result instead of
+            erasing the old one.
+          </p>
+        </section>
+
+        <section aria-labelledby="limits" className="border-t border-line py-12">
+          <h2 id="limits" className="text-2xl font-bold text-white">What it can’t do</h2>
+          <ul className="mt-4 max-w-2xl list-disc space-y-2 pl-5 leading-relaxed text-zinc-300">
+            <li>It can be wrong. A verdict is a summary of the evidence it found, not the final word, which is why every verdict shows its sources.</li>
+            <li>Half-true and cherry-picked claims are hard for it; it tends to answer yes or no.</li>
+            <li>It reads English only, and checks text, not images or video.</li>
+            <li>A check takes about a minute, because it searches and reads the web each time.</li>
+          </ul>
+        </section>
+
+        <section className="border-t border-line py-12">
+          <Link href="/login" className="inline-flex h-11 items-center rounded-full bg-accent px-6 font-semibold text-white hover:bg-accent-strong">
+            Create an account
+          </Link>
         </section>
       </main>
-    </div>
-  );
-}
-
-function FeatureRow({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200">
-      <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-      <div>
-        <span className="font-semibold text-slate-900">{title}:</span>{' '}
-        <span className="text-slate-600">{description}</span>
-      </div>
-    </div>
-  );
-}
-
-function UseCaseCard({ emoji, title, description }: { emoji: string; title: string; description: string }) {
-  return (
-    <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
-      <div className="text-4xl mb-3">{emoji}</div>
-      <h3 className="font-semibold text-slate-900 mb-1">{title}</h3>
-      <p className="text-sm text-slate-600">{description}</p>
     </div>
   );
 }

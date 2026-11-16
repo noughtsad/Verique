@@ -237,7 +237,7 @@
   color: #52525b;
 }
 
-/* ─── Chunky button (DermExcel signature) ────────────────────────────────── */
+/* ─── Primary button ─────────────────────────────────────────────────────── */
 .lp-btn {
   width: 100%;
   margin-top: 0.35rem;
@@ -248,16 +248,16 @@
   cursor: pointer;
   border-radius: 0.5rem;
   border: none;
-  color: #09090b;
-  background: #ffffff;
+  color: #ffffff;
+  background: #3b82f6; /* the app's accent (--color-accent) */
   box-shadow:
-    0 4px 0 0 rgba(255, 255, 255, 0.18),
+    0 4px 0 0 rgba(37, 99, 235, 0.55),
     0 6px 0 0 rgba(0, 0, 0, 0.55);
   transition: box-shadow 0.1s ease, transform 0.1s ease;
 }
 
 .lp-btn:hover:not(:disabled) {
-  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.18), 0 3px 0 0 rgba(0, 0, 0, 0.55);
+  box-shadow: 0 2px 0 0 rgba(37, 99, 235, 0.55), 0 3px 0 0 rgba(0, 0, 0, 0.55);
   transform: translateY(2px);
 }
 

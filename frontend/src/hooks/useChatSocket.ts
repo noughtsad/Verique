@@ -3,14 +3,10 @@
 /**
  * Chat WebSocket lifecycle, shared across every component that needs it.
  *
- * This is the one deliberate exception to the app's "no hooks folder"
- * convention: Sidebar is mounted independently on every page (there's no
- * shared layout), and its unread badge needs live updates even on pages
- * that never mount the messages view. A single module-level singleton
- * connection with a ref count — rather than each page owning its own
- * WebSocket — means Sidebar and the messages page share one connection
- * and one reconnect/backoff state machine instead of duplicating it or
- * opening two sockets per tab.
+ * The sidebar, the mobile nav and the messages page all call this hook. A single
+ * module-level connection with a ref count, rather than one WebSocket per caller,
+ * means they share one connection and one reconnect/backoff state machine instead
+ * of opening several sockets per tab.
  */
 import { useEffect } from 'react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
@@ -146,6 +142,8 @@ export function useChatSocket(currentUserId?: number) {
   }, [queryClient, currentUserId]);
 
   useEffect(() => {
+    // Signed-out visitors have no chat; don't open (and keep retrying) a socket for them.
+    if (currentUserId === undefined) return;
     refCount += 1;
     connect();
 
@@ -169,8 +167,7 @@ export function useChatSocket(currentUserId?: number) {
         scheduleTeardown();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUserId]);
 
   return {
     status,

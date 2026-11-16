@@ -37,42 +37,6 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Format date string to human-readable format
- */
-export function formatDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return dateString;
-    }
-    
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    // If within last 7 days, show relative time
-    if (diffDays === 0) {
-      return 'Today';
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    }
-    
-    // Otherwise show formatted date
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch (error) {
-    return dateString;
-  }
-}
-
-/**
  * Extract domain from URL
  */
 export function getDomainFromUrl(url: string): string {
@@ -99,32 +63,6 @@ export function truncate(text: string, maxLength: number): string {
  */
 export function formatConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
-}
-
-/**
- * Get color class based on score value
- */
-export function getScoreColor(score: number): string {
-  if (score >= 70) {
-    return 'text-green-600';
-  } else if (score >= 50) {
-    return 'text-yellow-600';
-  } else {
-    return 'text-red-600';
-  }
-}
-
-/**
- * Get background color class based on score value
- */
-export function getScoreBgColor(score: number): string {
-  if (score >= 70) {
-    return 'bg-green-50';
-  } else if (score >= 50) {
-    return 'bg-yellow-50';
-  } else {
-    return 'bg-red-50';
-  }
 }
 
 /**
@@ -194,6 +132,13 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Check whether a verification could not finish because an AI call failed (e.g. a rate limit).
+ */
+export function isFailedVerification(verification?: { status?: string | null } | null): boolean {
+  return verification?.status === 'failed';
+}
+
+/**
  * Check whether a verification represents an unverifiable statement, personal reflection, or opinion.
  */
 export function isUnverifiableVerification(verification?: {
@@ -211,6 +156,7 @@ export function isUnverifiableVerification(verification?: {
   claims?: any[];
 } | null): boolean {
   if (!verification) return false;
+  if (isFailedVerification(verification)) return false;  // an error, not an opinion
   if (verification.status === 'unverifiable') return true;
 
   // If claims array is provided and empty

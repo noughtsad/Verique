@@ -2,66 +2,57 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, MessageCircle, PenSquare, Search, Send } from 'lucide-react';
 
 import {
   getOrCreateConversation,
   listConversations,
   listMessages,
   markConversationRead,
+  searchUsers,
   sendMessageRest,
 } from '@/lib/api';
+import { formatClock, timeAgo } from '@/lib/time';
 import { Conversation, Message, User } from '@/lib/types';
-import { cn, formatDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useChatSocket } from '@/hooks/useChatSocket';
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { Modal } from '@/components/ui/Modal';
+import { Spinner } from '@/components/ui/Spinner';
 
-function avatarUrl(username: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-}
+const PAGE = 50;
 
-function formatMessageTime(dateString: string) {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
-
-function ConversationListItem({
-  conversation,
-  active,
-}: {
-  conversation: Conversation;
-  active: boolean;
-}) {
+function ConversationListItem({ conversation, active }: { conversation: Conversation; active: boolean }) {
   const other = conversation.other_user;
   return (
     <Link
       href={`/messages/${other.username}`}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-3 p-4 rounded-xl border transition-all duration-200',
-        active
-          ? 'bg-white/10 border-blue-500/30'
-          : 'bg-[#18181b]/55 border-white/10 hover:bg-white/10',
+        'flex items-center gap-3 rounded-xl border p-3 transition-colors',
+        active ? 'border-accent/40 bg-white/10' : 'border-line bg-surface/55 hover:bg-white/5',
       )}
     >
-      <div className="w-11 h-11 rounded-full overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
-        <img src={avatarUrl(other.username)} alt={other.username} className="w-full h-full object-cover" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-bold text-white truncate">{other.full_name || other.username}</p>
+      <Avatar user={other} size="md" />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-sm font-bold text-white">{other.full_name || other.username}</span>
           {conversation.last_message_at && (
-            <span className="text-[10px] text-slate-500 flex-shrink-0">
-              {formatDate(conversation.last_message_at)}
-            </span>
+            <span className="shrink-0 text-xs text-zinc-500">{timeAgo(conversation.last_message_at)}</span>
           )}
-        </div>
-        <p className="text-xs text-slate-400 truncate mt-0.5">
-          {conversation.last_message ? conversation.last_message.content : 'Say hello 👋'}
-        </p>
-      </div>
+        </span>
+        <span className="mt-0.5 block truncate text-sm text-zinc-400">
+          {conversation.last_message ? conversation.last_message.content : 'No messages yet'}
+        </span>
+      </span>
       {conversation.unread_count > 0 && (
-        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-blue-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-white">
           {conversation.unread_count > 99 ? '99+' : conversation.unread_count}
         </span>
       )}
@@ -72,263 +63,325 @@ function ConversationListItem({
 function MessageBubble({ message, isMine }: { message: Message; isMine: boolean }) {
   return (
     <div className={cn('flex items-end gap-2', isMine ? 'flex-row-reverse' : 'flex-row')}>
-      <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
-        <img
-          src={avatarUrl(message.sender.username)}
-          alt={message.sender.username}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      {!isMine && <Avatar user={message.sender} size="xs" />}
       <div
         className={cn(
-          'max-w-[70%] px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed break-words',
-          isMine
-            ? 'bg-blue-600/80 text-white rounded-br-sm'
-            : 'bg-[#18181b]/70 border border-white/10 text-slate-200 rounded-bl-sm',
+          'max-w-[78%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+          isMine ? 'rounded-br-sm bg-accent text-white' : 'rounded-bl-sm border border-line bg-surface-strong text-zinc-100',
+          message.id < 0 && 'opacity-60',
         )}
       >
         {message.content}
-        <div className={cn('text-[10px] mt-1', isMine ? 'text-blue-100/70' : 'text-slate-500')}>
-          {formatMessageTime(message.created_at)}
-        </div>
+        <span className={cn('mt-1 block text-[11px]', isMine ? 'text-blue-100/70' : 'text-zinc-500')}>
+          {message.id < 0 ? 'Sending…' : formatClock(message.created_at)}
+        </span>
       </div>
     </div>
   );
 }
 
-export function MessagesView({
-  currentUser,
-  activeUsername,
-}: {
-  currentUser: User | null;
-  activeUsername?: string;
-}) {
+function NewMessageDialog({ open, onClose, currentUser }: { open: boolean; onClose: () => void; currentUser: User }) {
+  const router = useRouter();
+  const [q, setQ] = useState('');
+  const [debounced, setDebounced] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q.trim()), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+  const people = useQuery({ queryKey: ['user-search', debounced], queryFn: () => searchUsers(debounced, 8), enabled: !!debounced });
+  const results = people.data?.filter((p) => p.username !== currentUser.username) ?? [];
+
+  return (
+    <Modal open={open} onClose={onClose} title="New message">
+      <div className="relative">
+        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search people"
+          aria-label="Search people"
+          className="h-11 w-full rounded-full border border-line bg-black/20 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none"
+        />
+      </div>
+      <ul className="mt-4 max-h-80 space-y-1 overflow-y-auto">
+        {people.isLoading && <Spinner label="Searching" />}
+        {people.isError && <ErrorBanner error={people.error} />}
+        {debounced && people.isSuccess && results.length === 0 && <p className="text-sm text-zinc-400">No one matches “{debounced}”.</p>}
+        {results.map((person) => (
+          <li key={person.id}>
+            <button
+              onClick={() => {
+                onClose();
+                router.push(`/messages/${person.username}`);
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/5"
+            >
+              <Avatar user={person} size="sm" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-white">{person.full_name || person.username}</span>
+                <span className="block truncate text-xs text-zinc-500">@{person.username}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Modal>
+  );
+}
+
+function Thread({ currentUser, username }: { currentUser: User; username: string }) {
   const queryClient = useQueryClient();
-  const chatSocket = useChatSocket(currentUser?.id);
+  const chatSocket = useChatSocket(currentUser.id);
   const [draft, setDraft] = useState('');
-
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [older, setOlder] = useState<Message[]>([]);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [olderError, setOlderError] = useState<unknown>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  // Only auto-scroll while the viewer is already at (or near) the bottom, so
-  // it doesn't yank them back down while they've scrolled up to read history.
-  const stickToBottomRef = useRef(true);
+  // Auto-scroll only while the reader is at the bottom, so reading history isn't interrupted.
+  const stickToBottom = useRef(true);
 
-  const handleScroll = () => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-  };
-
-  const conversationsQuery = useQuery({
-    queryKey: ['conversations'],
-    queryFn: listConversations,
-    enabled: !!currentUser,
-    refetchInterval: 15_000,
+  const conversation = useQuery({
+    queryKey: ['conversation-with', username],
+    queryFn: () => getOrCreateConversation(username),
+    retry: false,
   });
+  const conversationId = conversation.data?.id ?? null;
 
-  const activeConversationQuery = useQuery({
-    queryKey: ['conversation-with', activeUsername],
-    queryFn: () => getOrCreateConversation(activeUsername as string),
-    enabled: !!currentUser && !!activeUsername,
-  });
-
-  const conversationId = activeConversationQuery.data?.id ?? null;
-
-  // The socket is the primary delivery path, but polling every few seconds
-  // as a fallback means a dropped/missed WS event (a flaky connection, a
-  // backend restart, anything) self-heals within seconds instead of leaving
-  // the open thread stuck until a manual reload.
-  const messagesQuery = useQuery({
+  // The socket delivers new messages; the poll heals a missed socket event within seconds.
+  const latest = useQuery({
     queryKey: ['messages', conversationId],
-    queryFn: () => listMessages(conversationId as number),
+    queryFn: () => listMessages(conversationId as number, undefined, PAGE),
     enabled: conversationId !== null,
     refetchInterval: 8_000,
   });
 
-  // Jump to the bottom instantly on first load / when switching threads.
   useEffect(() => {
-    if (conversationId === null) return;
-    stickToBottomRef.current = true;
+    if (latest.isSuccess && older.length === 0) setHasOlder((latest.data?.length ?? 0) >= PAGE);
+  }, [latest.isSuccess, latest.data, older.length]);
+
+  const messages = useMemo(() => {
+    const seen = new Set<number>();
+    return [...older, ...(latest.data ?? [])].filter((m) => !seen.has(m.id) && seen.add(m.id));
+  }, [older, latest.data]);
+
+  useEffect(() => {
+    stickToBottom.current = true;
+    setOlder([]);
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [conversationId]);
 
-  // Scroll to the newest message whenever the list changes (a send, a
-  // socket push, or a poll refresh) — but only if the viewer was already
-  // near the bottom, so reading older history doesn't get interrupted.
   useEffect(() => {
-    if (!messagesQuery.data?.length) return;
-    if (stickToBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messagesQuery.data]);
+    if (stickToBottom.current) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [latest.data]);
 
-  // Keep the active thread's unread count at zero while it's open, including
-  // when a new message for it arrives over the socket while we're looking.
+  // Keep the open thread's unread count at zero, including for messages arriving now.
   useEffect(() => {
     if (conversationId === null) return;
     markConversationRead(conversationId)
-      .then(() => {
+      .then(() =>
         queryClient.setQueryData<Conversation[]>(['conversations'], (old) =>
           old?.map((c) => (c.id === conversationId ? { ...c, unread_count: 0 } : c)) ?? old,
-        );
-      })
+        ),
+      )
       .catch(() => {
-        // best-effort — an unread badge that's briefly stale isn't worth surfacing an error for
+        // Best effort: a briefly stale badge isn't worth an error.
       });
-  }, [conversationId, messagesQuery.data?.length, queryClient]);
+  }, [conversationId, latest.data?.length, queryClient]);
 
-  const sendMutation = useMutation({
+  const loadOlder = async () => {
+    if (conversationId === null || messages.length === 0) return;
+    setLoadingOlder(true);
+    setOlderError(null);
+    const el = scrollRef.current;
+    const previousHeight = el?.scrollHeight ?? 0;
+    try {
+      const page = await listMessages(conversationId, messages[0].id, PAGE);
+      setOlder((current) => [...page, ...current]);
+      setHasOlder(page.length >= PAGE);
+      stickToBottom.current = false;
+      // Keep the reader's place once the older messages are inserted above.
+      requestAnimationFrame(() => el && (el.scrollTop += el.scrollHeight - previousHeight));
+    } catch (error) {
+      setOlderError(error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  const send = useMutation({
     mutationFn: async (content: string) => {
-      if (conversationId === null) throw new Error('No conversation selected');
-      const sentOverSocket = chatSocket.sendMessage(conversationId, content);
-      if (!sentOverSocket) {
-        await sendMessageRest(conversationId, content);
-      }
+      if (conversationId === null) throw new Error('This conversation is not open yet.');
+      if (!chatSocket.sendMessage(conversationId, content)) await sendMessageRest(conversationId, content);
     },
-    onMutate: async (content: string) => {
-      if (conversationId === null || !currentUser) return {};
+    onMutate: async (content) => {
+      if (conversationId === null) return {};
       await queryClient.cancelQueries({ queryKey: ['messages', conversationId] });
       const previous = queryClient.getQueryData<Message[]>(['messages', conversationId]);
-      const optimisticMessage: Message = {
+      const optimistic: Message = {
         id: -Date.now(),
         conversation_id: conversationId,
         sender: currentUser,
         content,
         created_at: new Date().toISOString(),
       };
-      queryClient.setQueryData<Message[]>(['messages', conversationId], (old) =>
-        old ? [...old, optimisticMessage] : [optimisticMessage],
-      );
+      queryClient.setQueryData<Message[]>(['messages', conversationId], (old) => [...(old ?? []), optimistic]);
+      stickToBottom.current = true;
       return { previous };
     },
-    onError: (_err, _content, context) => {
-      if (conversationId !== null && context?.previous) {
-        queryClient.setQueryData(['messages', conversationId], context.previous);
-      }
+    onError: (_error, content, context) => {
+      if (conversationId !== null && context?.previous) queryClient.setQueryData(['messages', conversationId], context.previous);
+      setDraft((current) => current || content); // give the text back so it can be resent
     },
     onSettled: () => {
-      if (conversationId !== null) {
-        queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
-      }
+      if (conversationId !== null) queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
     const content = draft.trim();
     if (!content || conversationId === null) return;
     setDraft('');
-    sendMutation.mutate(content);
+    send.mutate(content);
   };
 
-  const conversations = useMemo(
-    () => conversationsQuery.data ?? [],
-    [conversationsQuery.data],
+  const other = conversation.data?.other_user;
+  return (
+    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-line p-3 sm:p-4">
+        <Link href="/messages" aria-label="Back to conversations" className="rounded-full p-1.5 text-zinc-400 hover:bg-white/10 hover:text-white sm:hidden">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        {other && (
+          <Link href={`/profile/${other.username}`} className="flex min-w-0 items-center gap-3">
+            <Avatar user={other} size="sm" />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold text-white">{other.full_name || other.username}</span>
+              <span className="block truncate text-xs text-zinc-400">@{other.username}</span>
+            </span>
+          </Link>
+        )}
+      </div>
+
+      {conversation.isError ? (
+        <div className="p-5">
+          <ErrorBanner error={conversation.error} />
+        </div>
+      ) : (
+        <>
+          <div
+            ref={scrollRef}
+            onScroll={() => {
+              const el = scrollRef.current;
+              if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            }}
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 sm:p-5"
+          >
+            {hasOlder && (
+              <div className="flex justify-center">
+                <Button variant="ghost" size="sm" onClick={loadOlder} loading={loadingOlder}>
+                  Load older messages
+                </Button>
+              </div>
+            )}
+            {!!olderError && <ErrorBanner error={olderError} onRetry={loadOlder} />}
+            {(conversation.isLoading || latest.isLoading) && (
+              <div className="flex flex-1 items-center justify-center">
+                <Spinner label="Loading messages" />
+              </div>
+            )}
+            {latest.isError && <ErrorBanner error={latest.error} onRetry={() => latest.refetch()} />}
+            {latest.isSuccess && messages.length === 0 && (
+              <p className="m-auto text-sm text-zinc-500">No messages yet. Say hello.</p>
+            )}
+            {messages.map((message) => (
+              <MessageBubble key={message.id} message={message} isMine={message.sender.id === currentUser.id} />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {send.isError && (
+            <div className="px-4">
+              <ErrorBanner error={send.error} />
+            </div>
+          )}
+          <form onSubmit={submit} className="flex items-center gap-2 border-t border-line p-3 sm:p-4">
+            <label htmlFor="message-draft" className="sr-only">
+              Write a message
+            </label>
+            <input
+              id="message-draft"
+              value={draft}
+              maxLength={2000}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Write a message"
+              className="h-11 flex-1 rounded-full border border-line bg-white/5 px-4 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!draft.trim() || conversationId === null}
+              aria-label="Send"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:bg-accent-strong disabled:opacity-40"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+        </>
+      )}
+    </Card>
   );
-  const activeOtherUser = activeConversationQuery.data?.other_user;
+}
+
+/** Conversation list plus the open thread. On phones only one of the two shows at a time. */
+export function MessagesView({ currentUser, activeUsername }: { currentUser: User; activeUsername?: string }) {
+  const [composing, setComposing] = useState(false);
+  const conversations = useQuery({
+    queryKey: ['conversations'],
+    queryFn: listConversations,
+    refetchInterval: 15_000,
+  });
 
   return (
-    <div className="flex h-full max-w-5xl mx-auto w-full gap-6">
-      {/* Conversation list */}
-      <div className="w-full sm:w-[320px] flex-shrink-0 flex flex-col gap-2 overflow-y-auto pb-10">
-        <h1 className="text-lg font-semibold text-white tracking-tight mb-2">Messages</h1>
-        {conversationsQuery.isLoading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-          </div>
-        ) : conversations.length ? (
-          conversations.map((c) => (
-            <ConversationListItem
-              key={c.id}
-              conversation={c}
-              active={c.other_user.username === activeUsername}
+    <div className="flex min-h-0 flex-1 gap-6">
+      <div className={cn('min-h-0 w-full flex-col gap-2 sm:flex sm:w-[300px] sm:shrink-0', activeUsername ? 'hidden' : 'flex')}>
+        <div className="mb-2 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Messages</h1>
+          <button onClick={() => setComposing(true)} aria-label="New message" title="New message" className="rounded-full p-2 text-blue-400 hover:bg-blue-500/10">
+            <PenSquare className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-4">
+          {conversations.isLoading && <Spinner label="Loading conversations" />}
+          {conversations.isError && <ErrorBanner error={conversations.error} onRetry={() => conversations.refetch()} />}
+          {conversations.isSuccess && conversations.data.length === 0 && (
+            <EmptyState
+              icon={MessageCircle}
+              title="No conversations yet"
+              body="Start one with anyone on Verique."
+              action={<Button onClick={() => setComposing(true)}>New message</Button>}
             />
-          ))
+          )}
+          {conversations.data?.map((c) => (
+            <ConversationListItem key={c.id} conversation={c} active={c.other_user.username === activeUsername} />
+          ))}
+        </div>
+      </div>
+
+      <div className={cn('min-h-0 flex-1 flex-col sm:flex', activeUsername ? 'flex' : 'hidden')}>
+        {activeUsername ? (
+          <Thread key={activeUsername} currentUser={currentUser} username={activeUsername} />
         ) : (
-          <div className="text-center py-16 text-slate-500 text-sm">
-            No conversations yet. Visit a profile and hit Message to start one.
-          </div>
+          <Card className="flex flex-1 items-center justify-center">
+            <EmptyState icon={MessageCircle} title="Pick a conversation" body="Or start a new one." />
+          </Card>
         )}
       </div>
 
-      {/* Active thread */}
-      <div className="flex-1 hidden sm:flex flex-col bg-[#18181b]/55 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden">
-        {!activeUsername ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60">
-            <MessageCircle className="w-14 h-14 text-slate-400 mb-4" />
-            <p className="text-sm font-semibold text-slate-400">
-              Select a conversation to start chatting.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="p-4 border-b border-white/10 flex items-center gap-3">
-              {activeOtherUser && (
-                <>
-                  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 border border-white/10">
-                    <img
-                      src={avatarUrl(activeOtherUser.username)}
-                      alt={activeOtherUser.username}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">
-                      {activeOtherUser.full_name || activeOtherUser.username}
-                    </p>
-                    <p className="text-xs text-slate-400">@{activeOtherUser.username}</p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div
-              ref={scrollContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-5 flex flex-col gap-4"
-            >
-              {messagesQuery.isLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                </div>
-              ) : messagesQuery.data?.length ? (
-                <>
-                  {messagesQuery.data.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isMine={message.sender.id === currentUser?.id}
-                    />
-                  ))}
-                  <div ref={bottomRef} />
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
-                  No messages yet — say hello 👋
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 flex items-center gap-3">
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Write a message…"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2.5 px-4 text-sm font-medium text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white/10 transition"
-              />
-              <button
-                type="submit"
-                disabled={!draft.trim() || conversationId === null}
-                className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 transition"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </>
-        )}
-      </div>
+      <NewMessageDialog open={composing} onClose={() => setComposing(false)} currentUser={currentUser} />
     </div>
   );
 }

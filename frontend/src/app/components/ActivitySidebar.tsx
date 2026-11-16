@@ -1,162 +1,106 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, Heart, Bookmark } from 'lucide-react';
-import { getFollowSuggestions, followUser, unfollowUser } from '@/lib/api';
-import { FollowerListItem, FollowResponse } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { getFollowSuggestions, listNotifications } from '@/lib/api';
+import { notificationHref, notificationText } from '@/lib/notifications';
+import { timeAgo } from '@/lib/time';
+import { Avatar } from '@/components/ui/Avatar';
+import { FollowButton } from '@/components/profile/FollowButton';
+import { User } from '@/lib/types';
 
-export function ActivitySidebarContent() {
-  const queryClient = useQueryClient();
-  const suggestionsQuery = useQuery({
-    queryKey: ['follow-suggestions'],
-    queryFn: () => getFollowSuggestions(5),
-  });
-
-  const followMutation = useMutation<
-    void | FollowResponse,
-    Error,
-    { username: string; isFollowing: boolean },
-    { previous?: FollowerListItem[] }
-  >({
-    mutationFn: ({ username, isFollowing }) =>
-      isFollowing ? unfollowUser(username) : followUser(username),
-    onMutate: async ({ username, isFollowing }) => {
-      await queryClient.cancelQueries({ queryKey: ['follow-suggestions'] });
-      const previous = queryClient.getQueryData<FollowerListItem[]>(['follow-suggestions']);
-      queryClient.setQueryData<FollowerListItem[]>(['follow-suggestions'], (old) =>
-        old?.map((person) =>
-          person.username === username ? { ...person, is_followed_by_me: !isFollowing } : person,
-        ),
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(['follow-suggestions'], context.previous);
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['follow-suggestions'] }),
-  });
-
+function Section({ title, href, children }: { title: string; href: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-10">
-      {/* People to Follow */}
-      <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-white">People to follow</h3>
-          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
-        </div>
-        <div className="space-y-5">
-          {suggestionsQuery.isLoading && (
-            <div className="text-xs text-slate-500">Loading…</div>
-          )}
-          {!suggestionsQuery.isLoading && suggestionsQuery.data?.length === 0 && (
-            <div className="text-xs text-slate-500">No suggestions right now.</div>
-          )}
-          {suggestionsQuery.data?.map((person) => (
-            <div key={person.id} className="flex items-center justify-between">
-              <Link href={`/profile/${person.username}`} className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden flex-shrink-0">
-                  <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.username}&backgroundColor=18181b`}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate">{person.full_name || person.username}</div>
-                  <div className="text-[11px] font-medium text-slate-400 truncate">@{person.username}</div>
-                </div>
-              </Link>
-              <button
-                onClick={() =>
-                  followMutation.mutate({
-                    username: person.username,
-                    isFollowing: person.is_followed_by_me,
-                  })
-                }
-                disabled={followMutation.isPending}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition ${
-                  person.is_followed_by_me
-                    ? 'bg-white/10 text-slate-400 border border-transparent'
-                    : 'bg-white/5 text-slate-200 border border-white/10 backdrop-blur-sm hover:bg-white/10'
-                }`}
-              >
-                {person.is_followed_by_me ? 'Followed' : 'Follow'}
-              </button>
-            </div>
-          ))}
-        </div>
+    <section>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h2 className="font-bold text-white">{title}</h2>
+        <Link href={href} className="text-sm font-semibold text-blue-400 hover:text-blue-300">
+          Show more
+        </Link>
       </div>
-
-      {/* You Saved Grid */}
-      <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-white">You Saved</h3>
-          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-24 rounded-lg bg-gradient-to-tr from-slate-800 to-slate-900 overflow-hidden relative border border-white/10 backdrop-blur-md">
-            <div className="absolute inset-0 bg-black/20"></div>
-            <div className="absolute bottom-2 left-2 w-3 h-3 rounded bg-white/20 shadow-sm"></div>
-          </div>
-          <div className="h-24 rounded-lg bg-gradient-to-br from-indigo-900/50 to-slate-800/50 backdrop-blur-md overflow-hidden border border-white/10"></div>
-          <div className="h-24 rounded-lg bg-gradient-to-br from-slate-700/50 to-slate-800/50 backdrop-blur-md overflow-hidden border border-white/10"></div>
-          <div className="h-24 rounded-lg bg-white/5 backdrop-blur-md overflow-hidden flex items-center justify-center relative border border-white/10">
-            <div className="absolute w-8 h-16 bg-white/10 rounded shadow-sm rotate-12"></div>
-            <div className="absolute w-4 h-12 bg-white/5 rounded left-4 -rotate-12"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Last Activity */}
-      <div>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-white">Last Activity</h3>
-          <button className="text-xs font-bold text-blue-400 hover:text-blue-300">See all</button>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5">
-              <MessageCircle className="w-4 h-4 text-blue-500 fill-blue-500" />
-            </div>
-            <div className="text-[13px] text-slate-400">
-              You&apos;ve Commented on Ahmed Mohamed <span className="font-bold text-white">Shot</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5">
-              <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            </div>
-            <div className="text-[13px] text-slate-400">
-              You&apos;ve Liked Noha Mohamed <span className="font-bold text-white">Shot</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5">
-              <Bookmark className="w-4 h-4 text-slate-500" />
-            </div>
-            <div className="text-[13px] text-slate-400">
-              You&apos;ve Saved Menna <span className="font-bold text-white">Shot</span> to your collection
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      {children}
+    </section>
   );
 }
 
-export function ActivitySidebar({ className }: { className?: string }) {
+function Muted({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-zinc-500">{children}</p>;
+}
+
+/** Right-hand rail (large screens): people to follow and your latest activity. */
+export function ActivitySidebar({ user }: { user: User | null }) {
+  const suggestions = useQuery({
+    queryKey: ['follow-suggestions'],
+    queryFn: () => getFollowSuggestions(4),
+    enabled: !!user,
+  });
+  const activity = useQuery({
+    queryKey: ['notifications', 'rail'],
+    queryFn: () => listNotifications(5, 0),
+    enabled: !!user,
+  });
+
+  if (!user) {
+    return (
+      <aside className="sticky top-0 hidden h-screen w-[320px] shrink-0 px-6 py-10 lg:block">
+        <div className="rounded-xl border border-line bg-surface/55 p-5 backdrop-blur-md">
+          <h2 className="font-bold text-white">New to Verique?</h2>
+          <p className="mt-1 text-sm text-zinc-400">Sign up to post, follow people and check any claim you read.</p>
+          <Link
+            href="/login"
+            className="mt-4 inline-flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong"
+          >
+            Sign up
+          </Link>
+        </div>
+      </aside>
+    );
+  }
+
   return (
-    <aside
-      className={cn(
-        'bg-[#18181b]/55 backdrop-blur-xl border-l border-white/10 p-6 flex-col flex-shrink-0 h-screen overflow-y-auto relative z-10 shadow-xl transition-all duration-500 hidden lg:flex w-[340px]',
-        className,
-      )}
-    >
-      <div className="animate-in fade-in duration-300 w-[292px]">
-        <ActivitySidebarContent />
-      </div>
+    <aside className="no-scrollbar sticky top-0 hidden h-screen w-[320px] shrink-0 space-y-10 overflow-y-auto px-6 py-10 lg:block">
+      <Section title="Who to follow" href="/explore">
+        {suggestions.isLoading && <Muted>Loading suggestions…</Muted>}
+        {suggestions.isError && <Muted>Suggestions aren&apos;t available right now.</Muted>}
+        {suggestions.data?.length === 0 && <Muted>You follow everyone we&apos;d suggest. Find more on Explore.</Muted>}
+        <ul className="space-y-4">
+          {suggestions.data?.map((person) => (
+            <li key={person.id} className="flex items-center gap-3">
+              <Link href={`/profile/${person.username}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar user={person} size="sm" />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-white hover:underline">
+                    {person.full_name || person.username}
+                  </span>
+                  <span className="block truncate text-xs text-zinc-500">@{person.username}</span>
+                </span>
+              </Link>
+              <FollowButton username={person.username} following={person.is_followed_by_me} />
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section title="Recent activity" href="/notifications">
+        {activity.isLoading && <Muted>Loading activity…</Muted>}
+        {activity.isError && <Muted>Activity isn&apos;t available right now.</Muted>}
+        {activity.data?.length === 0 && <Muted>Likes, comments and new followers will show up here.</Muted>}
+        <ul className="space-y-4">
+          {activity.data?.map((n) => (
+            <li key={n.id}>
+              <Link href={notificationHref(n)} className="flex items-start gap-3 rounded-lg hover:bg-white/5">
+                <Avatar user={n.actor} size="xs" />
+                <span className="min-w-0 text-sm text-zinc-300">
+                  <span className="font-semibold text-white">{n.actor.full_name || n.actor.username}</span>{' '}
+                  {notificationText(n)}
+                  <span className="text-zinc-500"> · {timeAgo(n.created_at)}</span>
+                  {n.preview && <span className="mt-0.5 block truncate text-zinc-500">“{n.preview}”</span>}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Section>
     </aside>
   );
 }

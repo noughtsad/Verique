@@ -11,6 +11,7 @@ import {
   CreatePostPayload,
   FollowerListItem,
   FollowResponse,
+  ListPostsParams,
   LoginPayload,
   Message,
   ModerationDecisionPayload,
@@ -22,6 +23,8 @@ import {
   RegisterPayload,
   ReportPostPayload,
   User,
+  UpdateMePayload,
+  UploadKind,
   UserProfile,
   VerificationResult,
   VerifyRequest,
@@ -41,29 +44,50 @@ export async function clearAuthToken() {
   }
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit, requireAuth = false): Promise<T> {
-  const headers = new Headers(init?.headers || {});
-  headers.set('Content-Type', 'application/json');
+/** An HTTP error from the API, with a message that can be shown to the user. */
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    credentials: 'include', // Send httpOnly cookies
-  });
+export function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
+function errorMessage(body: unknown, status: number): string {
+  if (body && typeof body === 'object') {
+    const detail = (body as { detail?: unknown }).detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && typeof detail[0]?.msg === 'string') return detail[0].msg;
+    const message = (body as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  if (status === 429) return 'Too many requests. Wait a moment and try again.';
+  if (status >= 500) return 'The server ran into a problem. Try again in a moment.';
+  return `Request failed (${status})`;
+}
+
+// Pages that need a session redirect through useCurrentUser; apiFetch only reports the 401.
+async function apiFetch<T>(path: string, init?: RequestInit, _requireAuth = false): Promise<T> {
+  const headers = new Headers(init?.headers || {});
+  if (!(init?.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include', // Send httpOnly cookies
+    });
+  } catch {
+    throw new ApiError(0, "Can't reach Verique. Check your connection and try again.");
+  }
 
   if (!response.ok) {
-    if (response.status === 401 && requireAuth) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-    }
-    const error = await response.json().catch(() => null);
-    const message =
-      error?.detail ||
-      error?.message ||
-      (typeof error === 'string' ? error : null) ||
-      `Request failed with status ${response.status}`;
-    throw new Error(message);
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, errorMessage(body, response.status));
   }
 
   if (response.status === 204) {
@@ -91,8 +115,56 @@ export async function getCurrentUser(): Promise<User> {
   return apiFetch<User>('/api/v1/auth/me', undefined, true);
 }
 
-export async function listPosts(): Promise<Post[]> {
-  return apiFetch<Post[]>('/api/v1/posts/');
+function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value));
+  }
+  const text = search.toString();
+  return text ? `?${text}` : '';
+}
+
+export async function listPosts(params: ListPostsParams = {}): Promise<Post[]> {
+  return apiFetch<Post[]>(`/api/v1/posts/${query({ ...params })}`);
+}
+
+export async function listBookmarks(limit = 20, offset = 0): Promise<Post[]> {
+  return apiFetch<Post[]>(`/api/v1/posts/bookmarks${query({ limit, offset })}`, undefined, true);
+}
+
+export async function bookmarkPost(postId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}/bookmark`, { method: 'POST' }, true);
+}
+
+export async function unbookmarkPost(postId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}/bookmark`, { method: 'DELETE' }, true);
+}
+
+export async function deletePost(postId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}`, { method: 'DELETE' }, true);
+}
+
+export async function deleteComment(postId: number, commentId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/posts/${postId}/comments/${commentId}`, { method: 'DELETE' }, true);
+}
+
+export async function updateMe(payload: UpdateMePayload): Promise<User> {
+  return apiFetch<User>('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }, true);
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  return apiFetch<void>(
+    '/api/v1/auth/me/password',
+    { method: 'POST', body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) },
+    true,
+  );
+}
+
+export async function uploadImage(file: File, kind: UploadKind): Promise<string> {
+  const body = new FormData();
+  body.append('file', file);
+  const result = await apiFetch<{ url: string }>(`/api/v1/uploads/image?kind=${kind}`, { method: 'POST', body }, true);
+  return result.url;
 }
 
 export async function getPost(postId: number): Promise<Post> {
@@ -216,10 +288,8 @@ export async function getFollowSuggestions(limit = 5): Promise<FollowerListItem[
   return apiFetch<FollowerListItem[]>(`/api/v1/users/suggestions/for-me?limit=${limit}`, undefined, true);
 }
 
-export async function searchUsers(query: string, limit = 5): Promise<FollowerListItem[]> {
-  return apiFetch<FollowerListItem[]>(
-    `/api/v1/users/search?q=${encodeURIComponent(query)}&limit=${limit}`,
-  );
+export async function searchUsers(q: string, limit = 5): Promise<FollowerListItem[]> {
+  return apiFetch<FollowerListItem[]>(`/api/v1/users/search${query({ q, limit })}`);
 }
 
 export async function getUserProfile(username: string): Promise<UserProfile> {

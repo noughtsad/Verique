@@ -41,7 +41,7 @@ export function ReportPostModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in"
       onClick={(e) => {
         // Portal events still bubble through the React tree to the post card's onClick.
         e.stopPropagation();
@@ -53,7 +53,7 @@ export function ReportPostModal({
         aria-modal="true"
         aria-label="Report post"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 bg-[#18181b] shadow-2xl animate-in zoom-in-95 duration-200"
+        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 bg-[#18181b] shadow-2xl animate-scale-in"
       >
         <div className="relative flex items-center justify-center border-b border-white/10 px-5 py-4">
           <h2 className="text-[15px] font-bold text-white">Report</h2>
