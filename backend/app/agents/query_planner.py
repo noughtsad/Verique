@@ -1,6 +1,7 @@
 """
 Query Planner Agent - Generates search queries for claims
 """
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 import structlog
 import httpx
@@ -19,6 +20,7 @@ QUERY_PLANNING_PROMPT = """Generate effective search queries to verify this fact
 Claim: {claim_text}
 Topic: {topic}
 Type: {claim_type}
+Today's date: {today} (read "this month", "now", "next year" against it; don't add older years to queries about current events)
 
 Generate two groups of queries:
 
@@ -38,6 +40,25 @@ Good queries:
 Return ONLY a JSON object:
 {{"support": ["query1", "query2"], "contradict": ["query3"]}}
 """
+
+
+# Claims whose truth changes over time need dated evidence to tell an old report from a current one.
+DATED_SEARCH_SENSITIVITIES = ("high", "medium")
+
+
+def mark_dated_search(claim: Dict[str, Any], queries: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Send a time-sensitive claim's second support query to the dated news search.
+
+    General web search returns no publication dates, so an outdated report looks as
+    current as last week's. One query switched (not added) keeps the search cost the
+    same; claims with a single support query keep general search for coverage.
+    """
+    if claim.get("time_sensitivity") not in DATED_SEARCH_SENSITIVITIES:
+        return queries
+    support = [q for q in queries if q.get("stance") == "support"]
+    if len(support) >= 2:
+        support[1]["topic"] = "news"
+    return queries
 
 
 class QueryPlannerAgent:
@@ -81,6 +102,7 @@ class QueryPlannerAgent:
                 # Format prompt
                 prompt = QUERY_PLANNING_PROMPT.format(
                     claim_text=claim["text"],
+                    today=datetime.now(timezone.utc).date().isoformat(),
                     topic=claim.get("topic", vertical),
                     claim_type=claim.get("claim_type", "general"),
                     n_support=N_SUPPORT_QUERIES,
@@ -107,7 +129,7 @@ class QueryPlannerAgent:
                 # Parse response
                 content = result["choices"][0]["message"]["content"]
                 claim_queries = self._parse_queries(content) or self._fallback_queries(claim)
-                queries[claim["id"]] = claim_queries
+                queries[claim["id"]] = mark_dated_search(claim, claim_queries)
 
             except Exception as e:
                 logger.warning(

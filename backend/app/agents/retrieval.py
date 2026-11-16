@@ -1,8 +1,10 @@
 """
 Retrieval Agent - Fetches evidence from web sources
 """
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Optional, Union
 import asyncio
+from datetime import date, datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 import httpx
 from urllib.parse import urlparse, quote_plus
 import structlog
@@ -11,6 +13,36 @@ from app.core.config import settings
 from app.agents.domain_reputation import get_domain_score
 
 logger = structlog.get_logger()
+
+
+def normalize_published_date(raw: Any) -> Optional[str]:
+    """Return a search result's publication date as YYYY-MM-DD, or None.
+
+    Search APIs send dates in different formats (Tavily's news topic uses
+    "Tue, 13 Oct 2026 14:01:10 GMT"); one format here means the ranker, the
+    verdict prompt and storage all read the same thing. A date more than a day
+    in the future is wrong data (Tavily has dated a page 2045), so it is dropped.
+    """
+    if not raw or not isinstance(raw, str):
+        return None
+    text = raw.strip()
+    parsed: Optional[date] = None
+    try:
+        parsed = parsedate_to_datetime(text).date()
+    except (TypeError, ValueError, IndexError):
+        for parse in (
+            lambda t: datetime.fromisoformat(t.replace("Z", "+00:00")).date(),
+            lambda t: datetime.strptime(t, "%B %d, %Y").date(),
+            lambda t: datetime.strptime(t, "%b %d, %Y").date(),
+        ):
+            try:
+                parsed = parse(text)
+                break
+            except ValueError:
+                continue
+    if parsed is None or parsed > datetime.now(timezone.utc).date() + timedelta(days=1):
+        return None
+    return parsed.isoformat()
 
 
 class RetrievalAgent:
@@ -60,9 +92,10 @@ class RetrievalAgent:
             for query in claim_queries:
                 if isinstance(query, dict):
                     query_text, stance = query["query"], query.get("stance", "support")
+                    topic = query.get("topic", "general")
                 else:
-                    query_text, stance = query, "support"
-                tasks.append(self._search(query_text))
+                    query_text, stance, topic = query, "support", "general"
+                tasks.append(self._search(query_text, topic))
                 claim_query_map.append(claim_id)
                 stance_map.append(stance)
         
@@ -106,12 +139,14 @@ class RetrievalAgent:
         
         return evidence
     
-    async def _search(self, query: str) -> List[Dict[str, Any]]:
+    async def _search(self, query: str, topic: str = "general") -> List[Dict[str, Any]]:
         """
         Perform a single search query.
         
         Args:
             query: Search query string
+            topic: "general", or "news" for dated news results (Tavily only; other
+                engines ignore it)
             
         Returns:
             List of evidence items
@@ -119,7 +154,7 @@ class RetrievalAgent:
         # Priority: Tavily (if keyed, DuckDuckGo as fallback) -> DuckDuckGo (free)
         # -> SerpAPI -> Google CSE
         if self.tavily_key:
-            results = await self._search_tavily(query)
+            results = await self._search_tavily(query, topic=topic)
             if results:
                 return results
             logger.warning("Tavily gave no results, falling back to DuckDuckGo", query=query[:50])
@@ -133,8 +168,11 @@ class RetrievalAgent:
         else:
             return await self._search_duckduckgo(query)
     
-    async def _search_tavily(self, query: str) -> List[Dict[str, Any]]:
-        """Search using the Tavily API (LLM-oriented search with cleaned content)."""
+    async def _search_tavily(self, query: str, topic: str = "general") -> List[Dict[str, Any]]:
+        """Search using the Tavily API (LLM-oriented search with cleaned content).
+
+        Only the "news" topic returns publication dates; "general" never does.
+        """
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 response = await client.post(
@@ -144,6 +182,7 @@ class RetrievalAgent:
                         "query": query,
                         "max_results": self.max_results_per_query,
                         "search_depth": "basic",
+                        "topic": topic,
                     },
                 )
                 response.raise_for_status()
@@ -158,7 +197,7 @@ class RetrievalAgent:
                     "title": item.get("title", ""),
                     "snippet": item.get("content", ""),
                     "domain": domain,
-                    "published_at": item.get("published_date"),
+                    "published_at": normalize_published_date(item.get("published_date")),
                     "relevance_score": item.get("score", 0.5),
                     "domain_reputation": self._get_domain_reputation(domain)
                 })
@@ -232,7 +271,7 @@ class RetrievalAgent:
                         "title": item.get("title", ""),
                         "snippet": item.get("snippet", ""),
                         "domain": domain,
-                        "published_at": item.get("date"),
+                        "published_at": normalize_published_date(item.get("date")),
                         "relevance_score": 0.5,
                         "domain_reputation": self._get_domain_reputation(domain)
                     })

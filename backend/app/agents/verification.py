@@ -3,6 +3,7 @@ Verification Agent - Generates verdicts for claims based on evidence
 """
 from typing import List, Dict, Any, Literal
 import json
+from datetime import datetime, timezone
 import structlog
 
 from groq import AsyncGroq, RateLimitError
@@ -50,6 +51,8 @@ class VerdictResponse(BaseModel):
 
 VERIFICATION_PROMPT = """You are an expert fact-checker. Analyze this claim against the provided evidence.
 
+TODAY'S DATE: {today}. Judge words like "this month", "now" or "next year" against today's date.
+
 CLAIM TO VERIFY:
 {claim_text}
 
@@ -87,6 +90,12 @@ Based on the evidence, provide your verdict:
 
 3. **Reasoning**: Brief explanation (2-3 sentences) of why you reached this verdict.
    
+   WHEN SOURCES DISAGREE ABOUT SOMETHING THAT CHANGES OVER TIME (release dates, schedules, current status, who holds a role, prices):
+   - Compare the "Published" dates. A newer report from a credible or official source supersedes an older one.
+   - An older report that was accurate when published but has since been superseded is NOT contradicting evidence: mention it in the reasoning as superseded, and leave it out of contradicting_sources.
+   - Treat the subject's own official source (e.g. a company's site about its own product) as authoritative on its own plans.
+   - Use "mixed" only when current, comparable sources genuinely disagree.
+
    WHEN EVIDENCE CONFLICTS:
    - Always mention BOTH supporting and contradicting evidence
    - Use "mixed" verdict
@@ -215,6 +224,7 @@ class VerificationAgent:
         
         # Format prompt
         prompt = VERIFICATION_PROMPT.format(
+            today=datetime.now(timezone.utc).date().isoformat(),
             claim_text=claim["text"],
             evidence_text=evidence_text
         )

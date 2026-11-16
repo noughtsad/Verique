@@ -72,7 +72,7 @@ def _item(url):
 async def test_retrieval_tags_evidence_with_query_stance():
     agent = RetrievalAgent()
 
-    async def fake_search(query):
+    async def fake_search(query, topic="general"):
         return {
             "q-support": [_item("https://a.org/1"), _item("https://shared.org/x")],
             "q-contradict": [_item("https://b.org/1"), _item("https://shared.org/x")],
@@ -96,7 +96,7 @@ async def test_retrieval_tags_evidence_with_query_stance():
 async def test_retrieval_still_accepts_plain_string_queries():
     agent = RetrievalAgent()
 
-    async def fake_search(query):
+    async def fake_search(query, topic="general"):
         return [_item("https://a.org/1")]
 
     agent._search = fake_search
