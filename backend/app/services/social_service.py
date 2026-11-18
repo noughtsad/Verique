@@ -70,6 +70,10 @@ class NotAllowedError(PermissionError):
     """The user may not change this post or comment."""
 
 
+class VerificationLocked(Exception):
+    """A moderator is reviewing (or has decided) this post's verdict."""
+
+
 def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
     """Bucket a claim's final verdict into "true" / "mixed" / "false" for
     scoring the accuracy of the sources cited on it. `not_verifiable`
@@ -81,6 +85,16 @@ def _claim_accuracy_outcome(verdict: Verdict) -> Optional[str]:
     if verdict in (Verdict.CONTRADICTED, Verdict.OUTDATED):
         return "false"
     return None
+
+
+def _split_summary(stored: Optional[dict]) -> tuple[Optional[VerificationSummary], Optional[str]]:
+    """Stored summaries hold the machine verdict counts plus, once a moderator
+    rewrites it, a `human_summary`. Older rows hold only the human summary."""
+    if not stored:
+        return None, None
+    human = stored.get("human_summary")
+    counts = {k: v for k, v in stored.items() if k != "human_summary"}
+    return (VerificationSummary.model_validate(counts) if counts else None), human
 
 
 class SocialService:
@@ -404,9 +418,17 @@ class SocialService:
 
         return engagement
 
-    async def verify_post(self, post_id: int) -> PostVerificationResponse:
+    async def verify_post(self, post_id: int, actor: Optional[User] = None) -> PostVerificationResponse:
         post = await self._load_post(post_id)
-        await self._mark_old_verifications_not_latest(post.id)
+        earlier = (
+            await self.db.execute(select(Verification).where(Verification.post_id == post.id))
+        ).scalars().all()
+        previous = next((v for v in earlier if v.is_latest), None)
+        is_moderator = actor is not None and actor.role in MODERATOR_ROLES
+        if previous is not None and previous.review_status in ("open", "resolved") and not is_moderator:
+            raise VerificationLocked("A moderator is reviewing this verdict, so it can't be re-run")
+        # Domain stats count each post once; a re-run that changes the verdict doesn't adjust them.
+        record_reputation = not any(v.status in ("completed", "moderated") for v in earlier)
 
         next_version = await self._next_version(post.id)
         verification_uid = f"postver_{uuid.uuid4().hex[:16]}"
@@ -430,7 +452,8 @@ class SocialService:
             article_id=article.id,
             post_id=post.id,
             version_number=next_version,
-            is_latest=True,
+            # Becomes the latest only once it has a result (see below).
+            is_latest=False,
             status="processing",
             review_status="none",
             content_hash=content_hash,
@@ -438,45 +461,49 @@ class SocialService:
         self.db.add(verification)
         await self.db.flush()
 
-        try:
-            result = await self.verification_service.verify(
-                text=post.content,
-                url=post.source_url,
-                vertical=None,
-                language="en",
-            )
-            errors = result.get("verification_errors") or []
-            has_verifiable_claims = len(result["claims"]) > 0
-            if errors:
-                # An LLM call failed (e.g. rate limit): say so instead of calling the post an opinion.
-                verification.status = "failed"
-                verification.overall_score = None
-                verification.final_decision_note = (
-                    f"Verification failed due to an error: {'; '.join(errors)}. Try verifying again later."
-                )
-            elif not has_verifiable_claims:
-                verification.status = "unverifiable"
-                verification.overall_score = None
-                verification.final_decision_note = (
-                    "No verifiable factual claims detected. This post consists of personal reflections, feelings, or subjective opinions."
-                )
-            else:
-                verification.status = "completed"
-                verification.overall_score = result["page_score"]
-                verification.final_decision_note = None
-            verification.summary = result["summary"].model_dump()
-            verification.models_used = result["models_used"]
-            verification.sources_checked = result["sources_checked"]
-            verification.processing_time_ms = result.get("processing_time_ms")
-            verification.completed_at = datetime.utcnow()
-
-            await self._persist_claims(article, verification, result["claims"])
-            await self.db.flush()
-            return await self.get_verification_response(verification.id)
-        except Exception:
+        result = await self.verification_service.verify(
+            text=post.content,
+            url=post.source_url,
+            vertical=None,
+            language="en",
+        )
+        errors = result.get("verification_errors") or []
+        has_verifiable_claims = len(result["claims"]) > 0
+        if errors:
+            # An LLM call failed (e.g. rate limit): say so instead of calling the post an opinion.
             verification.status = "failed"
-            verification.review_status = "none"
-            raise
+            verification.overall_score = None
+            verification.final_decision_note = (
+                f"Verification failed due to an error: {'; '.join(errors)}. Try verifying again later."
+            )
+        elif not has_verifiable_claims:
+            verification.status = "unverifiable"
+            verification.overall_score = None
+            verification.final_decision_note = (
+                "No verifiable factual claims detected. This post consists of personal reflections, feelings, or subjective opinions."
+            )
+        else:
+            verification.status = "completed"
+            verification.overall_score = result["page_score"]
+            verification.final_decision_note = None
+        verification.summary = result["summary"].model_dump()
+        verification.models_used = result["models_used"]
+        verification.sources_checked = result["sources_checked"]
+        verification.processing_time_ms = result.get("processing_time_ms")
+        verification.completed_at = datetime.utcnow()
+
+        # A failed re-run must not hide the verdict people were already seeing; the caller
+        # still gets the failed result back. A post's first run is latest either way, so it can retry.
+        if verification.status != "failed" or previous is None:
+            await self._mark_old_verifications_not_latest(post.id)
+            verification.is_latest = True
+
+        await self._persist_claims(
+            article, verification, result["claims"],
+            record_reputation=record_reputation and verification.status == "completed",
+        )
+        await self.db.flush()
+        return await self.get_verification_response(verification.id)
 
     async def get_latest_verification(self, post_id: int) -> Optional[PostVerificationResponse]:
         result = await self.db.execute(
@@ -500,6 +527,8 @@ class SocialService:
         payload: ChallengeRequest,
     ) -> ChallengeResponse:
         verification = await self._load_verification(verification_id)
+        if not verification.is_latest:
+            raise ValueError("This verdict has been replaced by a newer one")
         existing = await self.db.execute(
             select(Challenge).where(
                 Challenge.verification_id == verification_id,
@@ -526,8 +555,15 @@ class SocialService:
         if verification.challenge_count >= settings.CHALLENGE_THRESHOLD:
             verification.status = "under_review"
             verification.review_status = "open"
-            if verification.moderation_review is None:
+            review = await self.db.scalar(
+                select(ModerationReview).where(ModerationReview.verification_id == verification.id)
+            )
+            if review is None:
                 self.db.add(ModerationReview(verification_id=verification.id, status="open"))
+            elif review.status != "open":
+                # One review per verdict: a new challenge after a decision sends it back to the queue.
+                review.status = "open"
+                review.decided_at = None
 
         await self.db.refresh(challenge, attribute_names=["user"])
         return ChallengeResponse(
@@ -549,6 +585,9 @@ class SocialService:
                 .selectinload(Verification.claim_verdicts)
                 .selectinload(ClaimVerdict.sources)
                 .selectinload(VerificationSource.source),
+                selectinload(ModerationReview.verification)
+                .selectinload(Verification.claim_verdicts)
+                .selectinload(ClaimVerdict.claim),
                 selectinload(ModerationReview.verification).selectinload(Verification.post).selectinload(Post.author),
             )
             .where(ModerationReview.status == "open")
@@ -570,6 +609,9 @@ class SocialService:
                 .selectinload(Verification.claim_verdicts)
                 .selectinload(ClaimVerdict.sources)
                 .selectinload(VerificationSource.source),
+                selectinload(ModerationReview.verification)
+                .selectinload(Verification.claim_verdicts)
+                .selectinload(ClaimVerdict.claim),
                 selectinload(ModerationReview.verification).selectinload(Verification.post).selectinload(Post.author),
             )
             .where(ModerationReview.id == review_id)
@@ -598,7 +640,7 @@ class SocialService:
         if payload.override_score is not None:
             verification.overall_score = payload.override_score
         if payload.override_summary:
-            verification.summary = {"human_summary": payload.override_summary}
+            verification.summary = {**(verification.summary or {}), "human_summary": payload.override_summary}
 
         await self.db.flush()
         await self.db.refresh(review, attribute_names=["moderator"])
@@ -609,6 +651,7 @@ class SocialService:
         article: Article,
         verification: Verification,
         claims: list[Any],
+        record_reputation: bool = True,
     ) -> None:
         for claim_data in claims:
             claim_result = (
@@ -643,6 +686,7 @@ class SocialService:
             for role_name, items in (
                 ("supporting", claim_result.sources.supporting),
                 ("contradicting", claim_result.sources.contradicting),
+                ("neutral", claim_result.sources.neutral),
             ):
                 for source_info in items:
                     source = await self._get_or_create_source(source_info)
@@ -655,7 +699,9 @@ class SocialService:
                             snippet_used=source_info.snippet,
                         )
                     )
-                    await self._record_domain_outcome(source_info.domain, role_name, claim_outcome)
+                    # Uncited (neutral) evidence took no stance, so it says nothing about the domain.
+                    if record_reputation and role_name != "neutral":
+                        await self._record_domain_outcome(source_info.domain, role_name, claim_outcome)
 
     async def _get_or_create_source(self, source_info: SourceInfo) -> Source:
         result = await self.db.execute(select(Source).where(Source.url == source_info.url))
@@ -791,16 +837,13 @@ class SocialService:
         )
 
     def _serialize_verification_summary(self, verification: Verification) -> PostVerificationSummary:
-        summary = (
-            VerificationSummary.model_validate(verification.summary)
-            if verification.summary and "human_summary" not in verification.summary
-            else None
-        )
+        summary, human_summary = _split_summary(verification.summary)
         return PostVerificationSummary(
             id=verification.id,
             status=verification.status or "pending",
             score=int(verification.overall_score) if verification.overall_score is not None else None,
             summary=summary,
+            human_summary=human_summary,
             challenge_count=verification.challenge_count or 0,
             review_status=verification.review_status or "none",
             final_decision=verification.final_decision,
@@ -814,6 +857,7 @@ class SocialService:
         for verdict in verification.claim_verdicts:
             supporting: list[SourceInfo] = []
             contradicting: list[SourceInfo] = []
+            neutral: list[SourceInfo] = []
             for link in verdict.sources:
                 item = SourceInfo(
                     url=link.source.url,
@@ -827,6 +871,8 @@ class SocialService:
                     supporting.append(item)
                 elif link.role == "contradicting":
                     contradicting.append(item)
+                elif link.role == "neutral":
+                    neutral.append(item)
 
             claim_results.append(
                 ClaimResult(
@@ -840,7 +886,7 @@ class SocialService:
                     confidence=verdict.confidence,
                     reasoning=verdict.reasoning,
                     caveats=verdict.caveats or [],
-                    sources=ClaimSources(supporting=supporting, contradicting=contradicting),
+                    sources=ClaimSources(supporting=supporting, contradicting=contradicting, neutral=neutral),
                 )
             )
 
@@ -853,11 +899,7 @@ class SocialService:
                 cached=False,
             )
 
-        summary = (
-            VerificationSummary.model_validate(verification.summary)
-            if verification.summary and "human_summary" not in verification.summary
-            else None
-        )
+        summary, human_summary = _split_summary(verification.summary)
 
         return PostVerificationResponse(
             id=verification.id,
@@ -866,6 +908,7 @@ class SocialService:
             status=verification.status or "pending",
             score=int(verification.overall_score) if verification.overall_score is not None else None,
             summary=summary,
+            human_summary=human_summary,
             claims=claim_results,
             metadata=metadata,
             challenge_count=verification.challenge_count or 0,

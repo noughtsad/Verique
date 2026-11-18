@@ -37,6 +37,7 @@ logger = structlog.get_logger()
 # degraded-but-usable fallbacks of the other stages).
 DECOMPOSITION_ERROR = "Claim decomposition error"
 VERIFICATION_ERROR = "Verification error"
+EXPLANATION_ERROR = "Explanation error"
 
 
 def describe_llm_error(error: str) -> str:
@@ -188,7 +189,7 @@ class VerificationPipeline:
         
         raw_failures = [
             e for e in final_state.get("errors", [])
-            if e.startswith((DECOMPOSITION_ERROR, VERIFICATION_ERROR))
+            if e.startswith((DECOMPOSITION_ERROR, VERIFICATION_ERROR, EXPLANATION_ERROR))
         ] + [v["error"] for v in final_state["verdicts"] if v.get("error")]
 
         return {
@@ -322,6 +323,6 @@ class VerificationPipeline:
             )
             state["claims"] = claims
         except Exception as e:
-            state["errors"].append(f"Explanation error: {str(e)}")
+            state["errors"].append(f"{EXPLANATION_ERROR}: {str(e)}")
             state["claims"] = []
         return state

@@ -26,6 +26,7 @@ from app.services.social_service import (
     NotAllowedError,
     SelfReportError,
     SocialService,
+    VerificationLocked,
 )
 
 router = APIRouter()
@@ -199,12 +200,13 @@ async def verify_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    del current_user
     service = SocialService(db)
     try:
-        return await service.verify_post(post_id)
+        return await service.verify_post(post_id, current_user)
     except LLMRateLimitError as exc:
         raise rate_limit_http_error(exc) from exc
+    except VerificationLocked as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

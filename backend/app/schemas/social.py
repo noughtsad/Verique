@@ -66,6 +66,8 @@ class PostVerificationSummary(BaseModel):
     status: str
     score: Optional[int] = None
     summary: Optional[VerificationSummary] = None
+    # A moderator's rewritten summary, shown alongside the machine one.
+    human_summary: Optional[str] = None
     challenge_count: int = 0
     review_status: str = "none"
     final_decision: Optional[str] = None
@@ -97,6 +99,8 @@ class PostVerificationResponse(BaseModel):
     status: str
     score: Optional[int] = None
     summary: Optional[VerificationSummary] = None
+    # A moderator's rewritten summary, shown alongside the machine one.
+    human_summary: Optional[str] = None
     claims: list[ClaimResult] = Field(default_factory=list)
     metadata: Optional[VerificationMetadata] = None
     challenge_count: int = 0
