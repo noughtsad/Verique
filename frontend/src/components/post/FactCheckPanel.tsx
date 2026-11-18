@@ -121,6 +121,7 @@ function Summary({ v, onRetry, retrying, signedIn }: { v: PostVerification; onRe
         </p>
       )}
       {v.is_human_final && v.final_decision_note && <p className="text-sm text-ink-2">“{v.final_decision_note}”</p>}
+      {v.human_summary && <p className="text-sm text-ink-2">{v.human_summary}</p>}
     </Card>
   );
 }
@@ -250,8 +251,8 @@ export function FactCheckPanel({ post, viewer }: { post: Post; viewer: User | nu
     queryKey: ['verification', post.id],
     queryFn: () => getLatestPostVerification(post.id),
   });
-  const retry = useVerifyPost(post.id);
   const v = verification.data;
+  const retry = useVerifyPost(post.id, !!v && !isFailedVerification(v));
   const isModerator = viewer?.role === 'moderator' || viewer?.role === 'admin';
   const canChallenge = !!viewer && !!v && !isFailedVerification(v) && !isUnverifiableVerification(v) && !v.is_human_final;
 

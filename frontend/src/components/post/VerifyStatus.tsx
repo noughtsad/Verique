@@ -17,6 +17,7 @@ export function toSummary(v: PostVerification): PostVerificationSummary {
     status: v.status,
     score: v.score,
     summary: v.summary,
+    human_summary: v.human_summary,
     challenge_count: v.challenge_count,
     review_status: v.review_status,
     final_decision: v.final_decision,
@@ -26,11 +27,21 @@ export function toSummary(v: PostVerification): PostVerificationSummary {
   };
 }
 
-/** Runs a verification and writes the result into every cached copy of the post. */
-export function useVerifyPost(postId: number) {
+/**
+ * Runs a verification and writes the result into every cached copy of the post.
+ * When the post already has a verdict, a failed re-run keeps it (the server does too)
+ * and the failure is reported as an error instead.
+ */
+export function useVerifyPost(postId: number, hasVerdict: boolean) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => verifyPost(postId),
+    mutationFn: async () => {
+      const verification = await verifyPost(postId);
+      if (verification.status === 'failed' && hasVerdict) {
+        throw new Error(verification.final_decision_note || 'Verification failed. Try again.');
+      }
+      return verification;
+    },
     onSuccess: (verification) => {
       queryClient.setQueryData(['verification', postId], verification);
       updatePost(queryClient, postId, (p) => ({
@@ -46,8 +57,8 @@ const chip = 'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font
 
 /** The verification row on a post card: Verify button, score, or why there's no score. */
 export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post: Post; signedIn: boolean; showDetailsLink?: boolean }) {
-  const verify = useVerifyPost(post.id);
   const v = post.latest_verification_summary;
+  const verify = useVerifyPost(post.id, !!v && v.status !== 'failed');
   const detailsLink = showDetailsLink && (
     <Link href={`/post/${post.id}`} className="text-sm font-semibold text-link hover:text-link">
       See the fact-check

@@ -49,6 +49,7 @@ export type Source = SourceInfo;
 export interface ClaimSources {
   supporting: SourceInfo[];
   contradicting: SourceInfo[];
+  neutral?: SourceInfo[];
 }
 
 export interface ClaimResult {
@@ -146,6 +147,7 @@ export interface PostVerificationSummary {
   status: string;
   score?: number | null;
   summary?: VerificationSummary | null;
+  human_summary?: string | null;
   challenge_count: number;
   review_status: string;
   final_decision?: string | null;
@@ -202,6 +204,7 @@ export interface PostVerification {
   status: string;
   score?: number | null;
   summary?: VerificationSummary | null;
+  human_summary?: string | null;
   claims: ClaimResult[];
   metadata?: VerificationMetadata | null;
   challenge_count: number;
