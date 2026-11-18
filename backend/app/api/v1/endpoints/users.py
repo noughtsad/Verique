@@ -28,7 +28,7 @@ _optional_oauth2 = OAuth2CookieBearer(
 
 async def get_optional_user(
     token: Optional[str] = Depends(_optional_oauth2),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ) -> Optional[User]:
     """Returns the authenticated user if a valid token is supplied, else None."""
     if not token:
@@ -58,7 +58,7 @@ async def get_optional_user(
 async def search_users(
     q: str = Query(..., min_length=1, max_length=100),
     limit: int = Query(default=10, ge=1, le=50),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     return await FollowService(db).search_users(q, current_user=current_user, limit=limit)
@@ -72,7 +72,7 @@ async def search_users(
 async def get_follow_suggestions(
     limit: int = Query(default=5, ge=1, le=20),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Authenticated: suggest active users not already followed."""
     return await FollowService(db).suggest_users(current_user, limit=limit)
@@ -86,7 +86,7 @@ async def get_follow_suggestions(
 @router.get("/{username}", response_model=UserProfileResponse, summary="Get user profile")
 async def get_user_profile(
     username: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     try:
@@ -100,7 +100,7 @@ async def get_user_posts(
     username: str,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Paginated list of posts by this user, newest first, with the viewer's like and
@@ -120,7 +120,7 @@ async def get_followers(
     username: str,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     try:
@@ -140,7 +140,7 @@ async def get_following(
     username: str,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     try:
@@ -165,7 +165,7 @@ async def get_following(
 async def follow_user(
     username: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Authenticated: follow the given user."""
     try:
@@ -182,7 +182,7 @@ async def follow_user(
 async def unfollow_user(
     username: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Authenticated: unfollow the given user."""
     try:

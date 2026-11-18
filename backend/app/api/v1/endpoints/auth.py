@@ -37,7 +37,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
 async def register_user(
     payload: UserCreate,
     response: Response,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = AuthService(db)
     try:
@@ -52,7 +52,7 @@ async def register_user(
 async def login_user(
     payload: UserLogin,
     response: Response,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = AuthService(db)
     try:
@@ -85,7 +85,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
 async def update_me(
     payload: UserUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Update the signed-in user's name, bio or avatar."""
     try:
@@ -98,7 +98,7 @@ async def update_me(
 async def change_password(
     payload: PasswordChange,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await AuthService(db).change_password(

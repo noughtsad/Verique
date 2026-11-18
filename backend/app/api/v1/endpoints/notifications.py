@@ -22,7 +22,7 @@ async def list_notifications(
     limit: int = Query(default=30, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Return the authenticated user's notifications, newest first."""
     return await NotificationService(db).list_for_user(
@@ -37,7 +37,7 @@ async def list_notifications(
 )
 async def unread_count(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     return await NotificationService(db).unread_count(current_user.id)
 
@@ -49,7 +49,7 @@ async def unread_count(
 )
 async def mark_all_read(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     await NotificationService(db).mark_all_read(current_user.id)
 
@@ -62,6 +62,6 @@ async def mark_all_read(
 async def mark_one_read(
     notification_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     await NotificationService(db).mark_one_read(notification_id, current_user.id)

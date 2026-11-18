@@ -56,7 +56,12 @@ async def init_db():
 
 
 async def get_db() -> AsyncSession:
-    """Dependency to get database session."""
+    """Dependency to get database session.
+
+    Always use it as `Depends(get_db, scope="function")`: that commits before the
+    response is sent (so a failed commit is a 500, not a success) and every
+    dependency of a request shares one session.
+    """
     async with async_session_maker() as session:
         try:
             yield session

@@ -21,7 +21,7 @@ async def list_conversations(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     return await ChatService(db).list_conversations(current_user, limit=limit, offset=offset)
 
@@ -34,7 +34,7 @@ async def list_conversations(
 async def get_or_create_conversation(
     username: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         return await ChatService(db).get_or_create_conversation(current_user, username)
@@ -51,7 +51,7 @@ async def list_messages(
     before_id: Optional[int] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         return await ChatService(db).list_messages(
@@ -70,7 +70,7 @@ async def send_message(
     conversation_id: int,
     payload: MessageCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """REST fallback for sending — used while the client's WebSocket is
     reconnecting. Persists through the same ChatService as the WS path and
@@ -83,6 +83,7 @@ async def send_message(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
+    await db.commit()  # never push a message the other side can't load yet
     envelope = {"type": "message", "data": message.model_dump(mode="json")}
     await manager.broadcast_to_users([current_user.id, other_id], envelope)
     return message
@@ -92,7 +93,7 @@ async def send_message(
 async def mark_conversation_read(
     conversation_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await ChatService(db).mark_conversation_read(current_user, conversation_id)

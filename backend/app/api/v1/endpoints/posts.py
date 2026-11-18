@@ -38,7 +38,7 @@ async def list_posts(
     limit: int = Query(default=20, ge=1, le=50),
     offset: int = Query(default=0, ge=0),
     q: Optional[str] = Query(default=None, max_length=200),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     return await SocialService(db).list_posts(
@@ -52,7 +52,7 @@ async def list_bookmarks(
     limit: int = Query(default=20, ge=1, le=50),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     return await SocialService(db).list_bookmarked_posts(current_user, limit=limit, offset=offset)
 
@@ -61,7 +61,7 @@ async def list_bookmarks(
 async def create_post(
     payload: PostCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         return await SocialService(db).create_post(current_user, payload)
@@ -72,7 +72,7 @@ async def create_post(
 @router.get("/{post_id}", response_model=PostSummary)
 async def get_post(
     post_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     service = SocialService(db)
@@ -86,7 +86,7 @@ async def get_post(
 async def delete_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await SocialService(db).delete_post(current_user, post_id)
@@ -100,7 +100,7 @@ async def delete_post(
 async def bookmark_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await SocialService(db).bookmark_post(current_user, post_id)
@@ -112,7 +112,7 @@ async def bookmark_post(
 async def unbookmark_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     await SocialService(db).unbookmark_post(current_user, post_id)
 
@@ -121,7 +121,7 @@ async def unbookmark_post(
 async def like_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await SocialService(db).like_post(current_user, post_id)
@@ -133,7 +133,7 @@ async def like_post(
 async def unlike_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await SocialService(db).unlike_post(current_user, post_id)
@@ -142,7 +142,7 @@ async def unlike_post(
 
 
 @router.get("/{post_id}/comments", response_model=list[CommentResponse])
-async def list_comments(post_id: int, db: AsyncSession = Depends(get_db)):
+async def list_comments(post_id: int, db: AsyncSession = Depends(get_db, scope="function")):
     try:
         return await SocialService(db).list_comments(post_id)
     except ValueError as exc:
@@ -154,7 +154,7 @@ async def add_comment(
     post_id: int,
     payload: CommentCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         return await SocialService(db).add_comment(current_user, post_id, payload)
@@ -167,7 +167,7 @@ async def delete_comment(
     post_id: int,
     comment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         await SocialService(db).delete_comment(current_user, post_id, comment_id)
@@ -182,7 +182,7 @@ async def report_post(
     post_id: int,
     payload: PostReportCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     try:
         return await SocialService(db).report_post(current_user, post_id, payload)
@@ -198,7 +198,7 @@ async def report_post(
 async def verify_post(
     post_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = SocialService(db)
     try:
@@ -212,5 +212,5 @@ async def verify_post(
 
 
 @router.get("/{post_id}/verifications/latest", response_model=PostVerificationResponse | None)
-async def get_latest_verification(post_id: int, db: AsyncSession = Depends(get_db)):
+async def get_latest_verification(post_id: int, db: AsyncSession = Depends(get_db, scope="function")):
     return await SocialService(db).get_latest_verification(post_id)

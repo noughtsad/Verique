@@ -48,7 +48,7 @@ router = APIRouter()
 )
 async def verify_content(
     request: VerifyRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     """Verify factual claims in text content."""
     start_time = time.time()
@@ -146,7 +146,7 @@ async def verify_content(
 )
 async def verify_url(
     request: VerifyUrlRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     """Fetch content from URL and verify claims."""
     logger.info("Fetching content from URL", url=str(request.url))
@@ -198,7 +198,7 @@ async def verify_url(
 )
 async def get_verification(
     verification_id: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     """Get verification status and results."""
     # TODO: Implement database lookup for async jobs
@@ -221,7 +221,7 @@ async def get_verification(
 async def verify_async(
     request: VerifyRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     """Start asynchronous verification for large content."""
     verification_id = f"ver_{uuid.uuid4().hex[:16]}"

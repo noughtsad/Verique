@@ -23,7 +23,7 @@ async def challenge_verification(
     verification_id: int,
     payload: ChallengeRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = SocialService(db)
     try:
@@ -35,7 +35,7 @@ async def challenge_verification(
 @router.get("/moderation/reviews", response_model=list[ModerationReviewResponse])
 async def list_reviews(
     current_user: User = Depends(require_roles("moderator", "admin")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     del current_user
     return await SocialService(db).list_open_reviews()
@@ -46,7 +46,7 @@ async def resolve_review(
     review_id: int,
     payload: ModerationDecisionRequest,
     current_user: User = Depends(require_roles("moderator", "admin")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = SocialService(db)
     try:
