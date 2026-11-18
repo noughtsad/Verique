@@ -86,9 +86,11 @@ interface AnimatedCanvasProps {
   blurWidthRatio?: number;
   className?: string;
   interactive?: boolean;
+  /** "auto" follows the app theme; "dark" keeps the dark look (the login hero). */
+  theme?: 'auto' | 'dark';
 }
 
-export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', interactive = true }: AnimatedCanvasProps) {
+export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', interactive = true, theme = 'auto' }: AnimatedCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -102,6 +104,19 @@ export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', 
     let activity = 0;
     let waves: { x: number; y: number; startTime: number }[] = [];
     let maskRects: DOMRect[] = [], frameCount = 0, maskOverride = false, W = 0, H = 0;
+
+    // The icons are texture, not decoration: drawn at low opacity over the page background,
+    // so they sit closer to it (equivalent to blending each colour toward the background).
+    let background = '#080808', iconAlpha = 0.35;
+    function readTheme() {
+      const root = document.documentElement;
+      const dark = theme === 'dark' || !root.classList.contains('light');
+      background = dark ? '#080808' : getComputedStyle(root).getPropertyValue('--bg').trim() || '#f4f4f5';
+      iconAlpha = dark ? 0.35 : 0.3;
+    }
+    readTheme();
+    const themeObserver = new MutationObserver(readTheme);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     const iconPaths = {
       heart: new Path2D(ICON_PATHS_STRINGS.heart),
@@ -131,7 +146,8 @@ export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', 
 
     function tick() {
       const radius = Math.min(W, H) * (RADIUS_VMIN / 100), now = performance.now();
-      c.clearRect(0, 0, W, H); c.fillStyle = '#080808'; c.fillRect(0, 0, W, H);
+      c.clearRect(0, 0, W, H); c.globalAlpha = 1; c.fillStyle = background; c.fillRect(0, 0, W, H);
+      c.globalAlpha = iconAlpha;
 
       activity *= 0.93;
       if (++frameCount % 10 === 0) maskRects = Array.from(document.querySelectorAll('[data-shape-mask]')).map(el => el.getBoundingClientRect());
@@ -170,6 +186,7 @@ export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', 
 
         c.restore();
       }
+      c.globalAlpha = 1;
       rafId = requestAnimationFrame(tick);
 
       // Draw 1:1 copy to blur canvas if provided
@@ -204,13 +221,14 @@ export function AnimatedCanvas({ blurCanvasRef, blurWidthRatio, className = '', 
     
     return () => { 
       cancelAnimationFrame(rafId); 
+      themeObserver.disconnect();
       window.removeEventListener('resize', init); 
       if (interactive) {
         window.removeEventListener('pointermove', onMove); 
         window.removeEventListener('click', onClick); 
       }
     };
-  }, [blurCanvasRef, blurWidthRatio, interactive]);
+  }, [blurCanvasRef, blurWidthRatio, interactive, theme]);
 
   return <canvas ref={canvasRef} className={`absolute inset-0 block z-0 ${className}`} />;
 }

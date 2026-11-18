@@ -9,7 +9,7 @@ import { Post, PostVerification, PostVerificationSummary } from '@/lib/types';
 import { isFailedVerification, isUnverifiableVerification } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { ScoreMeter } from '@/components/ui/ScoreMeter';
-import { errorText } from '@/components/ui/ErrorBanner';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 
 export function toSummary(v: PostVerification): PostVerificationSummary {
   return {
@@ -42,14 +42,14 @@ export function useVerifyPost(postId: number) {
   });
 }
 
-const chip = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold';
+const chip = 'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold';
 
 /** The verification row on a post card: Verify button, score, or why there's no score. */
 export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post: Post; signedIn: boolean; showDetailsLink?: boolean }) {
   const verify = useVerifyPost(post.id);
   const v = post.latest_verification_summary;
   const detailsLink = showDetailsLink && (
-    <Link href={`/post/${post.id}`} className="text-sm font-semibold text-blue-400 hover:text-blue-300">
+    <Link href={`/post/${post.id}`} className="text-sm font-semibold text-link hover:text-link">
       See the fact-check
     </Link>
   );
@@ -57,22 +57,22 @@ export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post:
   let body: React.ReactNode;
   if (verify.isPending) {
     body = (
-      <span className={`${chip} bg-accent/10 text-blue-300`}>
+      <span className={`${chip} bg-accent/10 text-link`}>
         <RefreshCw aria-hidden className="h-3.5 w-3.5 animate-spin" /> Checking claims — this takes about a minute
       </span>
     );
   } else if (!v) {
     body = signedIn ? (
       <Button size="sm" variant="secondary" onClick={() => verify.mutate()}>
-        <ShieldCheck aria-hidden className="h-4 w-4 text-blue-400" /> Verify
+        <ShieldCheck aria-hidden className="h-4 w-4 text-link" /> Verify
       </Button>
     ) : (
-      <span className="text-sm text-zinc-500">Not fact-checked yet</span>
+      <span className="text-sm text-ink-muted">Not fact-checked yet</span>
     );
   } else if (isFailedVerification(v)) {
     body = (
       <>
-        <span className={`${chip} bg-rose-500/10 text-rose-300`}>
+        <span className={`${chip} bg-rose-500/10 text-danger-ink`}>
           <TriangleAlert aria-hidden className="h-3.5 w-3.5" /> Verification failed
         </span>
         {signedIn && (
@@ -85,7 +85,7 @@ export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post:
   } else if (isUnverifiableVerification(v)) {
     body = (
       <>
-        <span className={`${chip} bg-white/5 text-zinc-300`}>
+        <span className={`${chip} bg-fill text-ink-2`}>
           <HelpCircle aria-hidden className="h-3.5 w-3.5" /> Opinion — no factual claims
         </span>
         {detailsLink}
@@ -96,11 +96,11 @@ export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post:
       <>
         {v.score !== null && v.score !== undefined && <ScoreMeter score={v.score} />}
         {v.is_human_final && (
-          <span className={`${chip} bg-blue-500/10 text-blue-300`}>
+          <span className={`${chip} bg-accent/10 text-link`}>
             <UserCheck aria-hidden className="h-3.5 w-3.5" /> Reviewed by a moderator
           </span>
         )}
-        {v.review_status === 'open' && <span className={`${chip} bg-amber-400/10 text-amber-300`}>Under review</span>}
+        {v.review_status === 'open' && <span className={`${chip} bg-amber-400/10 text-warning-ink`}>Under review</span>}
         {detailsLink}
       </>
     );
@@ -109,7 +109,7 @@ export function VerifyStatus({ post, signedIn, showDetailsLink = true }: { post:
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3">{body}</div>
-      {verify.isError && <p className="text-sm text-rose-300">{errorText(verify.error)}</p>}
+      {verify.isError && <ErrorBanner error={verify.error} />}
     </div>
   );
 }

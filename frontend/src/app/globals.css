@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  /* One dark palette for every in-app page. Verdict colours carry meaning only. */
-  --color-surface: #18181b;
-  --color-surface-strong: #27272a;
-  --color-line: rgb(255 255 255 / 0.1);
-  --color-accent: #3b82f6;
-  --color-accent-strong: #2563eb;
-
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-scale-in: scale-in 160ms ease-out;
   --animate-slide-in: slide-in 200ms ease-out;
@@ -26,6 +19,99 @@
   }
 }
 
+/*
+ * Colour tokens. Utilities (bg-surface, text-ink, border-line…) read these variables
+ * at use time, so switching the <html> class between .light and .dark re-themes the app.
+ * Status/tier colours carry meaning only; they are the same in both themes (validated
+ * for contrast and colour-blind separation on #18181b and #ffffff).
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-well: var(--well);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-muted: var(--ink-muted);
+  --color-fill: var(--fill);
+  --color-fill-strong: var(--fill-strong);
+  --color-overlay: var(--overlay);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: #ffffff;
+  --color-link: var(--link);
+  --color-tier-good: var(--tier-good);
+  --color-tier-mixed: var(--tier-mixed);
+  --color-tier-bad: var(--tier-bad);
+  --color-danger-ink: var(--verdict-bad-ink);
+  --color-warning-ink: var(--verdict-mixed-ink);
+  --color-success-ink: var(--verdict-good-ink);
+}
+
+/* .lp-root: the login hero is dark in both themes, so it always gets the dark tokens. */
+html.dark,
+.lp-root {
+  color-scheme: dark;
+  --bg: #080808;
+  --surface: #18181b;
+  --surface-strong: #27272a;
+  --well: rgb(0 0 0 / 0.2);
+  --line: rgb(255 255 255 / 0.1);
+  --ink: #f4f4f5;
+  --ink-2: #d4d4d8;
+  --ink-3: #a1a1aa;
+  --ink-muted: #71717a;
+  --fill: rgb(255 255 255 / 0.05);
+  --fill-strong: rgb(255 255 255 / 0.1);
+  --overlay: rgb(0 0 0 / 0.7);
+  --accent: #2563eb;        /* white text on it: 5.2:1 */
+  --accent-strong: #1d4ed8;
+  --link: #60a5fa;          /* 7.0:1 on the card surface */
+  --tier-good: #0f9f8f;
+  --tier-mixed: #bb8a12;
+  --tier-bad: #d03b3b;
+  --scroll-thumb: rgb(255 255 255 / 0.1);
+  --scroll-thumb-hover: rgb(255 255 255 / 0.2);
+  --verdict-good-ink: #6ee7b7;
+  --verdict-mixed-ink: #fcd34d;
+  --verdict-weak-ink: #fdba74;
+  --verdict-bad-ink: #fda4af;
+  --verdict-outdated-ink: #c4b5fd;
+  --verdict-none-ink: #d4d4d8;
+}
+
+html.light {
+  color-scheme: light;
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --surface-strong: #f4f4f5;
+  --well: rgb(0 0 0 / 0.03);
+  --line: rgb(0 0 0 / 0.1);
+  --ink: #18181b;
+  --ink-2: #3f3f46;
+  --ink-3: #52525b;
+  --ink-muted: #71717a;
+  --fill: rgb(0 0 0 / 0.04);
+  --fill-strong: rgb(0 0 0 / 0.08);
+  --overlay: rgb(0 0 0 / 0.45);
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --link: #1d4ed8;          /* 6.7:1 on white */
+  --tier-good: #0f9f8f;
+  --tier-mixed: #bb8a12;
+  --tier-bad: #d03b3b;
+  --scroll-thumb: rgb(0 0 0 / 0.15);
+  --scroll-thumb-hover: rgb(0 0 0 / 0.25);
+  --verdict-good-ink: #047857;
+  --verdict-mixed-ink: #92400e;
+  --verdict-weak-ink: #9a3412;
+  --verdict-bad-ink: #b91c1c;
+  --verdict-outdated-ink: #6d28d9;
+  --verdict-none-ink: #52525b;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -33,14 +119,9 @@
   }
 }
 
-:root {
-  --foreground-rgb: 244, 244, 245; /* #f4f4f5 */
-  --background-rgb: 8, 8, 8;       /* #080808 */
-}
-
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: var(--ink);
+  background: var(--bg);
 }
 
 /* Custom scrollbar */
@@ -54,12 +135,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scroll-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scroll-thumb-hover);
 }
 
 .no-scrollbar {
@@ -70,6 +151,23 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Verdict badges: a light tint of the verdict's colour with a per-theme ink (≥4.5:1 in both). */
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+.verdict-good { background: color-mix(in oklab, var(--tier-good) 14%, transparent); color: var(--verdict-good-ink); }
+.verdict-mixed { background: color-mix(in oklab, var(--tier-mixed) 14%, transparent); color: var(--verdict-mixed-ink); }
+.verdict-weak { background: color-mix(in oklab, #ea7a28 14%, transparent); color: var(--verdict-weak-ink); }
+.verdict-bad { background: color-mix(in oklab, var(--tier-bad) 14%, transparent); color: var(--verdict-bad-ink); }
+.verdict-outdated { background: color-mix(in oklab, #8b5cf6 14%, transparent); color: var(--verdict-outdated-ink); }
+.verdict-none { background: var(--fill); color: var(--verdict-none-ink); }

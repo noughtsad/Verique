@@ -15,15 +15,15 @@ export function scoreTier(score: number): ScoreTier {
 }
 
 /**
- * Status colours, checked with the dataviz validator on the card surface (#18181b):
- * all inside the dark lightness band, ≥3:1 contrast, colour-blind separation ΔE ≥ 9.
+ * Status colours (CSS variables from globals.css), checked with the dataviz validator on
+ * #18181b and #ffffff: inside the lightness band, ≥3:1 contrast, colour-blind separation ΔE ≥ 9.
  * They mark state only (fill and icon); labels and numbers stay in text colours,
  * and every tier also has its own icon and label, so colour is never the only cue.
  */
 export const TIERS: Record<ScoreTier, { label: string; color: string; icon: LucideIcon }> = {
-  good: { label: 'Mostly accurate', color: '#0f9f8f', icon: ShieldCheck },
-  mixed: { label: 'Mixed', color: '#bb8a12', icon: ShieldAlert },
-  bad: { label: 'Disputed', color: '#d03b3b', icon: ShieldX },
+  good: { label: 'Mostly accurate', color: 'var(--tier-good)', icon: ShieldCheck },
+  mixed: { label: 'Mixed', color: 'var(--tier-mixed)', icon: ShieldAlert },
+  bad: { label: 'Disputed', color: 'var(--tier-bad)', icon: ShieldX },
 };
 
 /** Zones of the scale, low to high, for captions under the hero meter. */

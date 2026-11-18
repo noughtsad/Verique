@@ -17,7 +17,7 @@ import { VerifyStatus } from '@/components/post/VerifyStatus';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { errorText } from '@/components/ui/ErrorBanner';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 
@@ -63,7 +63,7 @@ function PostMenu({ post, viewer, onDelete, onReport }: { post: Post; viewer: Us
     };
   }, [open]);
 
-  const item = 'flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-semibold hover:bg-white/5';
+  const item = 'flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-semibold hover:bg-fill';
   return (
     <div ref={ref} className="relative">
       <button
@@ -71,19 +71,19 @@ function PostMenu({ post, viewer, onDelete, onReport }: { post: Post; viewer: Us
         aria-label="More options"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 hover:bg-fill-strong hover:text-ink"
       >
         <MoreHorizontal className="h-5 w-5" />
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-9 z-20 w-48 overflow-hidden rounded-xl border border-line bg-surface shadow-xl animate-scale-in">
           {(isAuthor || isModerator) && (
-            <button role="menuitem" onClick={() => { setOpen(false); onDelete(); }} className={cn(item, 'text-rose-300')}>
+            <button role="menuitem" onClick={() => { setOpen(false); onDelete(); }} className={cn(item, 'text-danger-ink')}>
               <Trash2 className="h-4 w-4" /> Delete post
             </button>
           )}
           {!isAuthor && (
-            <button role="menuitem" onClick={() => { setOpen(false); onReport(); }} className={cn(item, 'text-zinc-200')}>
+            <button role="menuitem" onClick={() => { setOpen(false); onReport(); }} className={cn(item, 'text-ink')}>
               <Flag className="h-4 w-4" /> Report post
             </button>
           )}
@@ -136,7 +136,7 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
   };
 
   const author = post.author;
-  const action = 'flex items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-semibold transition-colors';
+  const action = 'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors';
 
   return (
     <Card className="overflow-hidden">
@@ -146,11 +146,11 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] leading-tight">
-            <Link href={`/profile/${author.username}`} className="font-bold text-white hover:underline">
+            <Link href={`/profile/${author.username}`} className="font-bold text-ink hover:underline">
               {author.full_name || author.username}
             </Link>
           </p>
-          <p className="truncate text-sm text-zinc-500">
+          <p className="truncate text-sm text-ink-muted">
             @{author.username} ·{' '}
             <Link href={`/post/${post.id}`} title={fullDate(post.created_at)} className="hover:underline">
               {timeAgo(post.created_at)}
@@ -163,7 +163,7 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
       </div>
 
       <div className="space-y-4 px-5 pb-4 pt-3">
-        <p className={cn('whitespace-pre-wrap break-words leading-relaxed text-zinc-100', expanded ? 'text-lg' : 'text-[15px]')}>
+        <p className={cn('whitespace-pre-wrap break-words leading-relaxed text-ink', expanded ? 'text-lg' : 'text-[15px]')}>
           {post.content}
         </p>
         {post.image_url && (
@@ -180,7 +180,7 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
             href={post.source_url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-line bg-white/5 px-3 py-2.5 text-sm font-semibold text-blue-400 hover:bg-white/10"
+            className="flex items-center gap-2 rounded-lg border border-line bg-fill px-3 py-2.5 text-sm font-semibold text-link hover:bg-fill-strong"
           >
             <Globe aria-hidden className="h-4 w-4 shrink-0" />
             <span className="truncate">{getDomainFromUrl(post.source_url)}</span>
@@ -189,13 +189,13 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
         <VerifyStatus post={post} signedIn={!!viewer} showDetailsLink={!expanded} />
       </div>
 
-      <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-zinc-400">
+      <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-ink-3">
         <button
           onClick={requireLogin(() => like.mutate())}
           disabled={like.isPending}
           aria-pressed={post.is_liked_by_me}
           aria-label={post.is_liked_by_me ? 'Unlike' : 'Like'}
-          className={cn(action, post.is_liked_by_me ? 'text-rose-400' : 'hover:bg-rose-500/10 hover:text-rose-300')}
+          className={cn(action, post.is_liked_by_me ? 'text-danger-ink' : 'hover:bg-rose-500/10 hover:text-danger-ink')}
         >
           <Heart className={cn('h-[18px] w-[18px]', post.is_liked_by_me && 'fill-current')} />
           {post.likes_count}
@@ -204,7 +204,7 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
           onClick={() => setShowComments((v) => !v)}
           aria-expanded={showComments}
           aria-label="Comments"
-          className={cn(action, showComments ? 'text-blue-300' : 'hover:bg-blue-500/10 hover:text-blue-300')}
+          className={cn(action, showComments ? 'text-link' : 'hover:bg-accent/10 hover:text-link')}
         >
           <MessageSquare className="h-[18px] w-[18px]" />
           {post.comments_count}
@@ -214,11 +214,11 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
           disabled={bookmark.isPending}
           aria-pressed={post.is_bookmarked_by_me}
           aria-label={post.is_bookmarked_by_me ? 'Remove bookmark' : 'Bookmark'}
-          className={cn(action, post.is_bookmarked_by_me ? 'text-blue-300' : 'hover:bg-blue-500/10 hover:text-blue-300')}
+          className={cn(action, post.is_bookmarked_by_me ? 'text-link' : 'hover:bg-accent/10 hover:text-link')}
         >
           <Bookmark className={cn('h-[18px] w-[18px]', post.is_bookmarked_by_me && 'fill-current')} />
         </button>
-        <button onClick={share} aria-label="Share" className={cn(action, 'ml-auto hover:bg-white/10 hover:text-white')}>
+        <button onClick={share} aria-label="Share" className={cn(action, 'ml-auto hover:bg-fill-strong hover:text-ink')}>
           <Share2 className="h-[18px] w-[18px]" />
         </button>
       </div>
@@ -226,10 +226,10 @@ export function PostCard({ post, viewer, expanded = false }: { post: Post; viewe
       {showComments && <Comments post={post} viewer={viewer} />}
 
       <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete this post?">
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-ink-3">
           The post, its comments and its fact-check are removed for everyone. This can&apos;t be undone.
         </p>
-        {remove.isError && <p className="mt-3 text-sm text-rose-300">{errorText(remove.error)}</p>}
+        {remove.isError && <ErrorBanner error={remove.error} className="mt-3" />}
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
             Cancel

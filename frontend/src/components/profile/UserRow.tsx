@@ -10,9 +10,9 @@ export function UserRow({ person, viewerUsername }: { person: FollowerListItem; 
       <Link href={`/profile/${person.username}`} className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar user={person} size="md" />
         <span className="min-w-0">
-          <span className="block truncate font-semibold text-white hover:underline">{person.full_name || person.username}</span>
-          <span className="block truncate text-sm text-zinc-500">@{person.username}</span>
-          {person.bio && <span className="mt-0.5 line-clamp-1 block text-sm text-zinc-400">{person.bio}</span>}
+          <span className="block truncate font-semibold text-ink hover:underline">{person.full_name || person.username}</span>
+          <span className="block truncate text-sm text-ink-muted">@{person.username}</span>
+          {person.bio && <span className="mt-0.5 line-clamp-1 block text-sm text-ink-3">{person.bio}</span>}
         </span>
       </Link>
       {viewerUsername && viewerUsername !== person.username && (

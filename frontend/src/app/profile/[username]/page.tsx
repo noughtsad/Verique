@@ -84,7 +84,7 @@ function ProfileView({ username, viewer }: { username: string; viewer: User | nu
                 <Link
                   href={`/messages/${p.username}`}
                   aria-label={`Message ${p.username}`}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white/5 px-4 text-sm font-semibold text-zinc-100 hover:bg-white/10"
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-fill px-4 text-sm font-semibold text-ink hover:bg-fill-strong"
                 >
                   <MessageCircle aria-hidden className="h-4 w-4" />
                   <span className="hidden sm:inline">Message</span>
@@ -92,36 +92,36 @@ function ProfileView({ username, viewer }: { username: string; viewer: User | nu
                 <FollowButton username={p.username} following={p.is_followed_by_me} size="md" />
               </>
             ) : (
-              <Link href={`/login?next=/profile/${p.username}`} className="inline-flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">
+              <Link href={`/login?next=/profile/${p.username}`} className="inline-flex h-10 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink hover:bg-accent-strong">
                 Log in to follow
               </Link>
             )}
           </div>
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-white">{p.full_name || p.username}</h1>
-        <p className="text-zinc-500">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">{p.full_name || p.username}</h1>
+        <p className="text-ink-muted">
           @{p.username}
-          {p.role !== 'user' && <span className="ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-semibold capitalize text-blue-300">{p.role}</span>}
+          {p.role !== 'user' && <span className="ml-2 rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold capitalize text-link">{p.role}</span>}
         </p>
-        {p.bio && <p className="mt-3 whitespace-pre-wrap leading-relaxed text-zinc-200">{p.bio}</p>}
-        <p className="mt-3 flex items-center gap-1.5 text-sm text-zinc-500">
+        {p.bio && <p className="mt-3 whitespace-pre-wrap leading-relaxed text-ink">{p.bio}</p>}
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-muted">
           <CalendarDays aria-hidden className="h-4 w-4" /> Joined {format(new Date(p.created_at), 'MMMM yyyy')}
         </p>
         <p className="mt-3 flex gap-5 text-sm">
-          <button onClick={() => setTab('following')} className="text-zinc-400 hover:underline">
-            <span className="font-bold text-white">{p.following_count}</span> following
+          <button onClick={() => setTab('following')} className="text-ink-3 hover:underline">
+            <span className="font-bold text-ink">{p.following_count}</span> following
           </button>
-          <button onClick={() => setTab('followers')} className="text-zinc-400 hover:underline">
-            <span className="font-bold text-white">{p.followers_count}</span> {p.followers_count === 1 ? 'follower' : 'followers'}
+          <button onClick={() => setTab('followers')} className="text-ink-3 hover:underline">
+            <span className="font-bold text-ink">{p.followers_count}</span> {p.followers_count === 1 ? 'follower' : 'followers'}
           </button>
         </p>
         {isOwn && (
           // Phones have no sidebar, so these two live here.
           <div className="mt-4 flex gap-2 sm:hidden">
-            <Link href="/bookmarks" className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-3 text-sm text-zinc-200">
+            <Link href="/bookmarks" className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink">
               <Bookmark aria-hidden className="h-4 w-4" /> Bookmarks
             </Link>
-            <Link href="/settings" className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-3 text-sm text-zinc-200">
+            <Link href="/settings" className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink">
               <Settings aria-hidden className="h-4 w-4" /> Settings
             </Link>
           </div>

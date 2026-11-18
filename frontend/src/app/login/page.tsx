@@ -13,34 +13,34 @@ import './login.css';
 // ─── Globe card data ──────────────────────────────────────────────────────────
 const GLOBE_CARDS = [
   { user: 'alex_news', init: 'A', color: '#6366f1', text: 'Scientists confirm breakthrough in renewable energy storage.', verified: true },
-  { user: 'priya_facts', init: 'P', color: '#06b6d4', text: 'New study: 3hrs sleep is enough — CLAIM DISPUTED', verified: false },
-  { user: 'mark_truth', init: 'M', color: '#22c55e', text: '🌍 Climate summit agrees on net-zero by 2040 roadmap.', verified: true },
+  { user: 'priya_facts', init: 'P', color: '#06b6d4', text: 'New study says three hours of sleep is enough.', verified: false },
+  { user: 'mark_truth', init: 'M', color: '#22c55e', text: 'Climate summit agrees on a net-zero by 2040 roadmap.', verified: true },
   { user: 'sara_daily', init: 'S', color: '#f97316', text: 'Breaking: Central bank raises rates by 0.5% amid inflation.', verified: true },
   { user: 'dev_post', init: 'D', color: '#a78bfa', text: 'AI models outperform doctors in early cancer detection.', verified: true },
-  { user: 'leila_watch', init: 'L', color: '#ec4899', text: 'CLAIM: Moon landing footage shot in Hollywood studio.', verified: false },
+  { user: 'leila_watch', init: 'L', color: '#ec4899', text: 'Moon landing footage was shot in a Hollywood studio.', verified: false },
   { user: 'omar_lens', init: 'O', color: '#facc15', text: 'Record turnout in municipal elections across 14 states.', verified: true },
   { user: 'nina_verify', init: 'N', color: '#34d399', text: 'New vaccine shows 94% efficacy in phase 3 trials.', verified: true },
   { user: 'kai_report', init: 'K', color: '#ef4444', text: 'Stock markets hit all-time high on strong earnings data.', verified: true },
-  { user: 'jess_check', init: 'J', color: '#60a5fa', text: 'DISPUTED: Drinking lemon water daily cures diabetes.', verified: false },
+  { user: 'jess_check', init: 'J', color: '#60a5fa', text: 'Drinking lemon water daily cures diabetes.', verified: false },
   { user: 'raj_globe', init: 'R', color: '#06b6d4', text: 'Space agency announces crewed Mars mission for 2031.', verified: true },
   { user: 'bella_scan', init: 'B', color: '#22c55e', text: 'City council approves €2B public transport overhaul.', verified: true },
-  { user: 'tomás_now', init: 'T', color: '#9ca3af', text: 'FACT-CHECKED ✓ Water fluoridation is safe and effective.', verified: true },
+  { user: 'tomás_now', init: 'T', color: '#9ca3af', text: 'Water fluoridation is safe and effective.', verified: true },
   { user: 'yuna_pulse', init: 'Y', color: '#f97316', text: 'Earthquake magnitude 6.2 strikes Pacific Rim — no tsunami.', verified: true },
-  { user: 'finn_data', init: 'F', color: '#a78bfa', text: 'CLAIM: 5G towers cause health issues. Evidence: None found.', verified: false },
+  { user: 'finn_data', init: 'F', color: '#a78bfa', text: '5G towers cause health problems.', verified: false },
   { user: 'chen_live', init: 'C', color: '#ec4899', text: 'Researchers develop biodegradable plastic alternative.', verified: true },
   { user: 'amara_hq', init: 'A', color: '#6366f1', text: '78% of Gen-Z use social media as primary news source.', verified: true },
-  { user: 'sol_facts', init: 'S', color: '#facc15', text: 'MISLEADING: Headline omits crucial context on tax reform.', verified: false },
+  { user: 'sol_facts', init: 'S', color: '#facc15', text: 'The new tax reform cuts taxes for everyone.', verified: false },
   { user: 'lena_brief', init: 'L', color: '#34d399', text: 'WHO declares end of mpox global health emergency.', verified: true },
-  { user: 'hugo_press', init: 'H', color: '#ef4444', text: 'CLAIM: New food additive linked to cancer. Study retracted.', verified: false },
+  { user: 'hugo_press', init: 'H', color: '#ef4444', text: 'A common food additive causes cancer.', verified: false },
   { user: 'mia_signal', init: 'M', color: '#60a5fa', text: 'Quantum computing startup achieves 1000-qubit milestone.', verified: true },
   { user: 'zara_now', init: 'Z', color: '#9ca3af', text: 'Parliament passes landmark digital privacy legislation.', verified: true },
-  { user: 'ivan_check', init: 'I', color: '#a78bfa', text: 'DISPUTED: Historic temps "not unprecedented" — False.', verified: false },
+  { user: 'ivan_check', init: 'I', color: '#a78bfa', text: 'This summer’s temperatures were nothing unusual.', verified: false },
   { user: 'ada_facts', init: 'A', color: '#22c55e', text: 'Renewable energy now supplies 42% of global electricity.', verified: true },
   { user: 'rex_pulse', init: 'R', color: '#f97316', text: 'Study links ultra-processed food to higher dementia risk.', verified: true },
-  { user: 'nora_wire', init: 'N', color: '#06b6d4', text: 'CLAIM: Garlic injections cure COVID-19. No evidence found.', verified: false },
+  { user: 'nora_wire', init: 'N', color: '#06b6d4', text: 'Garlic injections cure COVID-19.', verified: false },
   { user: 'eli_scan', init: 'E', color: '#ec4899', text: 'New deep-sea species discovered off coast of Azores.', verified: true },
   { user: 'tao_brief', init: 'T', color: '#6366f1', text: 'Global literacy rate reaches historic high of 91%.', verified: true },
-  { user: 'pia_verify', init: 'P', color: '#facc15', text: 'MISLEADING: Out-of-context clip distorts politician speech.', verified: false },
+  { user: 'pia_verify', init: 'P', color: '#facc15', text: 'Viral clip shows the minister admitting fraud.', verified: false },
   { user: 'kas_live', init: 'K', color: '#34d399', text: 'Researchers map complete human epigenome for first time.', verified: true },
 ];
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
   return (
     <div className="lp-root">
       {/* Main canvas backdrop */}
-      <AnimatedCanvas blurCanvasRef={blurCanvasRef} blurWidthRatio={0.44} className="lp-canvas" />
+      <AnimatedCanvas blurCanvasRef={blurCanvasRef} blurWidthRatio={0.44} className="lp-canvas" theme="dark" />
 
       {/* Blur canvas — draws a blurred copy of main canvas over the left panel */}
       <canvas ref={blurCanvasRef} className="lp-blur-canvas" />
@@ -143,7 +143,7 @@ export default function LoginPage() {
 
         {/* LEFT — auth form */}
         <div className={`lp-left ${formVisible ? 'lp-left--visible' : ''}`}>
-          <h1 className="lp-title">Check a claim<br />where you read it</h1>
+          <h1 className="lp-title">Check a claim in<br />the place you read it</h1>
           <p className="lp-sub">Post, follow and talk like on any social app. Tap Verify on a post to see what the evidence says.</p>
 
           <div className="lp-card">
@@ -184,8 +184,8 @@ export default function LoginPage() {
                         <div className="lgc-user">
                           <div className="lgc-name">@{card.user}</div>
                           {card.verified
-                            ? <div className="lgc-badge lgc-badge--ok">✓ Verified</div>
-                            : <div className="lgc-badge lgc-badge--warn">⚠ Disputed</div>
+                            ? <div className="lgc-badge lgc-badge--ok">Mostly accurate</div>
+                            : <div className="lgc-badge lgc-badge--warn">Disputed</div>
                           }
                         </div>
                       </div>

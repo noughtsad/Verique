@@ -21,8 +21,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-20 z-[110] flex justify-center sm:bottom-8">
         {message && (
-          <div className="flex items-center gap-2 rounded-full border border-line bg-surface-strong px-4 py-2.5 text-sm font-medium text-white shadow-xl animate-slide-in">
-            <Check aria-hidden className="h-4 w-4 text-emerald-300" />
+          <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-strong px-4 py-2.5 text-sm font-medium text-ink shadow-xl animate-slide-in">
+            <Check aria-hidden className="h-4 w-4 text-success-ink" />
             {message}
           </div>
         )}

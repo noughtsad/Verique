@@ -29,9 +29,9 @@ function PostView({ postId, viewer }: { postId: number; viewer: User | null }) {
     <div className="space-y-6">
       <button
         onClick={() => (window.history.length > 1 ? router.back() : router.push('/'))}
-        className="flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white"
+        className="flex items-center gap-2 text-sm font-semibold text-ink-3 hover:text-ink"
       >
-        <ArrowLeft aria-hidden className="h-4 w-4" /> Back
+        <ArrowLeft aria-hidden className="h-5 w-5" /> Back
       </button>
       <h1 className="sr-only">Post</h1>
       {notFound ? (
@@ -41,7 +41,7 @@ function PostView({ postId, viewer }: { postId: number; viewer: User | null }) {
             title="This post doesn't exist"
             body="It may have been deleted by its author."
             action={
-              <Link href="/" className="text-sm font-semibold text-blue-400 hover:text-blue-300">
+              <Link href="/" className="text-sm font-semibold text-link hover:text-link">
                 Go to your feed
               </Link>
             }

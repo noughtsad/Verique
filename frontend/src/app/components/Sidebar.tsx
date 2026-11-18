@@ -13,10 +13,10 @@ import { cn } from '@/lib/utils';
 export function Logo({ withName = false }: { withName?: boolean }) {
   return (
     <span className="flex items-center gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-xl font-bold text-white">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-xl font-bold text-accent-ink">
         V
       </span>
-      {withName && <span className="text-lg font-bold tracking-tight text-white">Verique</span>}
+      {withName && <span className="text-lg font-bold tracking-tight text-ink">Verique</span>}
     </span>
   );
 }
@@ -26,7 +26,7 @@ function Badge({ count, tone = 'accent' }: { count: number; tone?: 'accent' | 'r
   return (
     <span
       className={cn(
-        'absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-white',
+        'absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-accent-ink',
         tone === 'rose' ? 'bg-rose-500' : 'bg-accent',
       )}
     >
@@ -47,7 +47,7 @@ export function Sidebar({ user }: { user: User | null }) {
   const linkClass = (active: boolean) =>
     cn(
       'relative flex items-center gap-4 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors',
-      active ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white',
+      active ? 'bg-fill-strong text-ink' : 'text-ink-3 hover:bg-fill hover:text-ink',
     );
 
   return (
@@ -89,16 +89,16 @@ export function Sidebar({ user }: { user: User | null }) {
           <>
             <Link
               href={`/profile/${user.username}`}
-              className="flex items-center gap-3 rounded-xl px-1.5 py-2 hover:bg-white/5"
+              className="flex items-center gap-3 rounded-xl px-1.5 py-2 hover:bg-fill"
               title={user.full_name || user.username}
             >
               <Avatar user={user} size="sm" />
               <span className="hidden min-w-0 xl:block">
-                <span className="block truncate text-sm font-semibold text-white">{user.full_name || user.username}</span>
-                <span className="block truncate text-xs text-zinc-400">@{user.username}</span>
+                <span className="block truncate text-sm font-semibold text-ink">{user.full_name || user.username}</span>
+                <span className="block truncate text-xs text-ink-3">@{user.username}</span>
               </span>
             </Link>
-            <button onClick={logout} title="Log out" className={cn(linkClass(false), 'hover:text-rose-300')}>
+            <button onClick={logout} title="Log out" className={cn(linkClass(false), 'hover:text-danger-ink')}>
               <LogOut aria-hidden className="h-6 w-6 shrink-0" />
               <span className="hidden xl:inline">Log out</span>
             </button>

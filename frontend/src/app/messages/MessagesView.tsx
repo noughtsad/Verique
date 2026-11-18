@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MessageCircle, PenSquare, Search, Send } from 'lucide-react';
+import { ArrowLeft, MessageCircle, PenSquare, Search, SearchX, Send } from 'lucide-react';
 
 import {
   getOrCreateConversation,
@@ -25,6 +25,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
+import { inlineInputClass } from '@/components/ui/Input';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 const PAGE = 50;
 
@@ -36,23 +38,23 @@ function ConversationListItem({ conversation, active }: { conversation: Conversa
       aria-current={active ? 'page' : undefined}
       className={cn(
         'flex items-center gap-3 rounded-xl border p-3 transition-colors',
-        active ? 'border-accent/40 bg-white/10' : 'border-line bg-surface/55 hover:bg-white/5',
+        active ? 'border-accent/40 bg-fill-strong' : 'border-line bg-surface/55 hover:bg-fill',
       )}
     >
       <Avatar user={other} size="md" />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-sm font-bold text-white">{other.full_name || other.username}</span>
+          <span className="truncate text-sm font-bold text-ink">{other.full_name || other.username}</span>
           {conversation.last_message_at && (
-            <span className="shrink-0 text-xs text-zinc-500">{timeAgo(conversation.last_message_at)}</span>
+            <span className="shrink-0 text-xs text-ink-muted">{timeAgo(conversation.last_message_at)}</span>
           )}
         </span>
-        <span className="mt-0.5 block truncate text-sm text-zinc-400">
+        <span className="mt-0.5 block truncate text-sm text-ink-3">
           {conversation.last_message ? conversation.last_message.content : 'No messages yet'}
         </span>
       </span>
       {conversation.unread_count > 0 && (
-        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-white">
+        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-ink">
           {conversation.unread_count > 99 ? '99+' : conversation.unread_count}
         </span>
       )}
@@ -67,12 +69,12 @@ function MessageBubble({ message, isMine }: { message: Message; isMine: boolean 
       <div
         className={cn(
           'max-w-[78%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-          isMine ? 'rounded-br-sm bg-accent text-white' : 'rounded-bl-sm border border-line bg-surface-strong text-zinc-100',
+          isMine ? 'rounded-br-sm bg-accent text-accent-ink' : 'rounded-bl-sm border border-line bg-surface-strong text-ink',
           message.id < 0 && 'opacity-60',
         )}
       >
         {message.content}
-        <span className={cn('mt-1 block text-[11px]', isMine ? 'text-blue-100/70' : 'text-zinc-500')}>
+        <span className={cn('mt-1 block text-[11px]', isMine ? 'text-accent-ink/70' : 'text-ink-muted')}>
           {message.id < 0 ? 'Sending…' : formatClock(message.created_at)}
         </span>
       </div>
@@ -94,20 +96,20 @@ function NewMessageDialog({ open, onClose, currentUser }: { open: boolean; onClo
   return (
     <Modal open={open} onClose={onClose} title="New message">
       <div className="relative">
-        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
         <input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search people"
           aria-label="Search people"
-          className="h-11 w-full rounded-full border border-line bg-black/20 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none"
+          className={`${inlineInputClass} pl-10`}
         />
       </div>
       <ul className="mt-4 max-h-80 space-y-1 overflow-y-auto">
         {people.isLoading && <Spinner label="Searching" />}
         {people.isError && <ErrorBanner error={people.error} />}
-        {debounced && people.isSuccess && results.length === 0 && <p className="text-sm text-zinc-400">No one matches “{debounced}”.</p>}
+        {debounced && people.isSuccess && results.length === 0 && <EmptyState compact icon={SearchX} title={`No one matches “${debounced}”`} />}
         {results.map((person) => (
           <li key={person.id}>
             <button
@@ -115,12 +117,12 @@ function NewMessageDialog({ open, onClose, currentUser }: { open: boolean; onClo
                 onClose();
                 router.push(`/messages/${person.username}`);
               }}
-              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/5"
+              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-fill"
             >
               <Avatar user={person} size="sm" />
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-white">{person.full_name || person.username}</span>
-                <span className="block truncate text-xs text-zinc-500">@{person.username}</span>
+                <span className="block truncate text-sm font-semibold text-ink">{person.full_name || person.username}</span>
+                <span className="block truncate text-xs text-ink-muted">@{person.username}</span>
               </span>
             </button>
           </li>
@@ -253,15 +255,15 @@ function Thread({ currentUser, username }: { currentUser: User; username: string
   return (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-line p-3 sm:p-4">
-        <Link href="/messages" aria-label="Back to conversations" className="rounded-full p-1.5 text-zinc-400 hover:bg-white/10 hover:text-white sm:hidden">
+        <Link href="/messages" aria-label="Back to conversations" className="rounded-full p-1.5 text-ink-3 hover:bg-fill-strong hover:text-ink sm:hidden">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         {other && (
           <Link href={`/profile/${other.username}`} className="flex min-w-0 items-center gap-3">
             <Avatar user={other} size="sm" />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold text-white">{other.full_name || other.username}</span>
-              <span className="block truncate text-xs text-zinc-400">@{other.username}</span>
+              <span className="block truncate text-sm font-bold text-ink">{other.full_name || other.username}</span>
+              <span className="block truncate text-xs text-ink-3">@{other.username}</span>
             </span>
           </Link>
         )}
@@ -296,7 +298,7 @@ function Thread({ currentUser, username }: { currentUser: User; username: string
             )}
             {latest.isError && <ErrorBanner error={latest.error} onRetry={() => latest.refetch()} />}
             {latest.isSuccess && messages.length === 0 && (
-              <p className="m-auto text-sm text-zinc-500">No messages yet. Say hello.</p>
+              <div className="m-auto"><EmptyState compact icon={MessageCircle} title="No messages yet" body="Say hello." /></div>
             )}
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} isMine={message.sender.id === currentUser.id} />
@@ -319,13 +321,13 @@ function Thread({ currentUser, username }: { currentUser: User; username: string
               maxLength={2000}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Write a message"
-              className="h-11 flex-1 rounded-full border border-line bg-white/5 px-4 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none"
+              className={inlineInputClass}
             />
             <button
               type="submit"
               disabled={!draft.trim() || conversationId === null}
               aria-label="Send"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:bg-accent-strong disabled:opacity-40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-ink hover:bg-accent-strong disabled:opacity-40"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -348,22 +350,26 @@ export function MessagesView({ currentUser, activeUsername }: { currentUser: Use
   return (
     <div className="flex min-h-0 flex-1 gap-6">
       <div className={cn('min-h-0 w-full flex-col gap-2 sm:flex sm:w-[300px] sm:shrink-0', activeUsername ? 'hidden' : 'flex')}>
-        <div className="mb-2 flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Messages</h1>
-          <button onClick={() => setComposing(true)} aria-label="New message" title="New message" className="rounded-full p-2 text-blue-400 hover:bg-blue-500/10">
-            <PenSquare className="h-5 w-5" />
-          </button>
-        </div>
+        <PageHeader
+          title="Messages"
+          actions={
+            <Button variant="secondary" size="sm" onClick={() => setComposing(true)} aria-label="New message">
+              <PenSquare aria-hidden className="h-4 w-4" /> New
+            </Button>
+          }
+        />
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-4">
           {conversations.isLoading && <Spinner label="Loading conversations" />}
           {conversations.isError && <ErrorBanner error={conversations.error} onRetry={() => conversations.refetch()} />}
           {conversations.isSuccess && conversations.data.length === 0 && (
-            <EmptyState
-              icon={MessageCircle}
-              title="No conversations yet"
-              body="Start one with anyone on Verique."
-              action={<Button onClick={() => setComposing(true)}>New message</Button>}
-            />
+            <Card>
+              <EmptyState
+                icon={MessageCircle}
+                title="No conversations yet"
+                body="Start one with anyone on Verique."
+                action={<Button onClick={() => setComposing(true)}>New message</Button>}
+              />
+            </Card>
           )}
           {conversations.data?.map((c) => (
             <ConversationListItem key={c.id} conversation={c} active={c.other_user.username === activeUsername} />

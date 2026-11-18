@@ -62,10 +62,10 @@ export function PostList({
         {isFetchingNextPage && <Spinner label="Loading more posts" />}
         {list.isFetchNextPageError && (
           <Button variant="secondary" onClick={() => fetchNextPage()}>
-            Couldn&apos;t load more. Try again
+            Couldn&apos;t load more. Try again.
           </Button>
         )}
-        {!hasNextPage && list.posts.length > 5 && <p className="text-sm text-zinc-500">You&apos;re all caught up.</p>}
+        {!hasNextPage && list.posts.length > 5 && <p className="text-sm text-ink-muted">You&apos;re all caught up.</p>}
       </div>
     </div>
   );

@@ -23,9 +23,9 @@ import { Tabs } from '@/components/ui/Tabs';
 const PAGE_SIZE = 30;
 
 const TYPE_ICON: Record<Notification['type'], { icon: typeof Heart; className: string }> = {
-  like: { icon: Heart, className: 'bg-rose-500/20 text-rose-300' },
-  comment: { icon: MessageCircle, className: 'bg-blue-500/20 text-blue-300' },
-  follow: { icon: UserPlus, className: 'bg-emerald-500/20 text-emerald-300' },
+  like: { icon: Heart, className: 'bg-rose-500/20 text-danger-ink' },
+  comment: { icon: MessageCircle, className: 'bg-accent/15 text-link' },
+  follow: { icon: UserPlus, className: 'bg-emerald-500/20 text-success-ink' },
 };
 
 type FilterType = 'all' | 'unread' | Notification['type'];
@@ -50,8 +50,8 @@ function NotificationRow({ notif, onOpen }: { notif: Notification; onOpen: (n: N
       className={cn(
         'relative flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition-colors',
         notif.is_read
-          ? 'border-line/50 bg-surface/40 hover:bg-white/[0.04]'
-          : 'border-line bg-surface/70 hover:bg-white/[0.06]',
+          ? 'border-line/50 bg-surface/40 hover:bg-fill'
+          : 'border-line bg-surface/70 hover:bg-fill-strong',
       )}
     >
       {!notif.is_read && <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-accent" title="Unread" />}
@@ -69,22 +69,22 @@ function NotificationRow({ notif, onOpen }: { notif: Notification; onOpen: (n: N
         </span>
       </div>
       <div className="min-w-0 flex-1 pr-4 text-sm">
-        <p className="leading-relaxed text-zinc-300">
+        <p className="leading-relaxed text-ink-2">
           <Link
             href={`/profile/${notif.actor.username}`}
             onClick={(e) => e.stopPropagation()}
-            className="font-semibold text-white hover:underline"
+            className="font-semibold text-ink hover:underline"
           >
             {notif.actor.full_name || notif.actor.username}
           </Link>{' '}
           {notificationText(notif)}
         </p>
         {notif.preview && (
-          <p className="mt-2 line-clamp-2 rounded-lg border border-line bg-white/5 px-3 py-2 text-zinc-300">
+          <p className="mt-2 line-clamp-2 rounded-lg border border-line bg-fill px-3 py-2 text-ink-2">
             “{notif.preview}”
           </p>
         )}
-        <p className="mt-2 text-xs text-zinc-500" title={fullDate(notif.created_at)}>
+        <p className="mt-2 text-xs text-ink-muted" title={fullDate(notif.created_at)}>
           {timeAgoLong(notif.created_at)}
         </p>
       </div>

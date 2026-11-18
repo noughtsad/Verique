@@ -18,7 +18,7 @@ const EMPTY: Record<Feed, { icon: typeof Users; title: string; body: string; act
     title: 'Nothing from people you follow',
     body: 'Follow people to see their posts here.',
     action: (
-      <Link href="/explore" className="text-sm font-semibold text-blue-400 hover:text-blue-300">
+      <Link href="/explore" className="text-sm font-semibold text-link hover:text-link">
         Find people on Explore
       </Link>
     ),

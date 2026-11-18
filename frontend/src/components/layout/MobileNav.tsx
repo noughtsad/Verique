@@ -30,7 +30,7 @@ export function MobileNav({ user }: { user: User | null }) {
             href={item.href(user?.username)}
             aria-label={item.label}
             aria-current={active ? 'page' : undefined}
-            className={cn('flex flex-1 justify-center py-3', active ? 'text-white' : 'text-zinc-500')}
+            className={cn('flex flex-1 justify-center py-3', active ? 'text-ink' : 'text-ink-muted')}
           >
             <span className="relative">
               <Icon aria-hidden className="h-6 w-6" />

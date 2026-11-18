@@ -42,7 +42,7 @@ export function FollowButton({
       disabled={mutation.isPending}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={isFollowing && hovered ? 'border-rose-500/40 text-rose-300' : undefined}
+      className={isFollowing && hovered ? 'border-rose-500/40 text-danger-ink' : undefined}
       aria-pressed={isFollowing}
     >
       {isFollowing ? (hovered ? 'Unfollow' : 'Following') : 'Follow'}

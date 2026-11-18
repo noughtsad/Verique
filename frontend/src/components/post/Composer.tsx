@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { inlineInputClass } from '@/components/ui/Input';
 
 // Same limits as the backend's PostCreate schema.
 const MIN_LENGTH = 10;
@@ -93,7 +94,7 @@ export function Composer({ user, onPosted }: { user: User; onPosted?: (post: Pos
             onChange={(e) => setContent(e.target.value)}
             placeholder="Share something. Anyone can check its claims."
             rows={content ? 4 : 2}
-            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-white placeholder:text-zinc-500 focus:outline-none"
+            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink placeholder:text-ink-muted focus:outline-none"
           />
 
           {upload.isPending && <Spinner label="Uploading image" />}
@@ -119,7 +120,7 @@ export function Composer({ user, onPosted }: { user: User; onPosted?: (post: Pos
               onChange={(e) => setSourceUrl(e.target.value)}
               placeholder="https://… link to your source (optional)"
               aria-label="Source link"
-              className="h-10 w-full rounded-lg border border-line bg-white/5 px-3 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none"
+              className={inlineInputClass}
             />
           )}
 
@@ -135,7 +136,7 @@ export function Composer({ user, onPosted }: { user: User; onPosted?: (post: Pos
               disabled={upload.isPending || !!image}
               title="Add an image"
               aria-label="Add an image"
-              className="rounded-full p-2 text-blue-400 hover:bg-blue-500/10 disabled:opacity-40"
+              className="rounded-md p-2 text-link hover:bg-accent/10 disabled:opacity-40"
             >
               <ImagePlus className="h-5 w-5" />
             </button>
@@ -145,12 +146,12 @@ export function Composer({ user, onPosted }: { user: User; onPosted?: (post: Pos
               aria-pressed={showSource}
               title="Add a source link"
               aria-label="Add a source link"
-              className={cn('rounded-full p-2 hover:bg-blue-500/10', showSource ? 'bg-blue-500/10 text-blue-300' : 'text-blue-400')}
+              className={cn('rounded-md p-2 hover:bg-accent/10', showSource ? 'bg-accent/10 text-link' : 'text-link')}
             >
               <Link2 className="h-5 w-5" />
             </button>
             <span
-              className={cn('ml-auto mr-3 text-xs tabular-nums', tooShort ? 'text-amber-300' : 'text-zinc-500')}
+              className={cn('ml-auto mr-3 text-xs tabular-nums', tooShort ? 'text-warning-ink' : 'text-ink-muted')}
               aria-live="polite"
             >
               {tooShort ? `${MIN_LENGTH - length} more characters` : length > 0 ? `${length}/${MAX_LENGTH}` : ''}

@@ -3,10 +3,10 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const VARIANTS = {
-  primary: 'bg-accent text-white hover:bg-accent-strong disabled:bg-accent/40',
-  secondary: 'border border-line bg-white/5 text-zinc-100 hover:bg-white/10',
-  ghost: 'text-zinc-300 hover:bg-white/5 hover:text-white',
-  danger: 'bg-rose-600 text-white hover:bg-rose-500 disabled:bg-rose-600/40',
+  primary: 'bg-accent text-accent-ink hover:bg-accent-strong disabled:bg-accent/40',
+  secondary: 'border border-line bg-fill text-ink hover:bg-fill-strong',
+  ghost: 'text-ink-2 hover:bg-fill hover:text-ink',
+  danger: 'bg-rose-600 text-accent-ink hover:bg-rose-500 disabled:bg-rose-600/40',
 } as const;
 
 const SIZES = { sm: 'h-8 px-3 text-sm', md: 'h-10 px-4 text-sm', lg: 'h-11 px-5 text-[15px]' } as const;
@@ -27,7 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+        'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70',
         VARIANTS[variant],
         SIZES[size],
         className,

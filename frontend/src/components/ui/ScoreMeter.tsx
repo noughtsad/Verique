@@ -24,7 +24,7 @@ export function ScoreMeter({ score, size = 'compact', className }: { score: numb
       aria-valuetext={`${value} out of 100, ${label.toLowerCase()}`}
       aria-label="Verique score"
       className={cn('relative w-full overflow-hidden rounded-full', hero ? 'h-2.5' : 'h-1.5')}
-      style={{ backgroundColor: `${color}33` }}
+      style={{ backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)` }}
     >
       <div
         className="h-full rounded-full transition-[width] duration-700 ease-out"
@@ -42,8 +42,8 @@ export function ScoreMeter({ score, size = 'compact', className }: { score: numb
       <div className={cn('w-44 space-y-1.5', className)} title={`Verique score ${value} of 100: ${label}`}>
         <div className="flex items-center gap-1.5 text-sm">
           <Icon aria-hidden className="h-4 w-4 shrink-0" style={{ color }} />
-          <span className="font-semibold text-zinc-100">{label}</span>
-          <span className="ml-auto font-semibold text-zinc-100">{value}</span>
+          <span className="font-semibold text-ink">{label}</span>
+          <span className="ml-auto font-semibold text-ink">{value}</span>
         </div>
         {bar}
       </div>
@@ -53,13 +53,13 @@ export function ScoreMeter({ score, size = 'compact', className }: { score: numb
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex items-end justify-between gap-4">
-        <p className="flex items-center gap-2 whitespace-nowrap text-lg font-bold text-white">
+        <p className="flex items-center gap-2 whitespace-nowrap text-lg font-bold text-ink">
           <Icon aria-hidden className="h-6 w-6 shrink-0" style={{ color }} />
           {label}
         </p>
         <p className="leading-none">
-          <span className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{value}</span>
-          <span className="ml-1 text-base text-zinc-500">/100</span>
+          <span className="text-4xl font-bold tracking-tight text-ink sm:text-5xl">{value}</span>
+          <span className="ml-1 text-base text-ink-muted">/100</span>
         </p>
       </div>
       {bar}
@@ -75,7 +75,7 @@ export function ScoreMeter({ score, size = 'compact', className }: { score: numb
               zone.tier === 'bad' && 'left-0',
               zone.tier === 'mixed' && '-translate-x-1/2',
               zone.tier === 'good' && 'right-0',
-              zone.tier === tier ? 'font-semibold text-zinc-100' : 'text-zinc-500',
+              zone.tier === tier ? 'font-semibold text-ink' : 'text-ink-muted',
             )}
           >
             {TIERS[zone.tier].label}

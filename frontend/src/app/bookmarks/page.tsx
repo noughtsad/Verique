@@ -22,7 +22,7 @@ export default function BookmarksPage() {
               title: 'No bookmarks yet',
               body: 'Tap the bookmark on any post to save it here.',
               action: (
-                <Link href="/explore" className="text-sm font-semibold text-blue-400 hover:text-blue-300">
+                <Link href="/explore" className="text-sm font-semibold text-link hover:text-link">
                   Find posts on Explore
                 </Link>
               ),

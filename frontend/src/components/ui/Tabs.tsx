@@ -23,11 +23,11 @@ export function Tabs<T extends string>({
             onClick={() => onChange(item.value)}
             className={cn(
               'relative shrink-0 px-4 pb-3 pt-1 text-sm font-semibold transition-colors',
-              active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200',
+              active ? 'text-ink' : 'text-ink-3 hover:text-ink',
             )}
           >
             {item.label}
-            {item.count !== undefined && <span className="ml-1.5 text-zinc-500">{item.count}</span>}
+            {item.count !== undefined && <span className="ml-1.5 text-ink-muted">{item.count}</span>}
             {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />}
           </button>
         );

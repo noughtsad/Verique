@@ -16,6 +16,7 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ScoreMeter } from '@/components/ui/ScoreMeter';
 import { Spinner } from '@/components/ui/Spinner';
 import { VerdictBadge } from '@/components/ui/VerdictBadge';
+import { inputClass } from '@/components/ui/Input';
 
 const CHALLENGE_REASONS = [
   ['missing_context', 'Missing context'],
@@ -30,13 +31,12 @@ const DECISION_LABEL: Record<string, string> = {
   remove_verdict: 'A moderator removed this verdict',
 };
 
-const field =
-  'w-full rounded-lg border border-line bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none';
+const field = inputClass;
 
 function Sources({ title, sources }: { title: string; sources: SourceInfo[] }) {
   return (
     <div>
-      <h4 className="mb-2 text-xs font-semibold text-zinc-400">{title}</h4>
+      <h4 className="mb-2 text-xs font-semibold text-ink-3">{title}</h4>
       <ul className="space-y-2">
         {sources.map((source) => (
           <li key={source.url}>
@@ -44,12 +44,12 @@ function Sources({ title, sources }: { title: string; sources: SourceInfo[] }) {
               href={source.url}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-lg border border-line bg-white/5 p-3 hover:bg-white/10"
+              className="block rounded-lg border border-line bg-fill p-3 hover:bg-fill-strong"
             >
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-blue-400">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-link">
                 <Globe aria-hidden className="h-3.5 w-3.5" /> {getDomainFromUrl(source.url)}
               </span>
-              <span className="mt-1 line-clamp-2 block text-sm text-zinc-300">{source.snippet}</span>
+              <span className="mt-1 line-clamp-2 block text-sm text-ink-2">{source.snippet}</span>
             </a>
           </li>
         ))}
@@ -63,12 +63,12 @@ function ClaimCard({ claim }: { claim: ClaimResult }) {
     <Card className="space-y-3 p-5">
       <div className="flex items-center justify-between gap-3">
         <VerdictBadge verdict={claim.verdict} />
-        <span className="text-xs text-zinc-500">{Math.round(claim.confidence * 100)}% confidence</span>
+        <span className="text-xs text-ink-muted">{Math.round(claim.confidence * 100)}% confidence</span>
       </div>
-      <p className="font-semibold leading-relaxed text-white">{claim.text}</p>
-      <p className="text-sm leading-relaxed text-zinc-300">{claim.reasoning}</p>
+      <p className="font-semibold leading-relaxed text-ink">{claim.text}</p>
+      <p className="text-sm leading-relaxed text-ink-2">{claim.reasoning}</p>
       {!!claim.caveats?.length && (
-        <ul className="list-disc space-y-1 rounded-lg border border-amber-400/20 bg-amber-400/5 py-2.5 pl-8 pr-3 text-sm text-amber-100/90">
+        <ul className="list-disc space-y-1 rounded-lg border border-amber-400/20 bg-amber-400/5 py-2.5 pl-8 pr-3 text-sm text-warning-ink">
           {claim.caveats.map((caveat, i) => (
             <li key={i}>{caveat}</li>
           ))}
@@ -84,10 +84,10 @@ function Summary({ v, onRetry, retrying, signedIn }: { v: PostVerification; onRe
   if (isFailedVerification(v)) {
     return (
       <Card className="space-y-3 border-rose-500/30 p-5">
-        <p className="flex items-center gap-2 font-semibold text-rose-200">
+        <p className="flex items-center gap-2 font-semibold text-danger-ink">
           <TriangleAlert aria-hidden className="h-5 w-5" /> This post couldn&apos;t be checked
         </p>
-        <p className="text-sm text-zinc-300">{v.final_decision_note || 'Something went wrong while checking. Try again.'}</p>
+        <p className="text-sm text-ink-2">{v.final_decision_note || 'Something went wrong while checking. Try again.'}</p>
         {signedIn && (
           <Button variant="secondary" onClick={onRetry} loading={retrying}>
             Try again
@@ -99,10 +99,10 @@ function Summary({ v, onRetry, retrying, signedIn }: { v: PostVerification; onRe
   if (isUnverifiableVerification(v)) {
     return (
       <Card className="space-y-2 p-5">
-        <p className="flex items-center gap-2 font-semibold text-white">
-          <HelpCircle aria-hidden className="h-5 w-5 text-zinc-400" /> No factual claims to check
+        <p className="flex items-center gap-2 font-semibold text-ink">
+          <HelpCircle aria-hidden className="h-5 w-5 text-ink-3" /> No factual claims to check
         </p>
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-ink-3">
           {v.final_decision_note ||
             'Verique scores only claims that can be checked against evidence. Opinions and personal feelings get no score.'}
         </p>
@@ -112,15 +112,15 @@ function Summary({ v, onRetry, retrying, signedIn }: { v: PostVerification; onRe
   return (
     <Card className="space-y-4 p-5">
       {v.score !== null && v.score !== undefined && <ScoreMeter score={v.score} size="hero" />}
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-ink-3">
         Verique score, from {v.claims.length} checked {v.claims.length === 1 ? 'claim' : 'claims'}
       </p>
       {v.is_human_final && v.final_decision && (
-        <p className="flex items-center gap-1.5 text-sm text-blue-300">
+        <p className="flex items-center gap-1.5 text-sm text-link">
           <UserCheck aria-hidden className="h-4 w-4" /> {DECISION_LABEL[v.final_decision] ?? 'Reviewed by a moderator'}
         </p>
       )}
-      {v.is_human_final && v.final_decision_note && <p className="text-sm text-zinc-300">“{v.final_decision_note}”</p>}
+      {v.is_human_final && v.final_decision_note && <p className="text-sm text-ink-2">“{v.final_decision_note}”</p>}
     </Card>
   );
 }
@@ -140,8 +140,8 @@ function ChallengeForm({ v, postId }: { v: PostVerification; postId: number }) {
 
   if (challenge.isSuccess || v.review_status === 'open') {
     return (
-      <Card className="flex items-start gap-3 p-5 text-sm text-zinc-300">
-        <CheckCircle2 aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+      <Card className="flex items-start gap-3 p-5 text-sm text-ink-2">
+        <CheckCircle2 aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-success-ink" />
         <p>
           {challenge.isSuccess ? 'Challenge sent. ' : ''}A moderator is reviewing this verdict. The result shows here once
           they decide.
@@ -156,21 +156,21 @@ function ChallengeForm({ v, postId }: { v: PostVerification; postId: number }) {
   };
   return (
     <Card className="p-5">
-      <h3 className="font-semibold text-white">Think this verdict is wrong?</h3>
-      <p className="mt-1 text-sm text-zinc-400">Challenge it and a moderator will review the evidence.</p>
+      <h3 className="font-bold text-ink">Think this verdict is wrong?</h3>
+      <p className="mt-1 text-sm text-ink-3">Challenge it and a moderator will review the evidence.</p>
       <form onSubmit={submit} className="mt-4 space-y-3">
-        <label className="block text-sm text-zinc-300">
+        <label className="block text-sm text-ink-2">
           Reason
           <select value={reason} onChange={(e) => setReason(e.target.value)} className={`${field} mt-1.5`}>
             {CHALLENGE_REASONS.map(([value, label]) => (
-              <option key={value} value={value} className="bg-zinc-900">
+              <option key={value} value={value} className="bg-surface">
                 {label}
               </option>
             ))}
           </select>
         </label>
-        <label className="block text-sm text-zinc-300">
-          What&apos;s wrong with it? <span className="text-zinc-500">(optional)</span>
+        <label className="block text-sm text-ink-2">
+          What&apos;s wrong with it? <span className="text-ink-muted">(optional)</span>
           <textarea value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} rows={3} className={`${field} mt-1.5 resize-none`} />
         </label>
         {challenge.isError && <ErrorBanner error={challenge.error} />}
@@ -200,14 +200,14 @@ function ResolveForm({ review, postId }: { review: ModerationReview; postId: num
 
   return (
     <Card className="space-y-3 border-amber-400/30 p-5">
-      <h3 className="font-semibold text-white">Resolve this challenge</h3>
-      <p className="text-sm text-zinc-400">
+      <h3 className="font-bold text-ink">Resolve this challenge</h3>
+      <p className="text-sm text-ink-3">
         Challenged {review.verification.challenge_count} {review.verification.challenge_count === 1 ? 'time' : 'times'}.
       </p>
       <select value={decision} onChange={(e) => setDecision(e.target.value as ReviewDecision)} className={field} aria-label="Decision">
-        <option value="uphold" className="bg-zinc-900">Uphold the verdict</option>
-        <option value="revise" className="bg-zinc-900">Revise the verdict</option>
-        <option value="remove_verdict" className="bg-zinc-900">Remove the verdict</option>
+        <option value="uphold" className="bg-surface">Uphold the verdict</option>
+        <option value="revise" className="bg-surface">Revise the verdict</option>
+        <option value="remove_verdict" className="bg-surface">Remove the verdict</option>
       </select>
       <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Note shown with the verdict (at least 5 characters)" className={`${field} resize-none`} aria-label="Moderator note" />
       <input value={score} onChange={(e) => setScore(e.target.value)} inputMode="numeric" placeholder="New score 0–100 (optional)" className={field} aria-label="Override score" />
@@ -228,12 +228,12 @@ function ModeratorTools({ v, postId }: { v: PostVerification | null | undefined;
       {forThis && <ResolveForm review={forThis} postId={postId} />}
       {others.length > 0 && (
         <Card className="p-5">
-          <h3 className="font-semibold text-white">Other open reviews ({others.length})</h3>
+          <h3 className="font-bold text-ink">Other open reviews ({others.length})</h3>
           <ul className="mt-3 space-y-2">
             {others.map((r) => (
               <li key={r.id}>
-                <Link href={`/post/${r.post.id}`} className="block rounded-lg px-2 py-1.5 text-sm text-zinc-300 hover:bg-white/5">
-                  <span className="font-semibold text-white">@{r.post.author.username}</span> · {r.post.content.slice(0, 80)}
+                <Link href={`/post/${r.post.id}`} className="block rounded-lg px-2 py-1.5 text-sm text-ink-2 hover:bg-fill">
+                  <span className="font-semibold text-ink">@{r.post.author.username}</span> · {r.post.content.slice(0, 80)}
                 </Link>
               </li>
             ))}
@@ -257,13 +257,13 @@ export function FactCheckPanel({ post, viewer }: { post: Post; viewer: User | nu
 
   return (
     <section aria-labelledby="fact-check-title" className="space-y-4">
-      <h2 id="fact-check-title" className="flex items-center gap-2 text-lg font-bold text-white">
-        <ShieldCheck aria-hidden className="h-5 w-5 text-blue-400" /> Fact-check
+      <h2 id="fact-check-title" className="flex items-center gap-2 text-lg font-bold text-ink">
+        <ShieldCheck aria-hidden className="h-5 w-5 text-link" /> Fact-check
       </h2>
       {verification.isLoading && <Spinner label="Loading the fact-check" />}
       {verification.isError && <ErrorBanner error={verification.error} onRetry={() => verification.refetch()} />}
       {verification.isSuccess && !v && (
-        <Card className="p-5 text-sm text-zinc-400">
+        <Card className="p-5 text-sm text-ink-3">
           This post hasn&apos;t been checked yet.{viewer ? ' Use Verify on the post above.' : ' Log in to verify it.'}
         </Card>
       )}
