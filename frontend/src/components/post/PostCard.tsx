@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bookmark, Flag, Globe, Heart, MessageSquare, MoreHorizontal, Share2, Trash2 } from 'lucide-react';
 
 import { bookmarkPost, deletePost, likePost, unbookmarkPost, unlikePost } from '@/lib/api';
-import { removePost, restorePosts, snapshotPosts, updatePost } from '@/lib/postCache';
+import { POSTS_KEY, removePost, restorePosts, snapshotPosts, updatePost } from '@/lib/postCache';
 import { fullDate, timeAgo } from '@/lib/time';
 import { Post, User } from '@/lib/types';
 import { cn, getDomainFromUrl } from '@/lib/utils';
@@ -29,7 +29,9 @@ function useOptimisticToggle(post: Post, field: 'like' | 'bookmark') {
       field === 'like'
         ? on ? unlikePost(post.id) : likePost(post.id)
         : on ? unbookmarkPost(post.id) : bookmarkPost(post.id),
-    onMutate: () => {
+    onMutate: async () => {
+      // A refetch already in flight (e.g. right after publishing) would overwrite the optimistic value.
+      await queryClient.cancelQueries({ queryKey: POSTS_KEY });
       const snapshot = snapshotPosts(queryClient);
       updatePost(queryClient, post.id, (p) =>
         field === 'like'
