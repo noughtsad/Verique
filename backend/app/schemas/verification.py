@@ -131,6 +131,8 @@ class ClaimSources(BaseModel):
     """Sources for a claim organized by role."""
     supporting: List[SourceInfo] = []
     contradicting: List[SourceInfo] = []
+    # Evidence the verdict did not cite: related reading, never counted as support.
+    neutral: List[SourceInfo] = []
 
 
 class ClaimResult(BaseModel):

@@ -117,3 +117,27 @@ async def test_query_planner_is_told_todays_date(monkeypatch):
     await QueryPlannerAgent().plan_queries([{"id": "c1", "text": "gta 6 releases this month", "time_sensitivity": "high"}])
     prompt = sent["messages"][-1]["content"]
     assert datetime.now(timezone.utc).date().isoformat() in prompt
+
+
+# --- 5. dates survive into the stored sources --------------------------------------
+
+def test_explanation_parses_evidence_dates():
+    from app.agents.explanation import ExplanationAgent
+
+    parse = ExplanationAgent.__new__(ExplanationAgent)._parse_date
+    assert parse("2026-10-13") == datetime(2026, 10, 13)
+    assert parse("2026-10-13T08:00:00Z") == datetime(2026, 10, 13, 8, 0)
+    assert parse("2026-10-13T08:00:00+05:30") == datetime(2026, 10, 13, 2, 30)
+    assert parse(None) is None
+    assert parse("n/a") is None
+
+
+def test_cited_sources_keep_their_publication_date():
+    from app.agents.explanation import ExplanationAgent
+
+    agent = ExplanationAgent.__new__(ExplanationAgent)
+    evidence = [{"url": "https://news.example/a", "domain": "news.example", "snippet": "x",
+                 "domain_reputation": 0.8, "published_at": "2026-10-13"}]
+    sources = agent._build_sources(evidence=evidence, supporting_urls=["https://news.example/a"],
+                                   contradicting_urls=[])
+    assert sources.supporting[0].published_at == datetime(2026, 10, 13)

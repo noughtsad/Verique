@@ -124,10 +124,11 @@ class ExplanationAgent:
                     role=SourceRole.CONTRADICTING
                 ))
         
-        # If no sources explicitly marked, use top evidence
+        # If no sources explicitly marked, list the top evidence as related reading (not support)
+        neutral = []
         if not supporting and not contradicting and evidence:
             for e in evidence[:3]:
-                supporting.append(SourceInfo(
+                neutral.append(SourceInfo(
                     url=e["url"],
                     domain=e.get("domain", ""),
                     snippet=e.get("snippet", ""),
@@ -138,7 +139,8 @@ class ExplanationAgent:
         
         return ClaimSources(
             supporting=supporting,
-            contradicting=contradicting
+            contradicting=contradicting,
+            neutral=neutral
         )
     
     def _parse_enum(self, enum_class, value: str):
@@ -150,19 +152,20 @@ class ExplanationAgent:
             return list(enum_class)[0]
     
     def _parse_date(self, date_str):
-        """Parse date string to datetime."""
+        """Parse an ISO date or datetime string to a naive UTC datetime."""
         if not date_str:
             return None
-        
-        from datetime import datetime
-        
+
+        from datetime import datetime, timezone
+
+        text = str(date_str).strip()
         try:
-            # Try common formats
-            for fmt in ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"]:
-                try:
-                    return datetime.strptime(str(date_str)[:len(fmt.replace('%', ''))], fmt)
-                except ValueError:
-                    continue
-            return None
-        except Exception:
-            return None
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            try:
+                parsed = datetime.strptime(text[:10], "%Y-%m-%d")
+            except ValueError:
+                return None
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+        return parsed

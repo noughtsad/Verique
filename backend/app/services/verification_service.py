@@ -104,8 +104,11 @@ class VerificationService:
             # Count sources for this claim
             supporting_count = len(claim.sources.supporting)
             contradicting_count = len(claim.sources.contradicting)
-            
-            total_supporting += supporting_count
+            # Only a supported verdict turns its sources into support for the page
+            is_supported = claim.verdict.value in ("strongly_supported", "supported")
+
+            if is_supported:
+                total_supporting += supporting_count
             total_contradicting += contradicting_count
             
             # Position weight: Earlier claims are more important
@@ -120,7 +123,7 @@ class VerificationService:
             # Source count bonus: Logarithmic scaling
             # More sources = higher confidence in the score
             total_sources = supporting_count + contradicting_count
-            if total_sources > 0 and claim.verdict.value in ["strongly_supported", "supported", "not_verifiable"]:
+            if total_sources > 0 and is_supported:
                 # Support ratio bonus
                 support_ratio = supporting_count / total_sources if total_sources > 0 else 0
                 
@@ -137,7 +140,7 @@ class VerificationService:
                 final_score = base_score
                 
             # STRICT PENALTY: Prevent mixed/negative verdicts from getting a passing score
-            if claim.verdict.value == "mixed":
+            if claim.verdict.value in ("mixed", "outdated"):
                 final_score = min(0.45, final_score)
             elif claim.verdict.value == "weak":
                 final_score = min(0.35, final_score)
@@ -156,7 +159,7 @@ class VerificationService:
         # Apply global source bonus
         # If the page has many supporting sources overall, boost the score
         # ONLY if there are no explicitly contradicted or mixed claims to prevent bypassing penalties
-        has_misinformation = any(c.verdict.value in ["mixed", "weak", "contradicted"] for c in claims)
+        has_misinformation = any(c.verdict.value in ["mixed", "weak", "contradicted", "outdated"] for c in claims)
         
         if total_supporting > 0 and not has_misinformation:
             total_sources = total_supporting + total_contradicting
