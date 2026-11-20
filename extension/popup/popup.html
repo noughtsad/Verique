@@ -2,70 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verique</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="popup-container">
-    <header class="popup-header">
-      <div class="logo">
-        <span class="logo-icon">🛡️</span>
-        <span class="logo-text">Verique</span>
-      </div>
-      <div class="status" id="api-status">
-        <span class="status-dot"></span>
-        <span class="status-text">Checking...</span>
-      </div>
-    </header>
+  <header class="top">
+    <img src="../icons/icon32.png" width="22" height="22" alt="">
+    <strong>Verique</strong>
+    <span class="spacer"></span>
+    <span class="status" id="api-status" title="">
+      <span class="dot"></span><span class="status-text">Checking API…</span>
+    </span>
+  </header>
 
-    <main class="popup-main">
-      <div class="section">
-        <h3>Quick Verify</h3>
-        <textarea 
-          id="verify-input" 
-          placeholder="Paste text to verify..."
-          rows="4"
-        ></textarea>
-        <button id="verify-btn" class="btn btn-primary">
-          <span class="btn-icon">✓</span>
-          Verify Text
-        </button>
+  <main>
+    <section>
+      <h2>This page</h2>
+      <div class="actions">
+        <button id="check-page" class="btn primary">Check this page</button>
+        <button id="check-selection" class="btn">Check selected text</button>
       </div>
+      <p id="page-hint" class="hint" hidden></p>
+    </section>
 
-      <div class="divider">
-        <span>or</span>
-      </div>
+    <section>
+      <h2>Check any text</h2>
+      <textarea id="text-input" rows="4" placeholder="Paste a paragraph or a claim…"></textarea>
+      <button id="check-text" class="btn">Check text</button>
+    </section>
 
-      <div class="section">
-        <h3>Page Actions</h3>
-        <button id="verify-page-btn" class="btn btn-secondary">
-          <span class="btn-icon">📄</span>
-          Verify Entire Page
-        </button>
-        <button id="verify-selection-btn" class="btn btn-secondary">
-          <span class="btn-icon">✂️</span>
-          Verify Selection
-        </button>
-      </div>
+    <section id="job" aria-live="polite" hidden></section>
 
-      <div id="loading" class="loading hidden">
-        <div class="spinner"></div>
-        <p>Analyzing claims...</p>
-      </div>
+    <details id="settings">
+      <summary>Settings</summary>
+      <form id="settings-form">
+        <label>API URL
+          <input id="api-base" type="url" required placeholder="http://localhost:8000">
+        </label>
+        <label>Web app URL
+          <input id="app-url" type="url" required placeholder="http://localhost:3000">
+        </label>
+        <div class="row">
+          <button type="submit" class="btn small">Save</button>
+          <button type="button" id="reset-settings" class="btn small ghost">Reset</button>
+          <span id="settings-msg" class="hint"></span>
+        </div>
+      </form>
+    </details>
+  </main>
 
-      <div id="error" class="error hidden">
-        <p id="error-message"></p>
-      </div>
-    </main>
+  <footer>
+    <a id="open-app" href="#" target="_blank" rel="noopener">Open Verique</a>
+    <span class="hint">Alt+Shift+V checks the page</span>
+  </footer>
 
-    <footer class="popup-footer">
-      <a href="https://verique.io" target="_blank">verique.io</a>
-      <span>•</span>
-      <a href="https://verique.io/docs" target="_blank">API Docs</a>
-    </footer>
-  </div>
-
+  <script src="../shared.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

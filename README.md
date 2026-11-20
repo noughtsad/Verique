@@ -341,21 +341,34 @@ GET /api/v1/posts/{post_id}/verifications/latest
 
 ### Installation
 
-The extension is an early Manifest V3 prototype. There is currently no build step (no
-`package.json` or `dist/` folder); load the source folder directly:
+A Manifest V3 extension for Chrome and Edge (116+). There is no build step; load the source
+folder directly:
 
-- Navigate to `chrome://extensions/`
-- Enable "Developer mode"
-- Click "Load unpacked"
-- Select the `extension/` folder
+- Start the backend (`uvicorn app.main:app --port 8000`, see Quick Start)
+- Open `chrome://extensions/` (or `edge://extensions/`) and turn on "Developer mode"
+- Click "Load unpacked" and select the `extension/` folder
+
+The popup's dot shows whether the API answers. By default the extension calls
+`http://localhost:8000`. To use another backend, open **Settings** in the popup and change the
+API URL; the extension asks for permission to reach that host once.
 
 ### Usage
 
-1. Navigate to any webpage
-2. Click the Verique icon in your toolbar
-3. Wait for analysis (15-30 seconds)
-4. View highlighted claims with color coding
-5. Hover for quick tooltips, click for detailed evidence
+- **Check a page:** click the Verique icon, then **Check this page** (or press `Alt+Shift+V`, or
+  right-click the page and choose *Fact-check this page with Verique*).
+- **Check a selection:** select text, then **Check selected text** in the popup, `Alt+Shift+S`,
+  or right-click it and choose *Fact-check selection with Verique*.
+- **Check pasted text:** paste it into the popup; the results are listed in the popup.
+
+A panel on the right of the page shows progress, then the trust score and one card per claim
+with its verdict, reasoning and sources. The claims are highlighted in the page in their
+verdict's colour: click a highlight to jump to its card, or **Show on page** on a card to
+jump to the highlight. Minimise the panel to a small score pill; closing it removes the
+highlights. Each claim takes about a minute to check, so a long article can take several
+minutes, and only its first 50,000 characters are sent.
+
+The extension only reads a page when you ask it to (it uses `activeTab`, with no access to
+every site), and it can't run on browser pages, the Chrome Web Store or PDFs.
 
 ---
 
@@ -381,11 +394,12 @@ verique/
 │   │   ├── hooks/           # Custom hooks (e.g. useChatSocket)
 │   │   └── lib/             # API client, types, utilities, chat store
 │   └── public/
-├── extension/              # Chrome browser extension (early prototype, no build step)
+├── extension/              # Chrome/Edge extension (Manifest V3, no build step)
 │   ├── manifest.json
-│   ├── popup/              # Extension popup
-│   ├── content/            # Content scripts
-│   └── background.js       # Service worker
+│   ├── background.js       # Service worker: runs checks, calls the API
+│   ├── shared.js           # Settings shared by the worker and the popup
+│   ├── popup/              # Toolbar popup: start checks, latest result, settings
+│   └── content/            # Results panel + in-page highlights (injected on demand)
 └── docs/                   # Project documents
 ```
 
@@ -422,7 +436,7 @@ pytest tests/ -v
 
 ### 📄 Phase 1 – Extension & Multi-Agent
 
-- [ ] Browser extension for Chrome/Edge
+- [x] Browser extension for Chrome/Edge
 - [ ] Parallel retrieval workers
 - [ ] Cross-model verification
 - [ ] Real-time agent visualization
