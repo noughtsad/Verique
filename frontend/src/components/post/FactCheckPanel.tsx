@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Globe, HelpCircle, ShieldCheck, TriangleAlert, UserCheck } from 'lucide-react';
 
-import { challengeVerification, getLatestPostVerification, listModerationReviews, resolveModerationReview } from '@/lib/api';
+import { challengeVerification, getLatestPostVerification, resolveModerationReview } from '@/lib/api';
+import { CHALLENGE_REASONS, isStaff, MODERATION_KEY, useOpenReviews } from '@/lib/moderation';
 import { updatePost } from '@/lib/postCache';
 import { ClaimResult, ModerationReview, Post, PostVerification, ReviewDecision, SourceInfo, User } from '@/lib/types';
 import { getDomainFromUrl, isFailedVerification, isUnverifiableVerification } from '@/lib/utils';
@@ -17,13 +18,6 @@ import { ScoreMeter } from '@/components/ui/ScoreMeter';
 import { Spinner } from '@/components/ui/Spinner';
 import { VerdictBadge } from '@/components/ui/VerdictBadge';
 import { inputClass } from '@/components/ui/Input';
-
-const CHALLENGE_REASONS = [
-  ['missing_context', 'Missing context'],
-  ['wrong_sources', 'Wrong or unreliable sources'],
-  ['outdated_conclusion', 'Outdated conclusion'],
-  ['incorrect_reasoning', 'Incorrect reasoning'],
-] as const;
 
 const DECISION_LABEL: Record<string, string> = {
   uphold: 'A moderator upheld this verdict',
@@ -135,7 +129,7 @@ function ChallengeForm({ v, postId }: { v: PostVerification; postId: number }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['verification', postId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });
+      queryClient.invalidateQueries({ queryKey: MODERATION_KEY });
     },
   });
 
@@ -194,7 +188,7 @@ function ResolveForm({ review, postId }: { review: ModerationReview; postId: num
     onSuccess: (resolved) => {
       queryClient.setQueryData(['verification', postId], resolved.verification);
       updatePost(queryClient, postId, (p) => ({ ...p, latest_verification_summary: toSummary(resolved.verification) }));
-      queryClient.invalidateQueries({ queryKey: ['moderation-reviews'] });
+      queryClient.invalidateQueries({ queryKey: MODERATION_KEY });
     },
   });
   const scoreValid = score === '' || (Number(score) >= 0 && Number(score) <= 100);
@@ -221,7 +215,7 @@ function ResolveForm({ review, postId }: { review: ModerationReview; postId: num
 }
 
 function ModeratorTools({ v, postId }: { v: PostVerification | null | undefined; postId: number }) {
-  const reviews = useQuery({ queryKey: ['moderation-reviews'], queryFn: listModerationReviews });
+  const reviews = useOpenReviews();
   const forThis = reviews.data?.find((r) => r.verification_id === v?.id);
   const others = reviews.data?.filter((r) => r.post.id !== postId) ?? [];
   return (
@@ -253,7 +247,7 @@ export function FactCheckPanel({ post, viewer }: { post: Post; viewer: User | nu
   });
   const v = verification.data;
   const retry = useVerifyPost(post.id, !!v && !isFailedVerification(v));
-  const isModerator = viewer?.role === 'moderator' || viewer?.role === 'admin';
+  const isModerator = isStaff(viewer);
   const canChallenge = !!viewer && !!v && !isFailedVerification(v) && !isUnverifiableVerification(v) && !v.is_human_final;
 
   return (

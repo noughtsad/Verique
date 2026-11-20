@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Bookmark, CalendarDays, FileText, MessageCircle, Settings, UserX, Users } from 'lucide-react';
+import { Bookmark, CalendarDays, FileText, MessageCircle, Settings, ShieldCheck, UserX, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { ApiError, getFollowers, getFollowing, getUserPosts, getUserProfile } from '@/lib/api';
+import { isStaff } from '@/lib/moderation';
 import { User } from '@/lib/types';
 import { AppShell } from '@/components/layout/AppShell';
 import { PostList } from '@/components/post/PostList';
@@ -116,14 +117,19 @@ function ProfileView({ username, viewer }: { username: string; viewer: User | nu
           </button>
         </p>
         {isOwn && (
-          // Phones have no sidebar, so these two live here.
-          <div className="mt-4 flex gap-2 sm:hidden">
+          // Phones have no sidebar, so these live here.
+          <div className="mt-4 flex flex-wrap gap-2 sm:hidden">
             <Link href="/bookmarks" className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink">
               <Bookmark aria-hidden className="h-4 w-4" /> Bookmarks
             </Link>
             <Link href="/settings" className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink">
               <Settings aria-hidden className="h-4 w-4" /> Settings
             </Link>
+            {isStaff(viewer) && (
+              <Link href="/admin" className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink">
+                <ShieldCheck aria-hidden className="h-4 w-4" /> Admin
+              </Link>
+            )}
           </div>
         )}
       </Card>

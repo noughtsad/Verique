@@ -576,25 +576,44 @@ class SocialService:
             created_at=challenge.created_at,
         )
 
-    async def list_open_reviews(self) -> list[ModerationReviewResponse]:
-        result = await self.db.execute(
-            select(ModerationReview)
-            .options(
-                selectinload(ModerationReview.moderator),
-                selectinload(ModerationReview.verification)
-                .selectinload(Verification.claim_verdicts)
-                .selectinload(ClaimVerdict.sources)
-                .selectinload(VerificationSource.source),
-                selectinload(ModerationReview.verification)
-                .selectinload(Verification.claim_verdicts)
-                .selectinload(ClaimVerdict.claim),
-                selectinload(ModerationReview.verification).selectinload(Verification.post).selectinload(Post.author),
-            )
-            .where(ModerationReview.status == "open")
-            .order_by(ModerationReview.created_at.asc())
+    @staticmethod
+    def _review_load_options() -> list[Any]:
+        """Everything _serialize_review reads, loaded up front (async sessions can't lazy-load)."""
+        verification = selectinload(ModerationReview.verification)
+        return [
+            selectinload(ModerationReview.moderator),
+            verification.selectinload(Verification.claim_verdicts)
+            .selectinload(ClaimVerdict.sources)
+            .selectinload(VerificationSource.source),
+            verification.selectinload(Verification.claim_verdicts).selectinload(ClaimVerdict.claim),
+            verification.selectinload(Verification.post).selectinload(Post.author),
+            verification.selectinload(Verification.challenges).selectinload(Challenge.user),
+        ]
+
+    async def list_reviews(self, status: str = "open", limit: Optional[int] = None) -> list[ModerationReviewResponse]:
+        """Open reviews oldest first (a queue); resolved ones newest decision first (history)."""
+        order = (
+            ModerationReview.created_at.asc()
+            if status == "open"
+            else ModerationReview.decided_at.desc()
         )
+        query = (
+            select(ModerationReview)
+            .options(*self._review_load_options())
+            .where(ModerationReview.status == status)
+            .order_by(order, ModerationReview.id.asc())
+            # Refresh objects this session already holds: a challenge added since they were
+            # loaded must still show up in the review's challenge list.
+            .execution_options(populate_existing=True)
+        )
+        if limit is not None:
+            query = query.limit(limit)
+        result = await self.db.execute(query)
         reviews = result.scalars().unique().all()
         return [self._serialize_review(review) for review in reviews]
+
+    async def list_open_reviews(self) -> list[ModerationReviewResponse]:
+        return await self.list_reviews("open")
 
     async def resolve_review(
         self,
@@ -604,16 +623,7 @@ class SocialService:
     ) -> ModerationReviewResponse:
         result = await self.db.execute(
             select(ModerationReview)
-            .options(
-                selectinload(ModerationReview.verification)
-                .selectinload(Verification.claim_verdicts)
-                .selectinload(ClaimVerdict.sources)
-                .selectinload(VerificationSource.source),
-                selectinload(ModerationReview.verification)
-                .selectinload(Verification.claim_verdicts)
-                .selectinload(ClaimVerdict.claim),
-                selectinload(ModerationReview.verification).selectinload(Verification.post).selectinload(Post.author),
-            )
+            .options(*self._review_load_options())
             .where(ModerationReview.id == review_id)
         )
         review = result.scalar_one_or_none()
@@ -641,6 +651,10 @@ class SocialService:
             verification.overall_score = payload.override_score
         if payload.override_summary:
             verification.summary = {**(verification.summary or {}), "human_summary": payload.override_summary}
+        # This decision answers every challenge still waiting on the verdict.
+        for challenge in verification.challenges:
+            if challenge.status == "submitted":
+                challenge.status = "resolved"
 
         await self.db.flush()
         await self.db.refresh(review, attribute_names=["moderator"])
@@ -945,6 +959,18 @@ class SocialService:
                 latest_verification_summary=self._serialize_verification_summary(review.verification),
                 challenge_state=review.verification.review_status or "none",
             ),
+            challenges=[
+                ChallengeResponse(
+                    id=challenge.id,
+                    verification_id=challenge.verification_id,
+                    user=challenge.user,
+                    reason_code=challenge.reason_code,
+                    comment=challenge.comment,
+                    status=challenge.status,
+                    created_at=challenge.created_at,
+                )
+                for challenge in sorted(review.verification.challenges, key=lambda c: (c.created_at, c.id))
+            ],
         )
 
     def _latest_verification(self, post: Post) -> Optional[Verification]:

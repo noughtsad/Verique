@@ -16,6 +16,7 @@ import {
   Message,
   ModerationDecisionPayload,
   ModerationReview,
+  ReviewStatus,
   Notification,
   NotificationCountResponse,
   Post,
@@ -239,8 +240,11 @@ export async function challengeVerification(
   );
 }
 
-export async function listModerationReviews(): Promise<ModerationReview[]> {
-  return apiFetch<ModerationReview[]>('/api/v1/moderation/reviews', undefined, true);
+/** The open queue (oldest first) or past decisions (newest first). Moderators and admins only. */
+export async function listModerationReviews(status: ReviewStatus = 'open', limit?: number): Promise<ModerationReview[]> {
+  const params = new URLSearchParams({ status });
+  if (limit) params.set('limit', String(limit));
+  return apiFetch<ModerationReview[]>(`/api/v1/moderation/reviews?${params}`, undefined, true);
 }
 
 export async function resolveModerationReview(

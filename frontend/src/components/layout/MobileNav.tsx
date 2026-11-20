@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { NAV_ITEMS } from '@/components/layout/navItems';
+import { canSee, NAV_ITEMS } from '@/components/layout/navItems';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,7 @@ const MOBILE_KEYS = ['home', 'explore', 'notifications', 'messages', 'profile'] 
 export function MobileNav({ user }: { user: User | null }) {
   const pathname = usePathname() || '/';
   const unread = useUnreadCounts(user?.id);
-  const items = NAV_ITEMS.filter((item) => (MOBILE_KEYS as readonly string[]).includes(item.key) && (user || !item.auth));
+  const items = NAV_ITEMS.filter((item) => (MOBILE_KEYS as readonly string[]).includes(item.key) && canSee(item, user));
 
   return (
     <nav
