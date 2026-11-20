@@ -49,7 +49,10 @@ for a code-structure question.
 
 - `backend/` — Python 3.10+, FastAPI, LangGraph multi-agent verification pipeline, SQLAlchemy + Alembic, Supabase Postgres.
 - `frontend/` — Next.js 16 (Turbopack, React 19), TypeScript, Tailwind CSS 4, TanStack Query.
-- `extension/` — Chrome Manifest V3 browser extension (planned, not yet built out).
+- `extension/` — Chrome/Edge Manifest V3 extension, no build step. It calls the public
+  `POST /api/v1/verify/` (no auth), injects its panel only on demand (`activeTab` +
+  `scripting`), and runs every check in the service worker, which pings an extension API
+  every 20s so Chrome doesn't stop it during multi-minute checks.
 
 See `README.md` for setup/quick start.
 
