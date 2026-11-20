@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
-import { NAV_ITEMS } from '@/components/layout/navItems';
+import { canSee, NAV_ITEMS } from '@/components/layout/navItems';
 import { useLogout } from '@/hooks/useCurrentUser';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
+import { isStaff, useOpenReviews } from '@/lib/moderation';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ export function Sidebar({ user }: { user: User | null }) {
   const pathname = usePathname() || '/';
   const logout = useLogout();
   const unread = useUnreadCounts(user?.id);
+  const openReviews = useOpenReviews(isStaff(user));
 
   const linkClass = (active: boolean) =>
     cn(
@@ -62,7 +64,7 @@ export function Sidebar({ user }: { user: User | null }) {
       </Link>
 
       <nav aria-label="Main" className="flex flex-col gap-1">
-        {NAV_ITEMS.filter((item) => user || !item.auth).map((item) => {
+        {NAV_ITEMS.filter((item) => canSee(item, user)).map((item) => {
           const active = item.match(pathname, user?.username);
           const Icon = item.icon;
           return (
@@ -77,6 +79,7 @@ export function Sidebar({ user }: { user: User | null }) {
                 <Icon aria-hidden className="h-6 w-6" />
                 {item.key === 'notifications' && <Badge count={unread.notifications} />}
                 {item.key === 'messages' && <Badge count={unread.messages} tone="rose" />}
+                {item.key === 'admin' && <Badge count={openReviews.data?.length ?? 0} tone="rose" />}
               </span>
               <span className="hidden xl:inline">{item.label}</span>
             </Link>

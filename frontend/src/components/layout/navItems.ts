@@ -1,6 +1,8 @@
-import { Bell, Bookmark, Compass, Home, MessageCircle, Settings, UserCircle, type LucideIcon } from 'lucide-react';
+import { Bell, Bookmark, Compass, Home, MessageCircle, Settings, ShieldCheck, UserCircle, type LucideIcon } from 'lucide-react';
+import { isStaff } from '@/lib/moderation';
+import { User } from '@/lib/types';
 
-export type NavKey = 'home' | 'explore' | 'notifications' | 'messages' | 'bookmarks' | 'profile' | 'settings';
+export type NavKey = 'home' | 'explore' | 'notifications' | 'messages' | 'bookmarks' | 'profile' | 'settings' | 'admin';
 
 export interface NavItem {
   key: NavKey;
@@ -9,6 +11,8 @@ export interface NavItem {
   href: (username?: string) => string;
   /** Only useful when signed in; hidden from visitors. */
   auth?: boolean;
+  /** Only for moderators and admins. */
+  staff?: boolean;
   match: (pathname: string, username?: string) => boolean;
 }
 
@@ -34,4 +38,11 @@ export const NAV_ITEMS: NavItem[] = [
     match: (p, u) => !!u && p === `/profile/${u}`,
   },
   { key: 'settings', auth: true, label: 'Settings', icon: Settings, href: () => '/settings', match: (p) => p.startsWith('/settings') },
+  { key: 'admin', auth: true, staff: true, label: 'Admin', icon: ShieldCheck, href: () => '/admin', match: (p) => p.startsWith('/admin') },
 ];
+
+/** Whether `user` (null for visitors) should see this nav item. */
+export function canSee(item: NavItem, user: User | null): boolean {
+  if (item.staff) return isStaff(user);
+  return !!user || !item.auth;
+}

@@ -34,6 +34,7 @@ export type Verdict =
 export type SourceRole = 'supporting' | 'contradicting' | 'neutral';
 export type UserRole = 'user' | 'moderator' | 'admin';
 export type ReviewDecision = 'uphold' | 'revise' | 'remove_verdict';
+export type ReviewStatus = 'open' | 'resolved';
 
 export interface SourceInfo {
   url: string;
@@ -229,7 +230,7 @@ export interface Challenge {
 export interface ModerationReview {
   id: number;
   verification_id: number;
-  status: string;
+  status: ReviewStatus;
   decision?: ReviewDecision | null;
   note?: string | null;
   override_score?: number | null;
@@ -239,6 +240,8 @@ export interface ModerationReview {
   moderator?: PublicUser | null;
   verification: PostVerification;
   post: Post;
+  /** Oldest first. `submitted` ones arrived since the last decision. */
+  challenges: Challenge[];
 }
 
 export interface RegisterPayload {

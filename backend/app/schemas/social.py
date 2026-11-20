@@ -135,3 +135,6 @@ class ModerationReviewResponse(BaseModel):
     moderator: Optional[PublicUserResponse] = None
     verification: PostVerificationResponse
     post: PostSummary
+    # Every challenge filed against this verdict, oldest first. "submitted" ones arrived
+    # since the last decision; "resolved" ones were covered by an earlier decision.
+    challenges: list[ChallengeResponse] = Field(default_factory=list)

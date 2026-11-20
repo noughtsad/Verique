@@ -1,7 +1,9 @@
 """
 Challenge and moderation endpoints.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Literal, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -34,11 +36,14 @@ async def challenge_verification(
 
 @router.get("/moderation/reviews", response_model=list[ModerationReviewResponse])
 async def list_reviews(
+    review_status: Literal["open", "resolved"] = Query("open", alias="status"),
+    limit: Optional[int] = Query(None, ge=1, le=200),
     current_user: User = Depends(require_roles("moderator", "admin")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    """The moderation queue (`status=open`, oldest first) or past decisions (`status=resolved`)."""
     del current_user
-    return await SocialService(db).list_open_reviews()
+    return await SocialService(db).list_reviews(review_status, limit)
 
 
 @router.post("/moderation/reviews/{review_id}/resolve", response_model=ModerationReviewResponse)
